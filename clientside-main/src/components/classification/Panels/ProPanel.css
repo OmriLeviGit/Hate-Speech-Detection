@@ -1,0 +1,47 @@
+.pro-panel-container {
+    padding: 2%;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    overflow: auto;
+}
+
+
+.pro-panel-table {
+    width: 100%;
+    border-collapse: collapse;
+    overflow: auto;
+
+}
+
+.pro-panel-table th {
+    background-color: #f2f2f2;
+    padding: 10px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+}
+
+.pro-panel-table td {
+    padding: 10px;
+    border-bottom: 1px solid #ddd;
+}
+
+.pro-panel-table tbody tr:hover {
+    background-color: #f9f9f9;
+}
+
+.pro-panel-container::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+}
+
+.pro-panel-container::-webkit-scrollbar-thumb {
+    background-color: #ddd;
+    border-radius: 10px;
+}
+
+.pro-panel-container::-webkit-scrollbar-track {
+    background-color: #ddd;
+    border-radius: 10px;
+}

@@ -1,0 +1,12 @@
+
+# Elastic Beanstalk Files
+.elasticbeanstalk/*
+!.elasticbeanstalk/*.cfg.yml
+!.elasticbeanstalk/*.global.yml
+
+classifier.zip
+clientside.zip
+militias.zip
+militias_code.zip
+serverside.zip
+/env
