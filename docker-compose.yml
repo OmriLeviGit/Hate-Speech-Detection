@@ -1,0 +1,17 @@
+# docker-compose.yml
+version: '3.8'
+
+services:
+  backend:
+    build: ./serverside-main
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./serverside-main:/app
+
+  frontend:
+    build: ./clientside-main
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
