@@ -4,7 +4,7 @@ const Tweet = ({ tweet }) => {
     return (
         <div className="tweet-div">
             <p className="tweet-text" dir='auto' > {tweet.tweetText} </p>
-            <p className="tweet-id"> {tweet.tweetId === "ERROR" ? '' : tweet.tweetId}</p>
+            <p className="tweet-id"> {tweet.tweetId === "ERROR" ? '' : `id=${tweet.tweetId}`}</p>
         </div>
     );
 

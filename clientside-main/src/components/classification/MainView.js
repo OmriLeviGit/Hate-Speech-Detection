@@ -5,24 +5,39 @@ import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 const MainView = () => {
+  const [isFinished, setIsFinished] = useState(false);
+  const [isAntisemistic, setIsAntiMil] = useState(false);
+  const [classifyCount, setClassifyCount] = useState(4);
+  const [tweetNumber, setTweetNumber] = useState(35);
   const [tweet, setTweet] = useState({
-    tweetId: "1",
-    tweetText: "Sample tweet content without authentication.",
+    tweetId: `${classifyCount + 1}`,
+    tweetText: `Sample tweet number ${tweetNumber}`,
     username: "TestUser",
   });
-  const [isFinished, setIsFinished] = useState(false);
-  const [isAntiMil, setIsAntiMil] = useState(false);
-  const [classifyCount, setClassifyCount] = useState(0);
 
+
+
+  // advance classification made
   useEffect(() => {
-    // Simulate API call, just set static data for testing purposes
-    setTweet({
-      tweetId: "1",
-      tweetText: "Sample tweet content.",
-      username: "TestUser",
-    });
-    setClassifyCount(10); // Example count
-  }, []);
+    if (isFinished) {
+      
+      // Increment classifyCount first
+      setClassifyCount((prevCount) => {
+        const newCount = prevCount + 1;
+        // Create a new tweet based on updated classifyCount
+        setTweet({
+          tweetId: `${newCount + 1}`,
+          tweetText: `Sample tweet number ${tweetNumber + 1}`,
+          username: "TestUser",
+        });
+        return newCount; // Return the updated count
+      });
+      setIsFinished(false); // Reset isFinished to prevent repeat execution
+      setTweetNumber((num) => num + 1)
+    }
+  }, [isFinished]);
+
+
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -31,9 +46,11 @@ const MainView = () => {
     setIsFinished(true);
   };
 
+
+
   return (
     <div id="form-frame">
-      <h1 className="form-title">S&O Classifier (No Authentication)</h1>
+      <h1 className="form-title">Data Tagging</h1>
       <form onSubmit={handleSubmit}>
         <div className="copy-to-clip-div">
           <button type="button" className="copy-to-clip-btn">
@@ -50,16 +67,16 @@ const MainView = () => {
           <p className="classify-count">Classifications made: {classifyCount}</p>
           <br />
           <div className="form-check form-switch form-switch-md">
-            <input className="form-check-input" type="checkbox" id="flexSwitchCheckDefault" onChange={() => setIsAntiMil(!isAntiMil)} />
+            <input className="form-check-input" type="checkbox" id="flexSwitchCheckDefault" onChange={() => setIsAntiMil(!isAntisemistic)} />
             <label className="form-check-label" htmlFor="flexSwitchCheckDefault">
-              {isAntiMil ? "Anti Militias" : "Supports Militias"}
+              {isAntisemistic ? "Antisemistic" : "Not antisemistic"}
             </label>
           </div>
         </div>
 
         <div className="classification-zone">
           <button type="submit" id="classify-btn" className="submit-button classify-submit-button" disabled={isFinished}>
-            Classify: {isAntiMil ? "Against Militias" : "In Favor of Militias"}
+            Classify: {isAntisemistic ? "Antisemistic" : "Not antisemistic"}
           </button>
 
           <button

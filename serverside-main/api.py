@@ -1,4 +1,6 @@
 import inspect
+import uvicorn
+
 from datetime import datetime, timedelta
 
 from fastapi import FastAPI, HTTPException, Depends
@@ -77,6 +79,7 @@ class Passcode(BaseModel):
 
 @app.post("/auth/signin")
 async def signin(passcode: Passcode):
+    print("@@@")
     return {'token': 123, 'is_pro': True}
 
 # @app.post("auth/signin")
@@ -261,5 +264,4 @@ async def params_list():
 
 
 if __name__ == '__main__':
-    import uvicorn
-    uvicorn.run(app, host="localhost", port=8000)
+    uvicorn.run("api:app", host="0.0.0.0", port=8000, reload=True)

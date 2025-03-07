@@ -35,8 +35,8 @@ const SignIn = ({ setIsPro, setPasscode, setToken }) => {
 
     // // POST request to server
     console.log("inside");
-    fetch("http://localhost:8000/auth/signin", {
-      // fetch(window.API_URL + "/auth/signin", {
+    // fetch("http://localhost:8000/auth/signin", {
+      fetch(window.API_URL + "/auth/signin", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
