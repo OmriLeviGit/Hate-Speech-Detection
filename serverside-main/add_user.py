@@ -1,7 +1,7 @@
-from db_access import DBAccess
+from db_access import get_database_instance
 from datetime import timedelta
 
-db = DBAccess()
+db = get_database_instance()
 emails = ['']
 num_days = 21
 for email in emails:
