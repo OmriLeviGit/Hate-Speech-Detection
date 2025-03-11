@@ -22,7 +22,7 @@ class Singleton(type):
         return cls.instance
 
 
-class DBAccess(metaclass=Singleton):
+class get_database_instance(metaclass=Singleton):
     def __init__(self):
         self.engine: Engine = create_engine(DB)
 
@@ -36,7 +36,7 @@ class DBAccess(metaclass=Singleton):
         return passcode.key
 
     # A method that returns a passcode object.
-    def get_passcode(self, key):
+    def get_user(self, key): # TODO need to change names of variables
         with Session(self.engine) as session:
             result = session.query(Passcode).filter(Passcode.key == key)
             return result.one_or_none()
@@ -162,7 +162,7 @@ class DBAccess(metaclass=Singleton):
                 return result
 
             # Check if the current user is a pro. If so, assign tweets accordingly.
-            if self.get_passcode(passcode).professional:
+            if self.get_user(passcode).professional:
                 # Check if there are tweets in the pro bank that are not assigned already.
                 pro_tweet = session.query(ProBank).filter(ProBank.done == False).first()
                 
@@ -227,7 +227,7 @@ class DBAccess(metaclass=Singleton):
     def classify_tweet(self, tweet_id, passcode, classification, features):
         with Session(self.engine) as session:
             # The classification is made by a pro user.
-            if self.get_passcode(passcode).professional:
+            if self.get_user(passcode).professional:
                 return self.classify_tweet_pro(tweet_id, passcode, classification, features)
 
             # Search for the wanted tweet and making sure it is unclassified.
