@@ -1,0 +1,201 @@
+body {
+  margin: 0;
+  font-family: Lato, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
+}
+
+/* error class */
+.error {
+  color: red;
+}
+
+:root {
+    --form-frame-background: white;
+    --box-shadow: rgba(0, 0, 0, 0.75);
+    --main-bright: #86A789;
+    --main-dark: #4F6F52;
+    --main-disabled-bright: #DDDDDD;
+    --main-disabled-dark: #CCCCCC;
+    --form-title-text: black;
+    --form-help: gray;
+    --submit-button-text: white;
+    --submit-button-disabled-text: gray;
+    --form-question: black;
+}
+
+/* Implement dark mode in the future */
+[data-theme='dark'] {
+    --form-frame-background: rgba(16, 27, 33, 255);
+    --box-shadow: rgba(0, 0, 0, 0.75);
+    --main-bright: #091014;
+    --main-dark: #091014;
+    --main-disabled-bright: #DDDDDD;
+    --main-disabled-dark: #CCCCCC;
+    --form-title-text: black;
+    --form-help: gray;
+    --submit-button-text: white;
+    --submit-button-disabled-text: gray;
+    --form-question: black;
+}
+
+body {
+    background: linear-gradient(to right bottom, var(--main-bright) 0%, var(--main-dark) 100%) fixed;
+}
+
+main {
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    overflow: auto;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+main #form-frame {
+    width: 30%;
+    min-width: 500px;
+    margin-top: 3%;
+    margin-bottom: 3%;
+    padding: 32px;
+    background: var(--form-frame-background);
+    border-radius: 5px;
+    box-shadow: 0 0 10px 0 var(--box-shadow);
+}
+
+/* PLEASE DO NOT TOUCH WITHOUT CONSULTING A PROFESSIONAL */
+/* SERIOUSLY, DON'T */
+.plaster {
+    height: 100vh;
+}
+
+.form-title {
+    font: 300 50px 'Lato', sans-serif;
+    color: var(--form-title-text);
+    text-align: center;
+    margin-bottom: 5%;
+}
+
+.form-group {
+    margin-top: 1%;
+    margin-bottom: 1%;
+}
+
+.form-help {
+    color: var(--form-help);
+    position: relative;
+    top: 10px;
+    left: 10px;
+    margin-left: 25%;
+    background-color: var(--form-frame-background);
+    padding: 0 5px 0 5px;
+    user-select: none;
+    z-index: 4;
+}
+
+.form-control {
+    box-shadow: none !important;
+}
+
+.submit-button {
+    font: 300 16px 'Lato', sans-serif;
+        color: var(--submit-button-text);
+    padding: 10px 20px 10px 20px;
+    position: relative;
+    background-image: linear-gradient(to right, var(--main-bright) 0%, var(--main-dark) 100%);
+    z-index: 1;
+    border-radius: 5px;
+    border: none;
+    width: 100%;
+}
+
+.submit-button:disabled {
+    background-image: linear-gradient(to right, var(--main-disabled-bright) 0%, var(--main-disabled-dark) 100%);
+    color: var(--submit-button-disabled-text);
+    cursor: not-allowed;
+}
+
+.submit-button::before {
+    position: absolute;
+    content: "";
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    background-image: linear-gradient(to left, var(--main-bright) 0%, var(--main-dark) 100%);
+    border-radius: 5px;
+    border: none;
+    z-index: -1;
+    transition: opacity 0.5s ease;
+    opacity: 0;
+}
+
+.submit-button:hover:not([disabled])::before {
+    opacity: 1;
+}
+
+.form-question {
+    position: relative;
+    bottom: 2px;
+    font: 300 16px 'Lato', sans-serif;
+    color: var(--form-question);
+    margin-bottom: 0;
+}
+
+.form-question > a {
+    font: bold 16px 'Lato', sans-serif;
+    text-decoration: none;
+}
+
+.center {
+    position: relative;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.center-x {
+    position: relative;
+    left: 50%;
+    transform: translate(-50%, 0%);
+}
+
+.form-group > .show-password-button {
+    position: relative;
+    bottom: 30px;
+    left: calc(100% - 30px);
+    margin-left: -25%;
+    font: 300 16px 'Lato', sans-serif;
+    color: var(--form-help);
+    background-color: transparent;
+    padding: 0 5px 0 5px;
+    user-select: none;
+    z-index: 4;
+    height: 100%;
+    border: none;
+}
+
+.form-group > .show-password-button-on-error {
+    bottom: 56px;
+    color: #dc3545;
+}
+
+.is-invalid {
+    background-image: none !important;
+}
+
+.classification-zone {
+    position: relative;
+    width: 100%;
+    background-color: var(--form-frame-background);
+    padding: 20px 5px;
+    user-select: none;
+    z-index: 4;
+}
