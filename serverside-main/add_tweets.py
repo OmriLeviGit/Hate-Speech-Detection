@@ -1,10 +1,10 @@
-from db_access import DBAccess
+from db_access import get_database_instance
 from datetime import timedelta
 import re
 import pandas as pd
 import os
 
-db = DBAccess()
+db = get_database_instance()
 
 # This method will add all users from the excel to our DB.
 def save_tweeters_from_excel(input_file):

@@ -17,7 +17,7 @@ def has_collision(key_value_pairs):
     return len(keys) != len(set(keys))
 
 
-def load_params():
+def get_params():
     # read features from file
     with open('./data/features.txt', 'r', encoding='utf-8') as f:
         params = f.readlines()
