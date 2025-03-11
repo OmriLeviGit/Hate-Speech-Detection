@@ -35,13 +35,13 @@ const SignIn = ({ setIsPro, setPasscode, setToken }) => {
 
     // // POST request to server
     console.log("inside");
-    // fetch("http://localhost:8000/auth/signin", {
       fetch(window.API_URL + "/auth/signin", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ passcode: passcode }),
+        // ToDo: Change passcode to password
+        body: JSON.stringify({ password: passcode }),
     }).then((response) => {
       // If response is ok, set passcode
       console.log(response);

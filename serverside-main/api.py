@@ -231,4 +231,4 @@ async def params_list():
 
 
 if __name__ == '__main__':
-    uvicorn.run("api:app", host="localhost", port=8000, reload=True)
+    uvicorn.run("server:app", host="localhost", port=8000, reload=True)

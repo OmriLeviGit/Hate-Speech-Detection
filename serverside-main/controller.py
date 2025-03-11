@@ -5,6 +5,7 @@ from db_access import get_database_instance
 
 async def handle_sign_in(password):
     db = get_database_instance()
+
     user = db.get_user(password)
 
     if user is None:
