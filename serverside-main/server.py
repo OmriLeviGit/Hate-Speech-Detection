@@ -6,6 +6,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer
 from asyncio.locks import Lock
+import uvicorn
 
 from helper_functions.load_params import get_params
 from db_access import get_database_instance
@@ -76,5 +77,4 @@ async def params_list():
 
 
 if __name__ == '__main__':
-    import uvicorn
-    uvicorn.run(app, host="localhost", port=8000)
+    uvicorn.run("server:app", host="localhost", port=8000, reload=True)

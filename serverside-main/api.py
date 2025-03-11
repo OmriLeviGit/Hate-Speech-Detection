@@ -1,5 +1,6 @@
 import inspect
-from auth import login_required
+import uvicorn
+
 from datetime import datetime, timedelta
 
 from fastapi import FastAPI, HTTPException, Depends
@@ -10,13 +11,13 @@ from pydantic import BaseModel
 from asyncio.locks import Lock
 
 from credentials import JWT_SECRET_KEY
-from db_access import get_database_instance
-from helper_functions.load_params import get_params
+from db_access import DBAccess
+from helper_functions.load_params import load_params
 
 app = FastAPI()
 auth = HTTPBearer()
 
-params = get_params()
+params = load_params()
 lock = Lock()
 
 app.add_middleware(
@@ -38,6 +39,39 @@ def generate_token(key: str):
     return token
 
 
+def login_required(func):
+    async def wrapper(credentials: HTTPAuthorizationCredentials = Depends(auth), *args, **kwargs):
+        try:
+            # Verify and decode the token
+            payload = jwt.decode(credentials.credentials, JWT_SECRET_KEY, algorithms=["HS256"])
+            key = payload.get("key")
+            if key:
+                # Process the request with the authenticated key
+                return await func(passcode=key, *args, **kwargs)
+            else:
+                raise HTTPException(status_code=401, detail="Invalid token")
+        except JWTError:
+            raise HTTPException(status_code=401, detail="Invalid token")
+
+    wrapper.__name__ = func.__name__
+    wrapper.__doc__ = func.__doc__
+
+    params = list(inspect.signature(func).parameters.values()) + list(inspect.signature(wrapper).parameters.values())
+    wrapper.__signature__ = inspect.signature(func).replace(
+        parameters=[
+            # Use all parameters from handler
+            *filter(lambda p: p.name != 'passcode', inspect.signature(func).parameters.values()),
+
+            # Skip *args and **kwargs from wrapper parameters:
+            *filter(
+                lambda p: p.kind not in (inspect.Parameter.VAR_POSITIONAL, inspect.Parameter.VAR_KEYWORD),
+                inspect.signature(wrapper).parameters.values()
+            )
+        ]
+    )
+
+    return wrapper
+
 
 class Passcode(BaseModel):
     passcode: str
@@ -45,6 +79,7 @@ class Passcode(BaseModel):
 
 @app.post("/auth/signin")
 async def signin(passcode: Passcode):
+    print("@@@")
     return {'token': 123, 'is_pro': True}
 
 # @app.post("auth/signin")
@@ -69,7 +104,7 @@ async def signin(passcode: Passcode):
 @login_required
 async def get_tweet(passcode):
     async with lock:
-        db = get_database_instance()
+        db = DBAccess()
         tweet = db.get_unclassified_tweet(passcode)
         if tweet is not None:
             db.update_start(tweet, passcode)
@@ -82,7 +117,6 @@ async def get_tweet(passcode):
 class SkipTweetRequest(BaseModel):
     curr_id: str
     
-
 @app.post("/get_skip_tweet")
 @login_required
 async def get_skip_tweet(passcode, request: SkipTweetRequest):
@@ -90,8 +124,8 @@ async def get_skip_tweet(passcode, request: SkipTweetRequest):
     # TODO: delete next line.
     print(f"curr_id: {curr_id}")
     async with lock:
-        db = get_database_instance()
-        if db.get_user(passcode).professional:
+        db = DBAccess()
+        if db.get_passcode(passcode).professional:
             tweet = db.get_different_unclassified_tweet_pro(passcode)
             if tweet is None:
                 tweet = db.get_different_unclassified_tweet(passcode, curr_id)
@@ -115,8 +149,8 @@ class Classification(BaseModel):
 @app.post("/classify_tweet")
 @login_required
 async def classify_tweet(passcode, classification: Classification):
-    db = get_database_instance()
-    if not db.get_user(passcode).is_valid(db.get_num_classifications(passcode)):
+    db = DBAccess()
+    if not db.get_passcode(passcode).is_valid(db.get_num_classifications(passcode)):
         raise HTTPException(status_code=401, detail="Unauthorized")
     tweet = db.get_tweet(classification.tweet_id)
     if tweet is not None:
@@ -133,7 +167,7 @@ async def classify_tweet(passcode, classification: Classification):
 @app.get("/count_classifications")
 @login_required
 async def count_classifications(passcode):
-    db = get_database_instance()
+    db = DBAccess()
     result = db.get_num_classifications(passcode)
     return {"count": result}
 
@@ -141,7 +175,7 @@ async def count_classifications(passcode):
 @login_required
 async def get_user_panel(passcode):
     async with lock:
-        db = get_database_instance()
+        db = DBAccess()
         num_classified = db.get_num_classifications(passcode)
         num_pos = db.get_num_positive_classifications(passcode)
         num_neg = db.get_num_negative_classifications(passcode)
@@ -173,7 +207,7 @@ async def get_user_panel(passcode):
 async def get_pro_panel(passcode):
     users = []
     async with lock:
-        db = get_database_instance()
+        db = DBAccess()
         user_data = db.get_users()
         num_tot = db.get_total_classifications()
         tot_neg = db.get_total_negative_classifications()
@@ -230,5 +264,4 @@ async def params_list():
 
 
 if __name__ == '__main__':
-    import uvicorn
-    uvicorn.run(app, host="localhost", port=8000)
+    uvicorn.run("server:app", host="localhost", port=8000, reload=True)
