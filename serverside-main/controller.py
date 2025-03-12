@@ -5,7 +5,6 @@ from db_access import get_database_instance
 
 async def handle_sign_in(password):
     db = get_database_instance()
-
     user = db.get_user(password)
 
     if user is None:
@@ -30,7 +29,7 @@ async def get_tweet(user_id, lock):
         return {'error': 'No unclassified tweets'}
 
     
-async def handle_classification(user_id, tweet_id, classification, reasons):
+async def handle_classification(lock, user_id, tweet_id, classification, reasons):
     db = get_database_instance()
     
     if not db.get_passcode(user_id).is_valid(db.get_num_classifications(user_id)):
