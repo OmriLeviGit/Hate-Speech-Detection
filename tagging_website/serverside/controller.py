@@ -17,7 +17,7 @@ async def handle_sign_in(password):
     token = generate_token(user.key)
     return {'token': token, 'is_pro': user.professional}
 
-
+# Returns a tweet to classify by a specific user
 async def get_tweet(user_id, lock):
     db = get_instance()
     async with lock:
@@ -28,6 +28,24 @@ async def get_tweet(user_id, lock):
         return {'id': tweet.id, 'tweeter': tweet.tweeter, 'content': tweet.content}
     else:
         return {'error': 'No unclassified tweets'}
+
+
+async def get_tweet_to_classify(lock, user_id):
+    """
+    check if user.user_id has a current_tweet_id.
+
+    if not:
+        list = ask the DB to get a list of all unclassified tweets (NOT IN PRO BANK and NOT IN final result and appears less than twice on taggers_decisions)
+        tweet_id = get a random tweet from list
+        Update for user_id the field of current_tweet_id to be tweet_id
+        ask the DB to get the tweet with tweet_id
+        tweet = get_tweet_by_id(tweet_id)
+
+    return {'id': tweet.id, 'content': tweet.content, 'tweet_url': tweet.tweet_url}
+    make sure the fields on return are the same as in the client
+
+    """
+
 
 async def handle_classification(lock, user_id, tweet_id, classification, reasons):
     db = get_instance()
