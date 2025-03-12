@@ -6,31 +6,17 @@ from types import SimpleNamespace
 
 
 async def handle_sign_in(password):
-    user = SimpleNamespace(user_id="123", password="pass", key="something", professional=True)
+    db = get_database_instance()
 
-    # db = get_database_instance()
-    #
-    # user = db.get_user(password)
-    #
-    # if user is None:
-    #     raise HTTPException(status_code=401, detail="Unauthorized")
-    # if not user.is_valid(db.get_num_classifications(user.key)): # TODO change the word 'key' to password, depending on how we set the database
-    #     raise HTTPException(status_code=401, detail="Unauthorized")
+    user = db.get_user(password)
+    # user = SimpleNamespace(user_id="123", password="pass", key="something")
+
+    if user is None:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    if not user.is_valid(db.get_num_classifications(user.key)): # TODO change the word 'key' to password, depending on how we set the database
+        raise HTTPException(status_code=401, detail="Unauthorized")
     token = generate_token(user.key)
     return {'token': token, 'is_pro': user.professional}
-
-# async def handle_sign_in(password):
-#     db = get_database_instance()
-#
-#     user = db.get_user(password)
-#     # user = SimpleNamespace(user_id="123", password="pass", key="something")
-#
-#     if user is None:
-#         raise HTTPException(status_code=401, detail="Unauthorized")
-#     if not user.is_valid(db.get_num_classifications(user.key)): # TODO change the word 'key' to password, depending on how we set the database
-#         raise HTTPException(status_code=401, detail="Unauthorized")
-#     token = generate_token(user.key)
-#     return {'token': token, 'is_pro': user.professional}
 
 
 async def get_tweet(user_id, lock):
