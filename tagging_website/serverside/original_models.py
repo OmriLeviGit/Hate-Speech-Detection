@@ -1,22 +1,22 @@
 from datetime import datetime
-
 from sqlalchemy import Column, Integer, String, Date, Boolean, ForeignKey
 from sqlalchemy.orm import declarative_base
 
 Base = declarative_base()
 
-class Passcode(Base):
-    __tablename__ = 'passcodes'
+class User(Base):
+    __tablename__ = 'users'
     __table_args__ = {'schema': 'public'}
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    key = Column(String, unique=True)
-    valid_until = Column(Date)
-    created = Column(Date)
-    activated = Column(Boolean, default=False)
-    email = Column(String)
-    max_classifications = Column(Integer)
+    user_id = Column(Integer, primary_key=True)
+    password = Column(Text, unique=True, nullable=False)
+    email = Column(Text, unique=True, nullable=False)
+    due_date = Column(Date)
+    creation_date = Column(Date, default=datetime.utcnow)
+    last_login = Column(DateTime(timezone=True), default=datetime.utcnow)
+    left_to_classify = Column(Integer, default=0)
     professional = Column(Boolean, default=False)
+    current_tweet_tag = Column(Text, ForeignKey('tweets.tweet_id'), nullable=True)
 
     def __repr__(self):
         return f"<Passcode(" \
