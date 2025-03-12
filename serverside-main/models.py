@@ -5,10 +5,9 @@ from sqlalchemy.orm import declarative_base
 
 Base = declarative_base()
 
-
 class Passcode(Base):
     __tablename__ = 'passcodes'
-    __table_args__ = {'schema': 'main'}
+    __table_args__ = {'schema': 'public'}
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     key = Column(String, unique=True)
@@ -38,7 +37,7 @@ class Passcode(Base):
 
 class Tweeter(Base):
     __tablename__ = 'tweeters'
-    __table_args__ = {'schema': 'main'}
+    __table_args__ = {'schema': 'public'}
 
     username = Column(String, primary_key=True)
     
@@ -49,7 +48,7 @@ class Tweeter(Base):
 
 class Tweet(Base):
     __tablename__ = 'tweets'
-    __table_args__ = {'schema': 'main'}
+    __table_args__ = {'schema': 'public'}
 
     id = Column(String, primary_key=True)
     tweeter = Column(ForeignKey(Tweeter.username))
@@ -61,7 +60,7 @@ class Tweet(Base):
 
 class Classification(Base):
     __tablename__ = 'classifications'
-    __table_args__ = {'schema': 'main'}
+    __table_args__ = {'schema': 'public'}
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     tweet = Column(ForeignKey(Tweet.id))
@@ -76,8 +75,8 @@ class Classification(Base):
 
 
 class ProBank(Base):
-    __tablename__ = 'probank'
-    __table_args__ = {'schema': 'main'}
+    __tablename__ = 'pro_bank'
+    __table_args__ = {'schema': 'public'}
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     tweet = Column(ForeignKey(Tweet.id))

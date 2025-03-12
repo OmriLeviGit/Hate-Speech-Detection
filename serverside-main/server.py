@@ -4,14 +4,13 @@ from base_models import Password, User_Id, Classification
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.security import HTTPBearer
+
 from asyncio.locks import Lock
 
 from helper_functions.load_params import get_params
 from db_access import get_database_instance
 
 app = FastAPI()
-auth = HTTPBearer()
 db = get_database_instance()
 lock = Lock()
 
@@ -31,7 +30,7 @@ app.add_middleware(
 )
 
 
-@app.post("auth/signin")
+@app.post("/auth/signin")
 async def sign_in(data: Password):
     return await controller.handle_sign_in(data.password)
 
@@ -47,7 +46,7 @@ async def get_tweet(data: User_Id):
 async def classify_tweet(user_id, data: Classification):
     tweet_id, classification, reasons = data
 
-    return await controller.handle_classification(user_id, tweet_id, classification, reasons)
+    return await controller.handle_classification(lock, user_id, tweet_id, classification, reasons)
 
 
 # TODO probably needs a basemodel class but im not sure, should work is it is though
