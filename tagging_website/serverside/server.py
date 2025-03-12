@@ -1,17 +1,15 @@
 from auth import login_required
 import controller
-from base_models import Password, User_Id, Classification
-
+from serverside.utils.base_models import Password, User_Id, Classification
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from asyncio.locks import Lock
 import uvicorn
-
 from helper_functions.load_params import get_params
-from db_access import get_database_instance
+import db_service
 
 app = FastAPI()
-db = get_database_instance()
+db = db_service.get_instance()
 lock = Lock()
 
 """

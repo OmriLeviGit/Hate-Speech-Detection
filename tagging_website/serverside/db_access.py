@@ -7,7 +7,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
 from credentials import *
-from models import Passcode, Tweet, Classification, Tweeter, ProBank ,Base
+from original_models import Passcode, Tweet, Classification, Tweeter, ProBank ,Base
 
 
 class Singleton(type):
@@ -21,7 +21,7 @@ class Singleton(type):
         return cls.instance
 
 
-class get_database_instance(metaclass=Singleton):
+class get_instance(metaclass=Singleton):
     def __init__(self):
         self.engine: Engine = create_engine(DB)
 
