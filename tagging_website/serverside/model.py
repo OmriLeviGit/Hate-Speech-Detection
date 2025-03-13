@@ -2,7 +2,7 @@ from sqlalchemy import (
     Column, Integer, String, Text, Date, Boolean, ForeignKey, TIMESTAMP, ARRAY
 )
 from sqlalchemy.dialects.postgresql import INTERVAL
-from sqlalchemy.orm import declarative_base, relationship
+from sqlalchemy.orm import declarative_base
 from datetime import datetime
 
 Base = declarative_base()

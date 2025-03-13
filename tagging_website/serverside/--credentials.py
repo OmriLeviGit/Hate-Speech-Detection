@@ -1,6 +1,6 @@
 # When the time is right, use env file instead of credentials.py
 
-DB = "postgresql://postgres:1234@localhost:5432/tagger_db"
+DB = "postgresql://postgres:1234@db:5432/tagger_db"
 
 # Twitter API credentials
 twitter_api = ""

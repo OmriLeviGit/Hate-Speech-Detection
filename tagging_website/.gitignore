@@ -1,12 +1,8 @@
 
-# Elastic Beanstalk Files
 __pycache__/
 
-classifier.zip
-clientside.zip
-militias.zip
-militias_code.zip
-serverside.zip
 /env
 /.idea
 test.py
+serverside/.env.local
+user_details.xlsx

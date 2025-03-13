@@ -5,12 +5,10 @@ from asyncio.locks import Lock
 from helper_functions.load_params import get_params
 
 import controller
-import db_service
-from utils.base_models import Password, User_Id, Classification
+from utils.base_models import Password, Classification
 from auth import login_required
 
 app = FastAPI()
-db = db_service.get_instance()
 lock = Lock()
 
 """
@@ -73,5 +71,4 @@ async def params_list():
 
 
 if __name__ == '__main__':
-    uvicorn.run(app, host="localhost", port=8000)
-    # uvicorn.run("server:app", host="localhost", port=8000, reload=True)
+    uvicorn.run("server:app", host="0.0.0.0", port=8000, reload=True)

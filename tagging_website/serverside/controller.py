@@ -1,11 +1,11 @@
 from auth import generate_token
 from fastapi import HTTPException
 # from db_access import get_instance
-from db_service import get_instance
+from db_service import get_db_instance
 from types import SimpleNamespace
 
 async def handle_sign_in(password):
-    db = get_instance()
+    db = get_db_instance()
 
     user = db.get_user(password=password)
     # The next commented line is just for a mock for a user, in case there's no DB to work with
@@ -25,7 +25,7 @@ async def handle_sign_in(password):
 
 # Returns a tweet to tag by a specific user.
 async def get_tweet_to_tag(lock, user_id):
-    db = get_instance()
+    db = get_db_instance()
 
     async with (lock):
         user = db.get_user(user_id=user_id)
@@ -65,7 +65,7 @@ async def get_tweet_to_tag(lock, user_id):
 
 
 async def handle_classification(lock, user_id, tweet_id, classification, reasons):
-    db = get_instance()
+    db = get_db_instance()
     if not db.get_passcode(user_id).is_valid(db.get_num_classifications(user_id)):
         raise HTTPException(status_code=401, detail="Unauthorized")
     tweet = db.get_tweet(tweet_id) # TODO maybe need await
@@ -80,12 +80,12 @@ async def handle_classification(lock, user_id, tweet_id, classification, reasons
 
 
 async def count_classifications(user_id): # TODO what is this data? whats the type
-    db = get_instance()
+    db = get_db_instance()
 
     return {"count": db.get_num_classifications(user_id)}
 
 async def get_user_panel(user_id, lock):
-    db = get_instance()
+    db = get_db_instance()
 
     async with lock:
         classified_count = db.get_num_classifications(user_id)
@@ -120,7 +120,7 @@ async def get_user_panel(user_id, lock):
 async def get_pro_panel(lock): # TODO probably remove the lock
     users = []
     async with lock:
-        db = get_instance()
+        db = get_db_instance()
         user_data = db.get_users()
         total_classifications = db.get_total_classifications()
         total_negatives = db.get_total_negative_classifications()

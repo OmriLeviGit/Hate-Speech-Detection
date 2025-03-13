@@ -1,15 +1,17 @@
+import os
 import random
 from datetime import timedelta
-from pprint import pprint
-from secrets import token_urlsafe
 
-import pandas as pd
-from sqlalchemy import Engine, Nullable, func
+from dotenv import load_dotenv
+from sqlalchemy import Engine, func
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
-from credentials import *
 from model import *
-from serverside.helper_functions.tweets_helpers import fix_corrupted_text
+from helper_functions.tweets_helpers import fix_corrupted_text
+
+
+load_dotenv('.local.env')
+DB = os.environ.get('DATABASE_URL')
 
 class Singleton(type):
     def __init__(cls, name, bases, dict):
@@ -22,22 +24,20 @@ class Singleton(type):
         return cls.instance
 
 
-class get_instance(metaclass=Singleton):
+class get_db_instance(metaclass=Singleton):
     def __init__(self):
         self.engine: Engine = create_engine(DB)
 
     # Creates a user and generates a password to them
     # ToDo: Take care of last login to be null when first created,
-    def create_user(self, email, num_days, left_to_classify):
-
-        password = token_urlsafe(6)
+    def create_user(self, email, password, num_days, left_to_classify):
         due_date = datetime.now() + timedelta(days=num_days)
 
         user = (User(
                 password=password,
-                email = email,
-                due_date = due_date,
-                left_to_classify = left_to_classify))
+                email=email,
+                due_date=due_date,
+                left_to_classify=left_to_classify))
 
         with Session(self.engine) as session:
             session.add(user)
