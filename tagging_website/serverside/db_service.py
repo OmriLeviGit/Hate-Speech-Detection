@@ -4,7 +4,7 @@ from pprint import pprint
 from secrets import token_urlsafe
 
 import pandas as pd
-from sqlalchemy import Engine, Nullable, func
+from sqlalchemy import Engine, Nullable, func, text
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 from credentials import *
@@ -93,66 +93,52 @@ class get_instance(metaclass=Singleton):
     # ToDo - the following method has yet to be tested and done
     def assign_unclassified_tweet(self, user):
         """
-        Assigns a random tweet to a regular user that hasn't been tagged twice
-        and reserves it in taggers_decisions with classification 'N/A'.
+        Assign an unclassified tweet to the given user.
+        A tweet is considered unclassified if:
+        - It's NOT in tagging_results (not already finalized)
+        - It's NOT in pro_bank (not reserved for professionals)
+        - It appears less than 2 times in taggers_decisions (not assigned to 2 users yet)
         """
+
         with Session(self.engine) as session:
-
-            print("entering queries")
-            subquery1 = (
-                session.query(Tweet.tweet_id)
-                .subquery()
-            )
-            print("has query1")
-            # df = pd.DataFrame(subquery1)
-            # print(df)
-            print(session.query(Tweet).all())
-            print("subquery1")
-            print(subquery1.c.tweet_id)
-            pro_bank_removed = (
-                session.query(ProBank)
-                .filter(~ProBank.tweet_id.in_(session.query(subquery1.c.tweet_id)))
-                .all()
-            )
-
-            removed_all_done_tweets = (
-                session.query(TaggingResult)
-                .filter(~TaggingResult.tweet_id.in_([pb.tweet_id for pb in pro_bank_removed]))
-                .all()
-            )
-
-            subquery2 = (
-                session.query(TaggersDecision.tweet_id)
-                .group_by(TaggersDecision.tweet_id)
-                .having(func.count(TaggersDecision.tagger_decision_id) >= 2)
+            # Step 1: Find all eligible tweets
+            subquery = (
+                session.query(
+                    Tweet.tweet_id
+                )
+                .outerjoin(TaggingResult, Tweet.tweet_id == TaggingResult.tweet_id)
+                .outerjoin(ProBank, Tweet.tweet_id == ProBank.tweet_id)
+                .outerjoin(TaggersDecision, Tweet.tweet_id == TaggersDecision.tweet_id)
+                .group_by(Tweet.tweet_id)
+                .having(func.count(TaggersDecision.tagger_decision_id) < 2)  # Less than 2 assignments
+                .filter(TaggingResult.id.is_(None))  # Not finalized
+                .filter(ProBank.id.is_(None))  # Not reserved for professionals
+                .order_by(func.random())  # Randomize selection
+                .limit(1)
                 .subquery()
             )
 
-            available_tweets = (
-                session.query(TaggingResult)
-                .filter(~TaggingResult.tweet_id.in_(session.query(subquery2.c.tweet_id)))
-                .filter(TaggingResult.tweet_id.in_([t.tweet_id for t in removed_all_done_tweets]))
-                .all()
-            )
+            # Step 2: Retrieve a random tweet from the eligible ones
+            random_tweet = session.query(Tweet).filter(Tweet.tweet_id == subquery.c.tweet_id).first()
 
-            if not available_tweets:
-                return None  # No available tweets
+            if random_tweet:
+                # Assign the tweet to the user
+                user.current_tweet_id = random_tweet.tweet_id
+                session.add(user)  # Ensure user update is tracked
 
-            # Choose a random tweet
-            selected_tweet = random.choice(available_tweets)
+                # Reserve the tweet in taggers_decisions table with "N/A"
+                reservation = TaggersDecision(
+                    tweet_id=random_tweet.tweet_id,  # Use tweet_id instead of object
+                    tagged_by=user.user_id,
+                    classification="N/A"
+                )
 
-            # Assign the tweet to the user
-            user.current_tweet_id = selected_tweet.tweet_id
+                session.add(reservation)
+                session.commit()  # Commit both user update & new reservation
+                return random_tweet.tweet_id
+            else:
+                return None  # No available tweet
 
-            # Reserve the tweet in taggers_decisions table with "N/A"
-            reservation = TaggersDecision(
-                tweet_id=selected_tweet.tweet_id,
-                tagged_by=user.user_id,
-                classification="N/A"
-            )
-            session.add(reservation)
-            session.commit()
-            return selected_tweet.tweet_id
 
     # ToDo - Create def __reserve_tweet(self, tweet, passcode)
 
