@@ -1,7 +1,18 @@
-\c postgres
-DROP DATABASE IF EXISTS tagger_db WITH (FORCE);
-CREATE DATABASE tagger_db;
-\c tagger_db;
+-- Connect to tagger_db first, then run this to drop all tables
+DO $$ 
+DECLARE
+    r RECORD;
+BEGIN
+    -- Disable foreign key checks during table deletion
+    EXECUTE 'SET CONSTRAINTS ALL DEFERRED';
+    
+    FOR r IN (SELECT tablename FROM pg_tables WHERE schemaname = 'public') LOOP
+        EXECUTE 'DROP TABLE IF EXISTS ' || quote_ident(r.tablename) || ' CASCADE';
+    END LOOP;
+    
+    -- Re-enable foreign key checks
+    EXECUTE 'SET CONSTRAINTS ALL IMMEDIATE';
+END $$;
 
 CREATE TABLE tweets (
     tweet_id TEXT PRIMARY KEY,

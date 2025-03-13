@@ -1,6 +1,6 @@
 from auth import login_required
 import controller
-from serverside.utils.base_models import Password, User_Id, Classification
+from utils.base_models import Password, User_Id, Classification
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from asyncio.locks import Lock
