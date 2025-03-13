@@ -1,3 +1,4 @@
+import random
 from datetime import timedelta
 from secrets import token_urlsafe
 from sqlalchemy import Engine, Nullable, func
@@ -85,6 +86,49 @@ class get_instance(metaclass=Singleton):
         with Session(self.engine) as session:
             session.add(tweet)
             session.commit()
+
+    # ToDo - the following method has yet to be tested and done
+    def assign_unclassified_tweet(self, user_id):
+        """ Assigns a random tweet to a regular user that hasn't been tagged twice
+            and reserves it in taggers_decisions with classification 'N/A'.
+        """
+        with Session(self.engine) as session:
+            # Get tweets that haven't been tagged twice
+            subquery = (
+                session.query(TaggersDecision.tweet_id, func.count(TaggersDecision.tagger_decision_id).label("count"))
+                .group_by(TaggersDecision.tweet_id)
+                .having(func.count(TaggersDecision.tagger_decision_id) < 2)
+                .subquery()
+            )
+
+            available_tweets = (
+                session.query(Tweet)
+                .join(subquery, Tweet.tweet_id == subquery.c.tweet_id)
+                .all()
+            )
+
+            if not available_tweets:
+                return None  # No available tweets
+
+            # Choose a random tweet
+            selected_tweet = random.choice(available_tweets)
+
+            # Assign the tweet to the user
+            user = session.query(User).filter(User.user_id == user_id, User.professional == False).first()
+            if user:
+                user.current_tweet_id = selected_tweet.tweet_id
+
+                # Reserve the tweet in taggers_decisions table with "N/A"
+                reservation = TaggersDecision(
+                    tweet_id=selected_tweet.tweet_id,
+                    tagged_by=user_id,
+                    classification="N/A"
+                )
+                session.add(reservation)
+                session.commit()
+                return selected_tweet
+
+        return None
 
     # ToDo - Create def __reserve_tweet(self, tweet, passcode)
 
