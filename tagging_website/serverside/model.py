@@ -78,7 +78,7 @@ class TaggingResult(Base):
 
 
 class ProBank(Base):
-    __tablename__ = 'probank'
+    __tablename__ = 'pro_bank'
     __table_args__ = {'schema': 'public'}
 
     id = Column(Integer, primary_key=True, autoincrement=True)

@@ -1,6 +1,9 @@
 import random
 from datetime import timedelta
+from pprint import pprint
 from secrets import token_urlsafe
+
+import pandas as pd
 from sqlalchemy import Engine, Nullable, func
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
@@ -88,22 +91,47 @@ class get_instance(metaclass=Singleton):
             session.commit()
 
     # ToDo - the following method has yet to be tested and done
-    def assign_unclassified_tweet(self, user_id):
-        """ Assigns a random tweet to a regular user that hasn't been tagged twice
-            and reserves it in taggers_decisions with classification 'N/A'.
+    def assign_unclassified_tweet(self, user):
+        """
+        Assigns a random tweet to a regular user that hasn't been tagged twice
+        and reserves it in taggers_decisions with classification 'N/A'.
         """
         with Session(self.engine) as session:
-            # Get tweets that haven't been tagged twice
-            subquery = (
-                session.query(TaggersDecision.tweet_id, func.count(TaggersDecision.tagger_decision_id).label("count"))
+
+            print("entering queries")
+            subquery1 = (
+                session.query(Tweet.tweet_id)
+                .subquery()
+            )
+            print("has query1")
+            # df = pd.DataFrame(subquery1)
+            # print(df)
+            print(session.query(Tweet).all())
+            print("subquery1")
+            print(subquery1.c.tweet_id)
+            pro_bank_removed = (
+                session.query(ProBank)
+                .filter(~ProBank.tweet_id.in_(session.query(subquery1.c.tweet_id)))
+                .all()
+            )
+
+            removed_all_done_tweets = (
+                session.query(TaggingResult)
+                .filter(~TaggingResult.tweet_id.in_([pb.tweet_id for pb in pro_bank_removed]))
+                .all()
+            )
+
+            subquery2 = (
+                session.query(TaggersDecision.tweet_id)
                 .group_by(TaggersDecision.tweet_id)
-                .having(func.count(TaggersDecision.tagger_decision_id) < 2)
+                .having(func.count(TaggersDecision.tagger_decision_id) >= 2)
                 .subquery()
             )
 
             available_tweets = (
-                session.query(Tweet)
-                .join(subquery, Tweet.tweet_id == subquery.c.tweet_id)
+                session.query(TaggingResult)
+                .filter(~TaggingResult.tweet_id.in_(session.query(subquery2.c.tweet_id)))
+                .filter(TaggingResult.tweet_id.in_([t.tweet_id for t in removed_all_done_tweets]))
                 .all()
             )
 
@@ -114,21 +142,17 @@ class get_instance(metaclass=Singleton):
             selected_tweet = random.choice(available_tweets)
 
             # Assign the tweet to the user
-            user = session.query(User).filter(User.user_id == user_id, User.professional == False).first()
-            if user:
-                user.current_tweet_id = selected_tweet.tweet_id
+            user.current_tweet_id = selected_tweet.tweet_id
 
-                # Reserve the tweet in taggers_decisions table with "N/A"
-                reservation = TaggersDecision(
-                    tweet_id=selected_tweet.tweet_id,
-                    tagged_by=user_id,
-                    classification="N/A"
-                )
-                session.add(reservation)
-                session.commit()
-                return selected_tweet
-
-        return None
+            # Reserve the tweet in taggers_decisions table with "N/A"
+            reservation = TaggersDecision(
+                tweet_id=selected_tweet.tweet_id,
+                tagged_by=user.user_id,
+                classification="N/A"
+            )
+            session.add(reservation)
+            session.commit()
+            return selected_tweet.tweet_id
 
     # ToDo - Create def __reserve_tweet(self, tweet, passcode)
 
