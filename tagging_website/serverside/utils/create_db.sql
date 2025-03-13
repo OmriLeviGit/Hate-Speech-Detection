@@ -1,3 +1,9 @@
+--  To run this script:
+--  On the terminal put: psql -U <username>
+--  Username is probably "postgres"
+--  Enter your password
+--  \i /absolute/path/to/create_db.sql
+
 \c postgres
 DROP DATABASE IF EXISTS tagger_db WITH (FORCE);
 CREATE DATABASE tagger_db;
@@ -46,7 +52,7 @@ CREATE TABLE pro_bank (
 );
 
 CREATE TABLE tagging_results (
-    id INT PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     tweet_id TEXT REFERENCES tweets(tweet_id) ON DELETE CASCADE,
     tag_result VARCHAR(255) NOT NULL,
     features TEXT,

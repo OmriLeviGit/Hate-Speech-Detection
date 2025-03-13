@@ -208,7 +208,7 @@ const MainView = ({passcode, isPro, setPasscode, token, setToken}) => {
 
   const submitClassification = async (classification, features_l) => {
     // Send classification to server
-    fetch(window.API_URL + '/classify_tweet', {
+    fetch(window.API_URL + '/tag_tweet', {
       method: "POST", headers: {
         "Content-Type": "application/json",
         "Authorization": "Bearer " + token,
