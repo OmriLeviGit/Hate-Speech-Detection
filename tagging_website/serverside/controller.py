@@ -1,8 +1,9 @@
 from auth import generate_token
 from fastapi import HTTPException
-# from db_access import get_instance
 from db_service import get_instance
 from types import SimpleNamespace
+
+# ToDO - Check if each method that has to use the lock actually uses it
 
 async def handle_sign_in(password):
     db = get_instance()
@@ -15,9 +16,13 @@ async def handle_sign_in(password):
 
     # ToDo:
     #  - Understand if we need the is_valid method in the current project
-    #  - If needed, change the word 'key' to password, depending on how we set the database
+    #  - If needed:
+    #       - change the word 'key' to password, depending on how we set the database
+    #       - Don't forget to use the left_to_classify
     # if not user.is_valid(db.get_num_classifications(user.key)):
     #     raise HTTPException(status_code=401, detail="Unauthorized")
+
+    db.update_last_login(user.user_id)
 
     token = generate_token(user.user_id)
     return {'token': token, 'is_pro': user.professional}
@@ -27,7 +32,7 @@ async def handle_sign_in(password):
 async def get_tweet_to_tag(lock, user_id):
     db = get_instance()
 
-    async with (lock):
+    async with lock:
         user = db.get_user(user_id=user_id)
         # Check if the user already has a tweet assigned they need to tag
         if user is None:
@@ -46,55 +51,73 @@ async def get_tweet_to_tag(lock, user_id):
         # else:
         #     return {'error': 'No available tweets'}
 
+'''
+handle_tweet_tagging flow:
 
-# async def get_tweet_to_classify(lock, user_id):
-#     """
-#     check if user.user_id has a current_tweet_id.
-#
-#     if not:
-#         list = ask the DB to get a list of all unclassified tweets (NOT IN PRO BANK and NOT IN final result and appears less than twice on taggers_decisions)
-#         tweet_id = get a random tweet from list
-#         Update for user_id the field of current_tweet_id to be tweet_id
-#         ask the DB to get the tweet with tweet_id
-#         tweet = get_tweet_by_id(tweet_id)
-#
-#     return {'id': tweet.id, 'content': tweet.content, 'tweet_url': tweet.tweet_url}
-#     make sure the fields on return are the same as in the client
-#
-#     """
+- If tagged by a pro: 
+    Insert the tag to tagging_results
+    Remove tweet_id from pro_bank
 
-
-async def handle_classification(lock, user_id, tweet_id, classification, reasons):
+- If tagged by a regular user: 
+    Update the new classification in taggers_decisions table
+    Check if the same tweet_id has already been classified twice
+        If not:
+            return
+        Else: 
+            check if there's an agreement of both either: positive, negative or irrelevant
+                if so, put the classification under tagging_results table and take the features of both tags to put in
+                else, send the tweet_id to pro_bank
+'''
+# ToDo - Update left_to_classify after submitting a tagging
+async def handle_tweet_tagging(lock, user_id, tweet_id, classification, features):
     db = get_instance()
-    if not db.get_passcode(user_id).is_valid(db.get_num_classifications(user_id)):
-        raise HTTPException(status_code=401, detail="Unauthorized")
-    tweet = db.get_tweet(tweet_id) # TODO maybe need await
-    if tweet is not None:
-        if classification.classification not in ['Positive', 'Negative', 'Irrelevant', 'Unknown']:
-            return {'error': 'Invalid classification'}
-        async with lock:
-            result = db.classify_tweet(tweet_id, user_id, classification, reasons)
-        return {'classified': result}
-    else:
-        return {'error': 'No such tweet'}
+    is_pro = db.is_pro(user_id)
+
+    async with lock:
+        if is_pro:
+            db.insert_to_tagging_results(tweet_id, classification, features, "Pro user")
+            db.remove_tweet_from_pro_bank(tweet_id)
+            return
+
+        # Else, the tag was made by a regular user
+        db.insert_to_taggers_decisions(tweet_id, user_id, classification, features)
+
+        # Check if the tweet has already been classified twice
+        decisions = db.get_tweet_decisions(tweet_id)
+        if len(decisions) < 2:
+            return
+
+        # Extract classifications
+        first_class = decisions[0]["classification"]
+        second_class = decisions[1]["classification"]
+
+        # Check if both taggers agreed on tweet's sentiment
+        if first_class == second_class:
+            combined_features = list(set(decisions[0]["features"] + decisions[1]["features"]))
+            db.insert_to_tagging_results(tweet_id, first_class, combined_features, "User agreement")
+            return
+
+        # Else, taggers didn't agree about tweet's sentiment
+        db.insert_tweet_to_pro_bank(tweet_id)
 
 
-async def count_classifications(user_id): # TODO what is this data? whats the type
+# Checks how many classifications where made by a specific user
+async def count_classifications(user_id):
     db = get_instance()
-
     return {"count": db.get_num_classifications(user_id)}
+
 
 async def get_user_panel(user_id, lock):
     db = get_instance()
 
     async with lock:
         classified_count = db.get_num_classifications(user_id)
-        positive_count = db.get_num_positive_classifications(user_id)
-        negative_count = db.get_num_negative_classifications(user_id)
-        time_left = db.get_time_left(user_id)
-        num_remaining = db.get_num_remaining_classifications(user_id)
+        positive_count = db.get_positive_classification_count(user_id)
+        negative_count = db.get_negative_classification_count(user_id)
+        irrelevant_count = db.get_irrelevant_classification_count(user_id)
+        time_left = db.get_days_left_to_classify(user_id)
+        num_remaining = db.get_number_of_tweets_left_to_classify(user_id)
         avg_time = db.get_average_classification_time(user_id)
-        irrelevant_count = db.get_num_irrelevant_classifications(user_id)
 
     # Calculate average time in seconds (for demonstration purposes)
     if avg_time is not None:
@@ -115,7 +138,6 @@ async def get_user_panel(user_id, lock):
     else:
         return {'error': 'Error getting user data'}
     
-
 
 async def get_pro_panel(lock): # TODO probably remove the lock
     users = []
