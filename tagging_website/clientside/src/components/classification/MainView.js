@@ -84,8 +84,9 @@ const MainView = ({passcode, isPro, setPasscode, token, setToken}) => {
   }
 
   const getNewTweet = async () => {
+    console.log('MainView.js, line 87: Trying to get a tweet to tag from');
     // Get new tweet from server and set tweet state
-    fetch(window.API_URL + '/get_tweet', {
+    fetch(window.API_URL + '/get_tweet_to_tag', {
       method: "GET", headers: {
         "Content-Type": "application/json",
         "Authorization": "Bearer " + token,
@@ -130,7 +131,8 @@ const MainView = ({passcode, isPro, setPasscode, token, setToken}) => {
 
     const fetchData = async () => {
       try {
-        const response = await fetch(window.API_URL + '/get_tweet', {
+        console.log('MainView.js, line 133: Trying to get a tweet to tag from');
+        const response = await fetch(window.API_URL + '/get_tweet_to_tag', {
           method: "GET",
           headers: {
             "Content-Type": "application/json",

@@ -34,7 +34,7 @@ const SignIn = ({ setIsPro, setPasscode, setToken }) => {
     const passcode = inputRef.current.value;
 
     // // POST request to server
-    console.log("inside");
+    console.log("Trying to sign in");
       fetch(window.API_URL + "/auth/signin", {
       method: "POST",
       headers: {

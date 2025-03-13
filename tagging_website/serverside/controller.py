@@ -1,50 +1,67 @@
 from auth import generate_token
 from fastapi import HTTPException
-from db_access import get_instance
+# from db_access import get_instance
+from db_service import get_instance
 from types import SimpleNamespace
 
 async def handle_sign_in(password):
     db = get_instance()
 
-    user = db.get_user(password)
+    user = db.get_user(password=password)
     # The next commented line is just for a mock for a user, in case there's no DB to work with
     # user = SimpleNamespace(user_id="123", password="pass", key="something")
-
     if user is None:
         raise HTTPException(status_code=401, detail="Unauthorized")
-    if not user.is_valid(db.get_num_classifications(user.key)): # TODO change the word 'key' to password, depending on how we set the database
-        raise HTTPException(status_code=401, detail="Unauthorized")
-    token = generate_token(user.key)
+
+    # ToDo:
+    #  - Understand if we need the is_valid method in the current project
+    #  - If needed, change the word 'key' to password, depending on how we set the database
+    # if not user.is_valid(db.get_num_classifications(user.key)):
+    #     raise HTTPException(status_code=401, detail="Unauthorized")
+
+    token = generate_token(user.user_id)
     return {'token': token, 'is_pro': user.professional}
 
-# Returns a tweet to classify by a specific user
-async def get_tweet(user_id, lock):
+
+# Returns a tweet to tag by a specific user.
+async def get_tweet_to_tag(lock, user_id):
     db = get_instance()
-    async with lock:
-        tweet = db.get_unclassified_tweet(user_id)
-        if tweet is not None:
-            db.update_start(tweet, user_id)
-    if tweet is not None:
-        return {'id': tweet.id, 'tweeter': tweet.tweeter, 'content': tweet.content}
-    else:
-        return {'error': 'No unclassified tweets'}
+
+    async with (lock):
+        user = db.get_user(user_id=user_id)
+        # Check if the user already has a tweet assigned they need to tag
+        if user is None:
+            return
+
+        if user.current_tweet_id is None:
+            db.assign_unclassified_tweet(user)
+
+        tweet = db.get_tweet(user.current_tweet_id)
+
+        return {
+            'id': tweet.tweet_id,
+            'content': tweet.content,
+            'tweet_url': tweet.tweet_url
+        }
+        # else:
+        #     return {'error': 'No available tweets'}
 
 
-async def get_tweet_to_classify(lock, user_id):
-    """
-    check if user.user_id has a current_tweet_id.
-
-    if not:
-        list = ask the DB to get a list of all unclassified tweets (NOT IN PRO BANK and NOT IN final result and appears less than twice on taggers_decisions)
-        tweet_id = get a random tweet from list
-        Update for user_id the field of current_tweet_id to be tweet_id
-        ask the DB to get the tweet with tweet_id
-        tweet = get_tweet_by_id(tweet_id)
-
-    return {'id': tweet.id, 'content': tweet.content, 'tweet_url': tweet.tweet_url}
-    make sure the fields on return are the same as in the client
-
-    """
+# async def get_tweet_to_classify(lock, user_id):
+#     """
+#     check if user.user_id has a current_tweet_id.
+#
+#     if not:
+#         list = ask the DB to get a list of all unclassified tweets (NOT IN PRO BANK and NOT IN final result and appears less than twice on taggers_decisions)
+#         tweet_id = get a random tweet from list
+#         Update for user_id the field of current_tweet_id to be tweet_id
+#         ask the DB to get the tweet with tweet_id
+#         tweet = get_tweet_by_id(tweet_id)
+#
+#     return {'id': tweet.id, 'content': tweet.content, 'tweet_url': tweet.tweet_url}
+#     make sure the fields on return are the same as in the client
+#
+#     """
 
 
 async def handle_classification(lock, user_id, tweet_id, classification, reasons):

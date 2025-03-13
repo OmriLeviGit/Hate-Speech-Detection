@@ -3,8 +3,6 @@ import os
 from datetime import datetime, timedelta
 from fastapi.security import HTTPBearer
 
-auth = HTTPBearer()
-
 from fastapi import HTTPException, Depends
 from fastapi.security import HTTPAuthorizationCredentials
 from jose import jwt, JWTError
@@ -15,17 +13,24 @@ from credentials import JWT_SECRET_KEY
 # JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY')
 
 
+auth = HTTPBearer()
+
 def login_required(func):
     async def wrapper(credentials: HTTPAuthorizationCredentials = Depends(auth), *args, **kwargs):
         try:
-            # Verify and decode the token
+            print(f"Received Token: {credentials.credentials}")  # DEBUG: Print the token
+
+            # Decode the token
             payload = jwt.decode(credentials.credentials, JWT_SECRET_KEY, algorithms=["HS256"])
-            key = payload.get("key")
-            if key:
-                # Process the request with the authenticated key
-                return await func(passcode=key, *args, **kwargs)
+
+            user_id = payload.get("user_id")  # Extract user_id from token
+            print(f"Decoded Payload: {payload}")  # DEBUG: Print payload content
+
+            if user_id:
+                return await func(user_id=user_id, *args, **kwargs)  # Pass user_id to the endpoint
             else:
                 raise HTTPException(status_code=401, detail="Invalid token")
+
         except JWTError:
             raise HTTPException(status_code=401, detail="Invalid token")
 
@@ -36,7 +41,7 @@ def login_required(func):
     wrapper.__signature__ = inspect.signature(func).replace(
         parameters=[
             # Use all parameters from handler
-            *filter(lambda p: p.name != 'passcode', inspect.signature(func).parameters.values()),
+            *filter(lambda p: p.name != 'user_id', inspect.signature(func).parameters.values()),
 
             # Skip *args and **kwargs from wrapper parameters:
             *filter(
@@ -49,11 +54,11 @@ def login_required(func):
     return wrapper
 
 
-def generate_token(key: str):
+def generate_token(user_id: str):
     # Set the token expiration time
     expire = datetime.utcnow() + timedelta(hours=3)
     # Create the payload containing the key
-    payload = {"key": key, "exp": expire}
+    payload = {"user_id": user_id, "exp": expire}
     # Generate the JWT token
     token = jwt.encode(payload, JWT_SECRET_KEY, algorithm="HS256")
     return token
