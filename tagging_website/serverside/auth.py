@@ -16,19 +16,6 @@ from credentials import JWT_SECRET_KEY
 auth = HTTPBearer()
 
 def login_required(func):
-    # async def wrapper(credentials: HTTPAuthorizationCredentials = Depends(auth), *args, **kwargs):
-    #     try:
-    #         # Verify and decode the token
-    #         payload = jwt.decode(credentials.credentials, JWT_SECRET_KEY, algorithms=["HS256"])
-    #         user_id = payload.get("user_id")
-    #         if user_id:
-    #             # Process the request with the authenticated key
-    #             return await func(user_id=user_id, *args, **kwargs)
-    #         else:
-    #             raise HTTPException(status_code=401, detail="Invalid token")
-    #     except JWTError:
-    #         raise HTTPException(status_code=401, detail="Invalid token")
-
     async def wrapper(credentials: HTTPAuthorizationCredentials = Depends(auth), *args, **kwargs):
         try:
             print(f"Received Token: {credentials.credentials}")  # DEBUG: Print the token
@@ -40,7 +27,7 @@ def login_required(func):
             print(f"Decoded Payload: {payload}")  # DEBUG: Print payload content
 
             if user_id:
-                return await func(user_id=user_id, *args, **kwargs)  # 🔹 Pass user_id to the endpoint
+                return await func(user_id=user_id, *args, **kwargs)  # Pass user_id to the endpoint
             else:
                 raise HTTPException(status_code=401, detail="Invalid token")
 

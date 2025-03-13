@@ -22,27 +22,29 @@ async def handle_sign_in(password):
     token = generate_token(user.user_id)
     return {'token': token, 'is_pro': user.professional}
 
+
 # Returns a tweet to tag by a specific user.
 async def get_tweet_to_tag(lock, user_id):
     db = get_instance()
 
-    async with lock:
+    async with (lock):
         user = db.get_user(user_id=user_id)
         # Check if the user already has a tweet assigned they need to tag
-        if user and user.current_tweet_id:
-            tweet = db.get_tweet(user.current_tweet_id)
-        else:
-            # If no assigned tweet, get a new one
-            tweet = db.assign_unclassified_tweet(user_id)
+        if user is None:
+            return
 
-    if tweet:
+        if user.current_tweet_id is None:
+            db.assign_unclassified_tweet(user)
+
+        tweet = db.get_tweet(user.current_tweet_id)
+
         return {
             'id': tweet.tweet_id,
             'content': tweet.content,
             'tweet_url': tweet.tweet_url
         }
-    else:
-        return {'error': 'No available tweets'}
+        # else:
+        #     return {'error': 'No available tweets'}
 
 
 # async def get_tweet_to_classify(lock, user_id):
