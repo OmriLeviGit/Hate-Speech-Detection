@@ -40,29 +40,27 @@ async def get_tweet_to_tag(user_id):
     return await controller.get_tweet_to_tag(lock, user_id)
 
 
-@app.post("/classify_tweet")
-# @login_required
-async def classify_tweet(user_id, data: Classification):
+@app.post("/tag_tweet")
+@login_required
+async def tag_tweet(user_id, data: Classification):
     tweet_id, classification, reasons = data
+    return await controller.handle_tweet_tagging(lock, user_id, tweet_id, classification, reasons)
 
-    return await controller.handle_classification(lock, user_id, tweet_id, classification, reasons)
 
-
-# TODO probably needs a basemodel class but im not sure, should work is it is though
+# ToDo - Test this method
 @app.get("/count_classifications")
-# @login_required
-async def count_classifications(data): # TODO what type is this data and why is it not data.password
-    return await controller.count_classifications(data)
+async def count_classifications(user_id):
+    return await controller.count_classifications(user_id)
 
 
 @app.get("/get_user_panel")
-# @login_required
+@login_required
 async def get_user_panel(user_id):
     return await controller.get_user_panel(user_id, lock)
 
 
 @app.get("/get_pro_panel")
-# @login_required
+@login_required
 async def get_pro_panel():
     return controller.get_pro_panel(lock)
 
