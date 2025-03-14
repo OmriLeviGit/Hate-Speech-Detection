@@ -33,13 +33,15 @@ class get_db_instance(metaclass=Singleton):
 
     # Creates a user and generates a password to them
     # ToDo: Take care of last login to be null when first created,
-    def create_user(self, email, password, num_days, left_to_classify):
-        due_date = datetime.now() + timedelta(days=num_days)
+    def create_user(self, email, password, due_date, tweets_left, is_pro):
+
         user = (User(
                 password=password,
                 email=email,
                 due_date=due_date,
-                left_to_classify=left_to_classify))
+                left_to_classify=tweets_left,
+                professional=is_pro
+                ))
 
         with Session(self.engine) as session:
             session.add(user)

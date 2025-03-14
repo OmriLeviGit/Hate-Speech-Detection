@@ -33,7 +33,7 @@ CREATE TABLE users (
     user_id SERIAL PRIMARY KEY,
     password TEXT UNIQUE NOT NULL,
     email TEXT UNIQUE NOT NULL,
-    due_date DATE,
+    due_date DATE DEFAULT NULL,
     creation_date DATE DEFAULT CURRENT_DATE,
     last_login TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     left_to_classify INT DEFAULT 0,

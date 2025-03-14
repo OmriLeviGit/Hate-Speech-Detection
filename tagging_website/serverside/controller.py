@@ -12,6 +12,7 @@ async def handle_sign_in(password):
     # The next commented line is just for a mock for a user, in case there's no DB to work with
     # user = SimpleNamespace(user_id="123", password="pass", key="something")
     if user is None:
+        print(f"Error: A user with the password '{password}' does not exist")
         raise HTTPException(status_code=401, detail="Unauthorized")
 
     # ToDo:

@@ -35,7 +35,7 @@ class User(Base):
     user_id = Column(Integer, primary_key=True, autoincrement=True)
     password = Column(Text, unique=True, nullable=False)
     email = Column(Text, unique=True, nullable=False)
-    due_date = Column(Date)
+    due_date = Column(Date, nullable=True)
     creation_date = Column(Date, default=datetime.utcnow)
     last_login = Column(TIMESTAMP, nullable=True)
     left_to_classify = Column(Integer, default=0)
