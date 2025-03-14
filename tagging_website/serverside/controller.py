@@ -12,8 +12,14 @@ async def handle_sign_in(password):
 
     user = db.get_user(password=password)
 
-    if user is None or not is_due_date_valid(user.user_id) or not has_classifications_left(user.user_id):
-        raise HTTPException(status_code=401, detail="Unauthorized")
+    if user is None:
+        raise HTTPException(status_code=401, detail="Unauthorized: Could not find user")
+
+    if not is_due_date_valid(user.user_id):
+        raise HTTPException(status_code=401, detail="Unauthorized: due-date has passed")
+
+    if not has_classifications_left(user.user_id):
+        raise HTTPException(status_code=401, detail="Unauthorized: user does not have any classifications left")
 
     db.update_last_login(user.user_id)
     token = generate_token(user.user_id)
@@ -41,43 +47,31 @@ async def get_tweet_to_tag(lock, user_id):
 
     async with lock:
         user = db.get_user(user_id=user_id)
-        # Check if the user already has a tweet assigned they need to tag
+
         if user is None:
             return
 
-        if user.current_tweet_id is None:
-            db.assign_unclassified_tweet(user)
+        # Check if the user already has a tweet assigned they need to tag
+        tweet_id = db.get_unclassified_tweet_for_user(user_id)
 
-        # ToDo - handle the case where there's a reserved tweet that waits to get classified by a user (currently it's "N/A")
+        # If the user doesn't have an assigned tweet they need to tag, assign one
+        if tweet_id is None:
+            tweet_id = db.assign_unclassified_tweet(user)
 
-        tweet = db.get_tweet(user.current_tweet_id)
+        tweet = db.get_tweet(tweet_id)
 
-        return {
+        if tweet is None:
+            return {'error': 'No available tweets'}
+
+        else:
+            return {
             'id': tweet.tweet_id,
             'content': tweet.content,
             'tweet_url': tweet.tweet_url
         }
-        # else:
-        #     return {'error': 'No available tweets'}
 
-'''
-handle_tweet_tagging flow:
 
-- If tagged by a pro: 
-    Insert the tag to tagging_results
-    Remove tweet_id from pro_bank
-
-- If tagged by a regular user: 
-    Update the new classification in taggers_decisions table
-    Check if the same tweet_id has already been classified twice
-        If not:
-            return
-        Else: 
-            check if there's an agreement of both either: positive, negative or irrelevant
-                if so, put the classification under tagging_results table and take the features of both tags to put in
-                else, send the tweet_id to pro_bank
-'''
-# ToDo - Update left_to_classify after submitting a tagging
+# Handles a tweet tagging that was received and stores it in the right place (tagging_results for a pro user and taggers_decisions for regular users)
 async def handle_tweet_tagging(lock, user_id, tweet_id, classification, features):
     db = get_instance()
 
@@ -116,9 +110,9 @@ async def handle_tweet_tagging(lock, user_id, tweet_id, classification, features
 
 
 # Checks how many classifications where made by a specific user
-async def count_classifications(user_id):
+async def count_tags_made(user_id):
     db = get_instance()
-    return {"count": db.get_num_classifications(user_id)}
+    return {"count": db.count_tags_made(user_id)}
 
 
 async def get_user_panel(user_id, lock):

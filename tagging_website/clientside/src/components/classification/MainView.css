@@ -151,7 +151,7 @@
 
 .classify-count {
     padding-top: 10px;
-
+    align-items: center;
 }
 
 html::-webkit-scrollbar {

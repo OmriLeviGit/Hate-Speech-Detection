@@ -1,8 +1,8 @@
 from model import *
-# from serverside import db_service
 from controller import *
 
-# db = db_service.get_instance()
+from serverside import db_service
+db = db_service.get_instance()
 
 
 # Test insert tweet
@@ -67,7 +67,7 @@ async def main():
     # features2 = ["a", "c"]
     #
     # # Run the function
-    await handle_tweet_tagging(lock, user_id1, tweet_id1, classification1, features1)
+    # await handle_tweet_tagging(lock, user_id1, tweet_id1, classification1, features1)
     # await handle_tweet_tagging(lock, user_id2, tweet_id2, classification2, features2)
 
 
@@ -78,6 +78,8 @@ async def main():
     # classification = "Positive"
     # features = ["a", "b"]
     # await handle_tweet_tagging(lock, user_id, tweet_id, classification, features)
+
+    print(await get_tweet_to_tag(lock, 2))
 
 # Run the async function
 if __name__ == "__main__":
