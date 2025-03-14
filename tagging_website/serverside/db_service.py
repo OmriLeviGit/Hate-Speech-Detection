@@ -56,6 +56,8 @@ class get_db_instance(metaclass=Singleton):
                 user = session.query(User).filter(User.user_id == user_id)
             elif password:
                 user = session.query(User).filter(User.password == password)
+            else:
+                print(f"error in db_service.get_user: {user_id}, {password}")
             return user.one_or_none()
 
     # Checks if a given user is a pro user (else, it's a regular user)
@@ -119,42 +121,52 @@ class get_db_instance(metaclass=Singleton):
         - It appears less than 2 times in taggers_decisions (not assigned to 2 users yet)
         """
 
+        """
+        new:
+        A tweet is considered unclassified if:
+        - It's NOT in tagging_results (not already finalized)
+        - It's assigned to 1 user at most, and that user is not pro user
+        """
+
         with Session(self.engine) as session:
             # Step 1: Find all eligible tweets
-            subquery = (
+            assignment_info = (
                 session.query(
-                    Tweet.tweet_id
+                    Tweet.tweet_id,
+                    func.count(AssignedTweet.user_id).label("assignment_count"),
+                    func.bool_or(User.professional).label("has_pro_assignment")
                 )
-                .outerjoin(TaggingResult, Tweet.tweet_id == TaggingResult.tweet_id)
-                .outerjoin(ProBank, Tweet.tweet_id == ProBank.tweet_id)
-                .outerjoin(TaggersDecision, Tweet.tweet_id == TaggersDecision.tweet_id)
+                .outerjoin(AssignedTweet, Tweet.tweet_id == AssignedTweet.tweet_id)
+                .outerjoin(User, AssignedTweet.user_id == User.user_id)
                 .group_by(Tweet.tweet_id)
-                .having(func.count(TaggersDecision.tagger_decision_id) < 2)  # Less than 2 assignments
+                .subquery()
+            )
+
+            subquery = (
+                session.query(Tweet.tweet_id)
+                .outerjoin(TaggingResult, Tweet.tweet_id == TaggingResult.tweet_id)
+                .join(assignment_info, Tweet.tweet_id == assignment_info.c.tweet_id, isouter=True)
                 .filter(TaggingResult.id.is_(None))  # Not finalized
-                .filter(ProBank.id.is_(None))  # Not reserved for professionals
-                .order_by(func.random())  # Randomize selection
+                .filter(
+                    (assignment_info.c.assignment_count <= 1) & (assignment_info.c.has_pro_assignment == False)
+                )
+                .order_by(func.random())
                 .limit(1)
                 .subquery()
             )
 
             # Step 2: Retrieve a random tweet from the eligible ones
             random_tweet = session.query(Tweet).filter(Tweet.tweet_id == subquery.c.tweet_id).first()
-
             if random_tweet:
-                # Assign the tweet to the user
-                user.current_tweet_id = random_tweet.tweet_id
-                session.add(user)  # Ensure user update is tracked
-
-                # Reserve the tweet in taggers_decisions table with "N/A"
-                reservation = TaggersDecision(
-                    tweet_id=random_tweet.tweet_id.key, # had an error without .key
-                    tagged_by=user.user_id,
-                    classification="N/A"
+                # Assign the tweet to the user in the assigned_tweets table
+                assignment = AssignedTweet(
+                    user_id=user.user_id,
+                    tweet_id=random_tweet.tweet_id,
+                    completed=False
                 )
-                session.add(reservation)
-                session.commit()  # Commit both user update & new reservation
+                session.add(assignment)
+                session.commit()
                 return random_tweet.tweet_id
-
             else:
                 return None  # No available tweet
 
@@ -163,6 +175,8 @@ class get_db_instance(metaclass=Singleton):
     def insert_to_taggers_decisions(self, tweet_id, user_id, tag_result, features):
         # Ensures tweet_id is a string to match the type on the DB
         tweet_id = str(tweet_id)
+
+        # TODO as it curently is, tagging duration is always none
 
         with Session(self.engine) as session:
             # Inserts new record into taggers_decisions
@@ -174,8 +188,17 @@ class get_db_instance(metaclass=Singleton):
                 tagging_date=datetime.now(timezone.utc),
                 tagging_duration=None  # If you have the duration, pass it; otherwise, it's NULL
             )
-
             session.add(new_entry)
+
+            # Remove from assigned_tweets table # TODO check if its called for pro users too
+            assigned_tweet = session.query(AssignedTweet).filter(
+                AssignedTweet.tweet_id == tweet_id,
+                AssignedTweet.user_id == user_id
+            ).first()
+
+            if assigned_tweet:
+                session.delete(assigned_tweet)
+
             session.commit()
             return True
 
@@ -196,7 +219,7 @@ class get_db_instance(metaclass=Singleton):
                 session.query(TaggersDecision.classification, TaggersDecision.features)
                 .filter(TaggersDecision.tweet_id == tweet_id)
                 .order_by(TaggersDecision.tagging_date.desc())  # Get latest decisions first
-                .limit(2)  # Only retrieve the last two classifications
+                .limit(2)  # Only retrieve the last two classifications # TODO check why 2
                 .all()
             )
 
@@ -204,7 +227,7 @@ class get_db_instance(metaclass=Singleton):
         return [{"classification": d.classification, "features": d.features} for d in decisions]
 
     # Inserts a tagging result into the table
-    def insert_to_tagging_results(self, tweet_id, tag_result, features, decision_source ):
+    def insert_to_tagging_results(self, tweet_id, tag_result, features, decision_source):
         # Ensures tweet_id is a string to match the type in the DB
         tweet_id = str(tweet_id)
 
@@ -228,29 +251,6 @@ class get_db_instance(metaclass=Singleton):
             # Indicates successful insertion
             return True
 
-    # Inserts a tweet into the pro_bank table if it's not already present
-    def insert_tweet_to_pro_bank(self, tweet_id):
-        with Session(self.engine) as session:
-            # Cast tweet_id to match the DB type
-            tweet_id = str(tweet_id)
-            # Check if the tweet is already in pro_bank
-            exists = session.query(ProBank).filter(ProBank.tweet_id == tweet_id).first()
-            if exists:
-                return False  # Tweet is already in pro_bank, no need to insert
-            # Insert new record into pro_bank
-            new_entry = ProBank(tweet_id=tweet_id)
-            session.add(new_entry)
-            session.commit()
-
-    # Removes a tweet from pro_bank
-    def remove_tweet_from_pro_bank(self, tweet_id):
-        # Cast tweet_id to match the DB type
-        tweet_id = str(tweet_id)
-        with Session(self.engine) as session:
-            record = session.query(ProBank).filter(ProBank.tweet_id == tweet_id).first()
-            if record:
-                session.delete(record)
-                session.commit()
 
     # ToDo - Create def get_average_classification_time(self, classifier):
     #  - A method that calculates duration of a tweet tag called

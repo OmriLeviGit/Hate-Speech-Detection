@@ -40,13 +40,32 @@ class User(Base):
     last_login = Column(TIMESTAMP, nullable=True)
     left_to_classify = Column(Integer, default=0)
     professional = Column(Boolean, default=False)
-    current_tweet_id = Column(Text, ForeignKey(Tweet.tweet_id), nullable=True)
 
     # ToDO - next line might be useful. if not and there's no use of it, delete it
     # current_tweet = relationship("Tweet", back_populates="current_users")
 
     def __repr__(self):
         return f"<User(user_id={self.user_id}, email={self.email}, professional={self.professional})>"
+
+
+class AssignedTweet(Base):
+    __tablename__ = 'assigned_tweets'
+    __table_args__ = (
+        PrimaryKeyConstraint('user_id', 'tweet_id'),
+        {'schema': 'public'}
+    )
+    
+    user_id = Column(Integer, ForeignKey('users.user_id', ondelete='CASCADE'), nullable=False)
+    tweet_id = Column(Text, ForeignKey('tweets.tweet_id', ondelete='CASCADE'), nullable=False)
+    completed = Column(Boolean, default=False)
+    
+    # Define relationships
+    # user = relationship("User", back_populates="assigned_tweets")
+    # tweet = relationship("Tweet", back_populates="assigned_users")
+    
+    def __repr__(self):
+        return f"<AssignedTweet(user_id={self.user_id}, tweet_id={self.tweet_id}, completed={self.completed})>"
+
 
 class TaggersDecision(Base):
     __tablename__ = 'taggers_decisions'
@@ -75,14 +94,3 @@ class TaggingResult(Base):
 
     def __repr__(self):
         return f"<TaggersDecision(id={self.id}, tag_result={self.tag_result})>"
-
-
-class ProBank(Base):
-    __tablename__ = 'pro_bank'
-    __table_args__ = {'schema': 'public'}
-
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    tweet_id = Column(Text, ForeignKey(Tweet.tweet_id), nullable=False)
-
-    def __repr__(self):
-        return f"<ProBank(id={self.id}, tweet_id={self.tweet_id}, done={self.done})>"

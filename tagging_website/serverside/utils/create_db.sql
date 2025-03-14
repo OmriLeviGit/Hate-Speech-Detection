@@ -38,7 +38,6 @@ CREATE TABLE users (
     last_login TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     left_to_classify INT DEFAULT 0,
     professional BOOLEAN DEFAULT FALSE,
-    current_tweet_id TEXT DEFAULT NULL REFERENCES tweets(tweet_id)
 );
 
 CREATE TABLE taggers_decisions (
@@ -51,17 +50,19 @@ CREATE TABLE taggers_decisions (
     tagging_duration INTERVAL
 );
 
-CREATE TABLE pro_bank (
-    id SERIAL PRIMARY KEY,
-    tweet_id TEXT REFERENCES tweets(tweet_id) ON DELETE CASCADE
-);
-
 CREATE TABLE tagging_results (
     id SERIAL PRIMARY KEY,
     tweet_id TEXT REFERENCES tweets(tweet_id) ON DELETE CASCADE,
     tag_result VARCHAR(255) NOT NULL,
     features TEXT,
     decision_source TEXT
+);
+
+CREATE TABLE assigned_tweets (
+    user_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE,
+    tweet_id TEXT REFERENCES tweets(tweet_id) ON DELETE CASCADE,
+    completed BOOLEAN DEFAULT FALSE,
+    PRIMARY KEY (user_id, tweet_id)
 );
 
 -- Indexes for faster queries
