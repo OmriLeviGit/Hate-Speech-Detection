@@ -5,7 +5,7 @@ from asyncio.locks import Lock
 from helper_functions.load_params import get_params
 
 import controller
-from utils.base_models import Password, Classification
+from base_models import Password, Classification
 from auth import login_required
 
 app = FastAPI()

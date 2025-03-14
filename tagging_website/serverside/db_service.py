@@ -12,7 +12,7 @@ from helper_functions.utils import fix_corrupted_text
 load_dotenv(os.path.join(Path(__file__).parent.absolute(), '.env.local'))
 if os.path.exists('/.dockerenv'):
     # when running with docker, dont forget to stop the local post gres by using 'sudo service postgresql stop'
-    DB = os.environ.get('DATA_DOCKER')
+    DB = os.environ.get('DATABASE_DOCKER')
 else:
     # if using the local machine, you need to start postgres by using 'sudo service postgresql start'
     DB = os.environ.get('DATABASE_LOCAL')
@@ -31,6 +31,7 @@ class Singleton(type):
 class get_db_instance(metaclass=Singleton):
     def __init__(self):
         self.engine: Engine = create_engine(DB)
+        Base.metadata.create_all(self.engine)
 
     # Creates a user and generates a password to them
     # ToDo: Take care of last login to be null when first created,

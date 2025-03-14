@@ -29,6 +29,8 @@ def fix_corrupted_text(text):
                 text = codecs.decode(text, 'unicode_escape', errors='replace')
     except:
         pass
+    
+    text = text.replace('†', '"')   # Common character replacement
 
     # Common character replacement
     text = text.replace('†', '"')

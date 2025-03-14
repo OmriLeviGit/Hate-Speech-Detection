@@ -14,7 +14,7 @@ def reset_database():
         conn.autocommit = True
         cursor = conn.cursor()
         
-        # Drop all tables
+        # drop all tables
         drop_tables_sql = """
         DO $$
         DECLARE
@@ -35,7 +35,7 @@ def reset_database():
         
         # Create tweets table
         cursor.execute("""
-        CREATE TABLE tweets (
+        CREATE TABLE public.tweets (
             tweet_id TEXT PRIMARY KEY,
             user_posted TEXT,
             content TEXT,
@@ -53,7 +53,7 @@ def reset_database():
         
         # Create users table
         cursor.execute("""
-        CREATE TABLE users (
+        CREATE TABLE public.users (
             user_id SERIAL PRIMARY KEY,
             password TEXT UNIQUE NOT NULL,
             email TEXT UNIQUE NOT NULL,
@@ -67,7 +67,7 @@ def reset_database():
         
         # Create assigned_tweets table
         cursor.execute("""
-        CREATE TABLE assigned_tweets (
+        CREATE TABLE public.assigned_tweets (
             user_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE,
             tweet_id TEXT REFERENCES tweets(tweet_id) ON DELETE CASCADE,
             completed BOOLEAN DEFAULT FALSE,
@@ -77,7 +77,7 @@ def reset_database():
         
         # Create taggers_decisions table
         cursor.execute("""
-        CREATE TABLE taggers_decisions (
+        CREATE TABLE public.taggers_decisions (
             tagger_decision_id SERIAL PRIMARY KEY,
             tweet_id TEXT REFERENCES tweets(tweet_id) ON DELETE CASCADE,
             tagged_by INT REFERENCES users(user_id) ON DELETE SET NULL,
@@ -90,7 +90,7 @@ def reset_database():
         
         # Create tagging_results table
         cursor.execute("""
-        CREATE TABLE tagging_results (
+        CREATE TABLE public.tagging_results (
             id SERIAL PRIMARY KEY,
             tweet_id TEXT REFERENCES tweets(tweet_id) ON DELETE CASCADE,
             tag_result VARCHAR(255) NOT NULL,
