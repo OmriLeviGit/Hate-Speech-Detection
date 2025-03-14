@@ -208,7 +208,7 @@ const MainView = ({passcode, isPro, setPasscode, token, setToken}) => {
 
   const submitClassification = async (classification, features_l) => {
     // Send classification to server
-    fetch(window.API_URL + '/tag_tweet', {
+    fetch(window.API_URL + '/submit_tweet_tag', {
       method: "POST", headers: {
         "Content-Type": "application/json",
         "Authorization": "Bearer " + token,
@@ -229,10 +229,10 @@ const MainView = ({passcode, isPro, setPasscode, token, setToken}) => {
           }
         });
 
-        // // Get new tweet
-        // getNewTweet();
-        // // Update classification count
-        // updateCount();
+        // Get new tweet
+        getNewTweet();
+        // Update classification count
+        updateCount();
       } else {
         toast.error("Error sending classification", {
           position: toast.POSITION.TOP_RIGHT,

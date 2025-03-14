@@ -55,11 +55,11 @@ async def main():
 
     # Part 1 - Make a tweet to go to pro_bank by conflicting two regular users decisions
     # Result1
-    # user_id1 = 1
-    # tweet_id1 = "a2"
-    # classification1 = "Positive"
-    # features1 = ["a", "b"]
-    #
+    user_id1 = 1
+    tweet_id1 = "a1"
+    classification1 = "Positive"
+    features1 = ["a", "b"]
+
     # # Result2
     # user_id2 = 2
     # tweet_id2 = "a2"
@@ -67,17 +67,17 @@ async def main():
     # features2 = ["a", "c"]
     #
     # # Run the function
-    # result1 = await handle_tweet_tagging(lock, user_id1, tweet_id1, classification1, features1)
-    # result2 = await handle_tweet_tagging(lock, user_id2, tweet_id2, classification2, features2)
+    await handle_tweet_tagging(lock, user_id1, tweet_id1, classification1, features1)
+    # await handle_tweet_tagging(lock, user_id2, tweet_id2, classification2, features2)
 
 
     # Part 2 - Check Pro user tagging abilities
     # Result3 - Pro User
-    user_id = 3
-    tweet_id = "a2"
-    classification = "Positive"
-    features = ["a", "b"]
-    await handle_tweet_tagging(lock, user_id, tweet_id, classification, features)
+    # user_id = 3
+    # tweet_id = "a2"
+    # classification = "Positive"
+    # features = ["a", "b"]
+    # await handle_tweet_tagging(lock, user_id, tweet_id, classification, features)
 
 # Run the async function
 if __name__ == "__main__":

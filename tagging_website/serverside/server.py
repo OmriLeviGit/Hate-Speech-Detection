@@ -13,13 +13,6 @@ app = FastAPI()
 db = db_service.get_instance()
 lock = Lock()
 
-"""
-ours            theirs
-User            Passcode
-User.user_id    Passcode.id
-User.password   Passcode.key
-"""
-
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -40,11 +33,11 @@ async def get_tweet_to_tag(user_id):
     return await controller.get_tweet_to_tag(lock, user_id)
 
 
-@app.post("/tag_tweet")
+@app.post("/submit_tweet_tag")
 @login_required
 async def tag_tweet(user_id, data: Classification):
-    tweet_id, classification, reasons = data
-    return await controller.handle_tweet_tagging(lock, user_id, tweet_id, classification, reasons)
+    tweet_id, classification, features = data
+    await controller.handle_tweet_tagging(lock, user_id, tweet_id, classification, features)
 
 
 # ToDo - Test this method
