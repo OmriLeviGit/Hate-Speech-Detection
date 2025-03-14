@@ -50,13 +50,11 @@ class User(Base):
 
 class AssignedTweet(Base):
     __tablename__ = 'assigned_tweets'
-    __table_args__ = (
-        PrimaryKeyConstraint('user_id', 'tweet_id'),
-        {'schema': 'public'}
-    )
+    __table_args__ = {'schema': 'public'}
     
-    user_id = Column(Integer, ForeignKey('users.user_id', ondelete='CASCADE'), nullable=False)
-    tweet_id = Column(Text, ForeignKey('tweets.tweet_id', ondelete='CASCADE'), nullable=False)
+    tweet_id = Column(Text, ForeignKey(Tweet.tweet_id, ondelete="CASCADE"), primary_key=True, nullable=False)
+    user_id = Column(Text, ForeignKey(User.user_id, ondelete="CASCADE"), primary_key=True, nullable=False)
+
     completed = Column(Boolean, default=False)
     
     # Define relationships

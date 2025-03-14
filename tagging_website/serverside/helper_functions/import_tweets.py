@@ -10,12 +10,14 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import db_service
 
-def import_tweets_from_csv(path="../ready_to_load/tweet_table.csv"):
+def import_tweets_from_csv(path="../ready_to_load/tweet_table.csv", limit=None):
     db = db_service.get_db_instance()
 
     df = pd.read_csv(path)
 
     for _, row in df.iterrows():
+        if limit and limit <= i:
+            break
 
         # Parse JSON fields
         photos_list = json.loads(row['photos']) if pd.notna(row['photos']) and row['photos'] else []

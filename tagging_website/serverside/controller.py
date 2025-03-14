@@ -34,15 +34,7 @@ async def get_tweet_to_tag(lock, user_id):
     db = get_db_instance()
 
     async with lock:
-        user = db.get_user(user_id=user_id)
-        # Check if the user already has a tweet assigned they need to tag
-        if user is None:
-            return
-
-        if user.current_tweet_id is None:
-            db.assign_unclassified_tweet(user)
-
-        tweet = db.get_tweet(user.current_tweet_id)
+        tweet = db.assign_unclassified_tweet(user_id)
 
         return {
             'id': tweet.tweet_id,
