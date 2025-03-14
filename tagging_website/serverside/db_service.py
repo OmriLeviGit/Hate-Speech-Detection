@@ -1,7 +1,5 @@
 import os
-import random
-from datetime import timedelta
-
+from datetime import datetime, timezone, timedelta
 from dotenv import load_dotenv
 from sqlalchemy import Engine, func
 from sqlalchemy import create_engine
@@ -10,8 +8,13 @@ from model import *
 from helper_functions.tweets_helpers import fix_corrupted_text
 
 
-load_dotenv('.local.env')
-DB = os.environ.get('DATABASE_URL')
+load_dotenv('.env.local')
+if os.path.exists('/.dockerenv'):
+    # when running with docker, dont forget to stop the local post gres by using 'sudo service postgresql stop'
+    DB = os.environ.get('DATABASE_DOCKER')
+else:
+    # if using the local machine, you need to start postgres by using 'sudo service postgresql start'
+    DB = os.environ.get('DATABASE_LOCAL')
 
 class Singleton(type):
     def __init__(cls, name, bases, dict):
@@ -32,7 +35,6 @@ class get_db_instance(metaclass=Singleton):
     # ToDo: Take care of last login to be null when first created,
     def create_user(self, email, password, num_days, left_to_classify):
         due_date = datetime.now() + timedelta(days=num_days)
-
         user = (User(
                 password=password,
                 email=email,
@@ -54,6 +56,21 @@ class get_db_instance(metaclass=Singleton):
                 user = session.query(User).filter(User.password == password)
             return user.one_or_none()
 
+    # Checks if a given user is a pro user (else, it's a regular user)
+    def is_pro(self, user_id):
+        with Session(self.engine) as session:
+            user = session.query(User).filter(User.user_id == user_id).first()
+            if user:
+                return user.professional
+
+    # Updates the last_login field of a user to the current timestamp
+    def update_last_login(self, user_id):
+        with Session(self.engine) as session:
+            user = session.query(User).filter(User.user_id == user_id).first()
+            if user:
+                user.last_login = datetime.now(timezone.utc)
+                session.commit()
+
     # Returns all users from users table
     def get_users(self):
         with Session(self.engine) as session:
@@ -67,10 +84,10 @@ class get_db_instance(metaclass=Singleton):
     # Adding a new tweet into the tweets table in the DB
     def insert_tweet(self, tweet_id, user_posted, content, date_posted, photos, tweet_url, tagged_users, replies, reposts, likes, views, hashtags):
 
-        if not content:
-            return
-
         processed_content = fix_corrupted_text(content)
+
+        if not processed_content:   # if could not be parsed correctly
+            return
 
         tweet = (Tweet
                  (tweet_id=tweet_id,
@@ -90,90 +107,151 @@ class get_db_instance(metaclass=Singleton):
             session.add(tweet)
             session.commit()
 
-    # ToDo - the following method has yet to be tested and done
+
+    # Assigns an unclassified tweet to the given user
     def assign_unclassified_tweet(self, user):
         """
-        Assigns a random tweet to a regular user that hasn't been tagged twice
-        and reserves it in taggers_decisions with classification 'N/A'.
+        A tweet is considered unclassified if:
+        - It's NOT in tagging_results (not already finalized)
+        - It's NOT in pro_bank (not reserved for professionals)
+        - It appears less than 2 times in taggers_decisions (not assigned to 2 users yet)
         """
+
         with Session(self.engine) as session:
-
-            print("entering queries")
-            subquery1 = (
-                session.query(Tweet.tweet_id)
-                .subquery()
-            )
-            print("has query1")
-            # df = pd.DataFrame(subquery1)
-            # print(df)
-            print(session.query(Tweet).all())
-            print("subquery1")
-            print(subquery1.c.tweet_id)
-            pro_bank_removed = (
-                session.query(ProBank)
-                .filter(~ProBank.tweet_id.in_(session.query(subquery1.c.tweet_id)))
-                .all()
-            )
-
-            removed_all_done_tweets = (
-                session.query(TaggingResult)
-                .filter(~TaggingResult.tweet_id.in_([pb.tweet_id for pb in pro_bank_removed]))
-                .all()
-            )
-
-            subquery2 = (
-                session.query(TaggersDecision.tweet_id)
-                .group_by(TaggersDecision.tweet_id)
-                .having(func.count(TaggersDecision.tagger_decision_id) >= 2)
+            # Step 1: Find all eligible tweets
+            subquery = (
+                session.query(
+                    Tweet.tweet_id
+                )
+                .outerjoin(TaggingResult, Tweet.tweet_id == TaggingResult.tweet_id)
+                .outerjoin(ProBank, Tweet.tweet_id == ProBank.tweet_id)
+                .outerjoin(TaggersDecision, Tweet.tweet_id == TaggersDecision.tweet_id)
+                .group_by(Tweet.tweet_id)
+                .having(func.count(TaggersDecision.tagger_decision_id) < 2)  # Less than 2 assignments
+                .filter(TaggingResult.id.is_(None))  # Not finalized
+                .filter(ProBank.id.is_(None))  # Not reserved for professionals
+                .order_by(func.random())  # Randomize selection
+                .limit(1)
                 .subquery()
             )
 
-            available_tweets = (
-                session.query(TaggingResult)
-                .filter(~TaggingResult.tweet_id.in_(session.query(subquery2.c.tweet_id)))
-                .filter(TaggingResult.tweet_id.in_([t.tweet_id for t in removed_all_done_tweets]))
-                .all()
+            # Step 2: Retrieve a random tweet from the eligible ones
+            random_tweet = session.query(Tweet).filter(Tweet.tweet_id == subquery.c.tweet_id).first()
+
+            if random_tweet:
+                # Assign the tweet to the user
+                user.current_tweet_id = random_tweet.tweet_id
+                session.add(user)  # Ensure user update is tracked
+
+                # Reserve the tweet in taggers_decisions table with "N/A"
+                reservation = TaggersDecision(
+                    tweet_id=random_tweet.tweet_id.key, # had an error without .key
+                    tagged_by=user.user_id,
+                    classification="N/A"
+                )
+                session.add(reservation)
+                session.commit()  # Commit both user update & new reservation
+                return random_tweet.tweet_id
+
+            else:
+                return None  # No available tweet
+
+
+    # Inserts a tagging decision to the taggers_decisions table
+    def insert_to_taggers_decisions(self, tweet_id, user_id, tag_result, features):
+        # Ensures tweet_id is a string to match the type on the DB
+        tweet_id = str(tweet_id)
+
+        with Session(self.engine) as session:
+            # Inserts new record into taggers_decisions
+            new_entry = TaggersDecision(
+                tweet_id=tweet_id,
+                tagged_by=user_id,
+                classification=tag_result,
+                features=features if features else [],  # Ensure it's a list
+                tagging_date=datetime.now(timezone.utc),
+                tagging_duration=None  # If you have the duration, pass it; otherwise, it's NULL
             )
 
-            if not available_tweets:
-                return None  # No available tweets
-
-            # Choose a random tweet
-            selected_tweet = random.choice(available_tweets)
-
-            # Assign the tweet to the user
-            user.current_tweet_id = selected_tweet.tweet_id
-
-            # Reserve the tweet in taggers_decisions table with "N/A"
-            reservation = TaggersDecision(
-                tweet_id=selected_tweet.tweet_id,
-                tagged_by=user.user_id,
-                classification="N/A"
-            )
-            session.add(reservation)
+            session.add(new_entry)
             session.commit()
-            return selected_tweet.tweet_id
+            return True
 
-    # ToDo - Create def __reserve_tweet(self, tweet, passcode)
+    def get_tweet_decisions(self, tweet_id):
+        """
+        Retrieves the last two classifications for a given tweet from the taggers_decisions table.
 
-    # ToDo - Create def __reserve_tweet_pro(self, tweet, passcode, pro_tweet)
+        Parameters:
+        - tweet_id (str): The ID of the tweet.
 
-    # ToDo - Create def insert_to_pro_bank(self, tweet_id)
+        Returns:
+        - A list of dictionaries containing 'classification' and 'features' of the last two classifications.
+        """
+        tweet_id = str(tweet_id)  # Ensure tweet_id is a string
 
-    # ToDo - Create def get_unclassified_tweet(self, passcode)
+        with Session(self.engine) as session:
+            decisions = (
+                session.query(TaggersDecision.classification, TaggersDecision.features)
+                .filter(TaggersDecision.tweet_id == tweet_id)
+                .order_by(TaggersDecision.tagging_date.desc())  # Get latest decisions first
+                .limit(2)  # Only retrieve the last two classifications
+                .all()
+            )
 
-    # ToDo - Create def def classify_tweet(self, tweet_id, user_id, classification, features)
+        # Convert to a list of dictionaries
+        return [{"classification": d.classification, "features": d.features} for d in decisions]
 
-    # ToDo - Create def classify_tweet_pro(self, tweet_id, passcode, classification, features)
+    # Inserts a tagging result into the table
+    def insert_to_tagging_results(self, tweet_id, tag_result, features, decision_source ):
+        # Ensures tweet_id is a string to match the type in the DB
+        tweet_id = str(tweet_id)
 
-    # ToDo - Create def get_average_classification_time(self, classifier), a method that calculates duration of a tweet tag called
+        with Session(self.engine) as session:
+            # Check if tweet_id already exists in tagging_results
+            exists = session.query(TaggingResult).filter(TaggingResult.tweet_id == tweet_id).first()
 
-    # def get_tweet_to_classify(self, user_id):
+            if exists:
+                return False  # Tweet already classified, no need to insert
 
-    # Flow to get a tweet to classify:
-    #   A user enters the client and asks for a tweet to tag
-    #   check if the tweet IS NOT IN pro_bank and NOT IN tagging_results
-    #
+            # Insert new record into tagging_results
+            new_entry = TaggingResult(
+                tweet_id=tweet_id,
+                tag_result=tag_result,
+                features=features if features else [],  # Ensure it's a list
+                decision_source=decision_source
+            )
+
+            session.add(new_entry)
+            session.commit()
+            # Indicates successful insertion
+            return True
+
+    # Inserts a tweet into the pro_bank table if it's not already present
+    def insert_tweet_to_pro_bank(self, tweet_id):
+        with Session(self.engine) as session:
+            # Cast tweet_id to match the DB type
+            tweet_id = str(tweet_id)
+            # Check if the tweet is already in pro_bank
+            exists = session.query(ProBank).filter(ProBank.tweet_id == tweet_id).first()
+            if exists:
+                return False  # Tweet is already in pro_bank, no need to insert
+            # Insert new record into pro_bank
+            new_entry = ProBank(tweet_id=tweet_id)
+            session.add(new_entry)
+            session.commit()
+
+    # Removes a tweet from pro_bank
+    def remove_tweet_from_pro_bank(self, tweet_id):
+        # Cast tweet_id to match the DB type
+        tweet_id = str(tweet_id)
+        with Session(self.engine) as session:
+            record = session.query(ProBank).filter(ProBank.tweet_id == tweet_id).first()
+            if record:
+                session.delete(record)
+                session.commit()
+
+    # ToDo - Create def get_average_classification_time(self, classifier):
+    #  - A method that calculates duration of a tweet tag called
 
     # Returns the number of classifications marked as "Positive" made by a specific user
     def get_positive_classification_count(self, user_id):

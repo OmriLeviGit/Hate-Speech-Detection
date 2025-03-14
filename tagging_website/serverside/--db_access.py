@@ -21,7 +21,7 @@
 #         return cls.instance
 
 
-# class get_instance(metaclass=Singleton):
+# class get_db_instance(metaclass=Singleton):
 #     def __init__(self):
 #         self.engine: Engine = create_engine(DB)
 

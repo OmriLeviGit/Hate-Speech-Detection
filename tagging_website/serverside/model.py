@@ -67,7 +67,7 @@ class TaggingResult(Base):
     __tablename__ = 'tagging_results'
     __table_args__ = {'schema': 'public'}
 
-    id = Column(Integer, primary_key=True)
+    id = Column(Integer, primary_key=True, autoincrement=True)
     tweet_id = Column(Text, ForeignKey(Tweet.tweet_id, ondelete="CASCADE"), nullable=False)
     tag_result = Column(String(255), nullable=False)
     features = Column(ARRAY(Text), default=[])

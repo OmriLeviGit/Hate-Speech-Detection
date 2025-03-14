@@ -2,18 +2,23 @@ import codecs
 import re
 import html
 import ftfy
+import emoji
 
 def fix_corrupted_text(text):
-    # First handle HTML entities
+
+    if not text:
+        return None
+    
+    # handle HTML entities
     try:
         text = html.unescape(text)
     except:
         pass
 
-    # Use ftfy for general text encoding fixes
+    # general text encoding fixes
     text = ftfy.fix_text(text)
 
-    # Handle specific Unicode escape sequences if ftfy didn't catch them
+    # specific Unicode escape sequences if ftfy didn't catch them
     try:
         if '\\u' in text or '\\U' in text:
             text = re.sub(r'\\u([0-9a-fA-F]{4})', lambda m: chr(int(m.group(1), 16)), text)
@@ -25,7 +30,12 @@ def fix_corrupted_text(text):
     except:
         pass
 
-    # Specific character replacement
+    # Common character replacement
     text = text.replace('†', '"')
 
+    is_text_or_emoji = emoji.demojize(text).isascii()
+    
+    if not is_text_or_emoji:
+        return None
+    
     return text

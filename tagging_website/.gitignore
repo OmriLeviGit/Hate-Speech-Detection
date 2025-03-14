@@ -6,3 +6,4 @@ __pycache__/
 test.py
 serverside/.env.local
 user_details.xlsx
+.env.local

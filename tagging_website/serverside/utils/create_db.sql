@@ -57,7 +57,7 @@ CREATE TABLE pro_bank (
 );
 
 CREATE TABLE tagging_results (
-    id INT PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     tweet_id TEXT REFERENCES tweets(tweet_id) ON DELETE CASCADE,
     tag_result VARCHAR(255) NOT NULL,
     features TEXT,
