@@ -1,5 +1,7 @@
+import './MainViewRefactored.css';
 import { useEffect, useState } from "react";
 import { toast, ToastContainer } from "react-toastify";
+import { CopyToClipboard } from "react-copy-to-clipboard";
 import { fetchTweet, submitClassification, fetchFeatures, fetchClassificationCount } from "../../services/api";
 import FeatureButton from './FeatureButton';
 import Panel from "./Panels/Panel";
@@ -33,6 +35,9 @@ const MainViewRefactored = ({ token, setToken, setPasscode, isPro }) => {
     // Disables the buttons while sending a tag submission
     const [loading, setLoading] = useState(false);
 
+    // Disables the classifications button when there are no tweets to tag
+    const [doneTagging, setDoneTagging] = useState(false);
+
     // Stores the feature list
     const [featuresList, setFeaturesList] = useState([]);
 
@@ -63,8 +68,10 @@ const MainViewRefactored = ({ token, setToken, setPasscode, isPro }) => {
         if (!resj) {
             setTweet({ content: "Error connecting to server!" });
         } else if (resj.error) {
+            setDoneTagging(true);
             setTweet({ content: "No tweets left to classify! 🎉" });
         } else {
+            setDoneTagging(false);
             setTweet({
                 tweetId: resj.id,
                 content: resj.content,
@@ -76,18 +83,18 @@ const MainViewRefactored = ({ token, setToken, setPasscode, isPro }) => {
     };
 
 
+    const fetchClassificationCountData = async () => {
+        const resj = await fetchClassificationCount(token);
+        if (resj) {
+            setClassificationCount(resj.count);
+        }
+    };
+
     // Loads the feature list from the server
     const loadFeatures = async () => {
         const resj = await fetchFeatures();
         setFeaturesList(resj.map(feature => feature[1]));
     };
-
-    // ToDo - write the updateTagCount
-    // const updateTagCount = async () => {
-    //     const resj = await fetchCount();
-    //     set
-    // }
-
 
 
     // Sends a request to the server to tag the current tweet
@@ -95,9 +102,7 @@ const MainViewRefactored = ({ token, setToken, setPasscode, isPro }) => {
         if (!tweet) return;
 
         setLoading(true);
-
         const success = await submitClassification(token, tweet.tweetId, classification, features);
-
         if (success) {
             // Shows the user a success message on screens
             toast.success("Classification submitted!", { autoClose: 2000 });
@@ -108,8 +113,8 @@ const MainViewRefactored = ({ token, setToken, setPasscode, isPro }) => {
         } else {
             toast.error("Error submitting classification.");
         }
-
         setLoading(false);
+        setIsAntisemitic(false);
     };
 
 
@@ -120,21 +125,11 @@ const MainViewRefactored = ({ token, setToken, setPasscode, isPro }) => {
     }
 
 
-    // ToDo - Make this useEffect looks nicer
-    // Fetch a tweet on component mount
+    // Happens on component mount
     useEffect(() => {
         getNewTweet();
         loadFeatures();
-
-        // Fetch the classification count
-        const fetchCount = async () => {
-            const resj = await fetchClassificationCount(token);
-            if (resj) {
-                setClassificationCount(resj.count);
-            }
-        };
-
-        fetchCount();
+        fetchClassificationCountData();
     }, []);
 
 
@@ -151,28 +146,36 @@ const MainViewRefactored = ({ token, setToken, setPasscode, isPro }) => {
                 )}
                 </p>}
 
+
             {/* ToDo - Add the copy button (copies tweet's content)*/}
+            <div className="copy-to-clip-div">
+                <CopyToClipboard text={tweet ? tweet.content : ""} onCopy={() => {
+                    toast.success("Text copied to clipboard", { autoClose: 2000 });
+                }}>
+                    <button className="copy-to-clip-btn" type="button">
+                        <span className="bi bi-clipboard"></span>
+                        <span style={{ paddingLeft: "5%" }}></span>
+                        Copy
+                    </button>
+                </CopyToClipboard>
+            </div>
+
 
             {/* Toggle button for tagging as Antisemitic or Not Antisemitic*/}
             <div className="form-check form-switch form-switch-md">
+
                 <input
                     className="form-check-input"
                     type="checkbox"
                     id="flexSwitchCheckDefault"
                     checked={isAntisemitic}
                     onChange={() => setIsAntisemitic(!isAntisemitic)}
+                    disabled={doneTagging}
                 />
                 <label className="form-check-label" htmlFor="flexSwitchCheckDefault">
                     {isAntisemitic ? "Antisemitic" : "Not Antisemitic"}
                 </label>
-            </div>
 
-
-
-
-            {/* ToDo - Consider adding "x classifications made out of y classifications needed" */}
-            <div>
-                Classifications Made: {classificationCount}
             </div>
 
 
@@ -181,8 +184,9 @@ const MainViewRefactored = ({ token, setToken, setPasscode, isPro }) => {
                 <button
                     type="submit" id="classify-btn"
                     className="submit-button classify-submit-button"
-                    onClick={() => submitTweetTagging(isAntisemitic ? "Positive" : "Negative", selectedFeatures)}
-                    disabled={loading}
+                    onClick={() =>
+                        submitTweetTagging(isAntisemitic ? "Positive" : "Negative", selectedFeatures)}
+                    disabled={loading || doneTagging || (isAntisemitic && selectedFeatures.length === 0)}
                 >
                     Classify As {isAntisemitic ? "" : "Not "}Antisemitic
                 </button>
@@ -191,7 +195,7 @@ const MainViewRefactored = ({ token, setToken, setPasscode, isPro }) => {
                     id="not-sure-btn"
                     className="small-side-button"
                     type="button"
-                    disabled={loading}
+                    disabled={loading || doneTagging || isAntisemitic}
                     onClick={() => submitTweetTagging("Uncertain", [])}
                 >
                     <span className="bi bi-question-octagon-fill"/>
@@ -205,20 +209,22 @@ const MainViewRefactored = ({ token, setToken, setPasscode, isPro }) => {
                     id="irrelevant-btn"
                     className="small-side-button"
                     type="button"
-                    disabled={loading}
+                    disabled={loading || doneTagging || isAntisemitic}
                     onClick={() => submitTweetTagging("Irrelevant", [])}
                 >
                     <span>Irrelevant</span>
                     <span style={{paddingLeft: "3%"}}/>
                     <span className="bi bi-trash-fill"/>
                 </button>
-            </div>
 
+            </div>
 
 
             {isAntisemitic && (
                 <div className="features-container">
-                    <h3>Select Features:</h3>
+                    <div className="select-feature">
+                        Select at least one feature before classifying as antisemitic
+                    </div>
                     {featuresList.map((feature) => (
                         <FeatureButton
                             key={feature}
@@ -230,6 +236,11 @@ const MainViewRefactored = ({ token, setToken, setPasscode, isPro }) => {
                 </div>
             )}
 
+
+            {/* ToDo - Consider adding "x classifications made out of y classifications needed" */}
+            <div>
+                Classifications Made: {classificationCount}
+            </div>
 
             <div className="bottom-container">
 
