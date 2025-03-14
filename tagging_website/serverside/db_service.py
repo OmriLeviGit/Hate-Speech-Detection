@@ -1,14 +1,14 @@
 import os
 from datetime import datetime, timezone, timedelta
 from dotenv import load_dotenv
-from sqlalchemy import Engine, func
-from sqlalchemy import create_engine
+from pathlib import Path
+from sqlalchemy import Engine, func, create_engine
 from sqlalchemy.orm import Session
 from model import *
-from helper_functions.tweets_helpers import fix_corrupted_text
+from helper_functions.utils import fix_corrupted_text
 
 
-load_dotenv('.env.local')
+load_dotenv(os.path.join(Path(__file__).parent.absolute(), '.env.local'))
 if os.path.exists('/.dockerenv'):
     # when running with docker, dont forget to stop the local post gres by using 'sudo service postgresql stop'
     DB = os.environ.get('DATABASE_DOCKER')

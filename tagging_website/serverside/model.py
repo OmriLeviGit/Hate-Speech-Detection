@@ -1,5 +1,5 @@
 from sqlalchemy import (
-    Column, Integer, String, Text, Date, Boolean, ForeignKey, TIMESTAMP, ARRAY
+    Column, Integer, String, Text, Date, Boolean, ForeignKey, PrimaryKeyConstraint, TIMESTAMP, ARRAY
 )
 from sqlalchemy.dialects.postgresql import INTERVAL
 from sqlalchemy.orm import declarative_base

@@ -37,14 +37,20 @@ def create_user_list(path, due_date, tweets_left):
     
     return user_list
 
-if __name__ == "__main__":
-    path = os.path.join(script_dir, "..", "data", "user_details.xlsx")
-    days_left = 30
-    tweets_left = 200
 
+def generate_users(file_name="user_details.xlsx", days_left=30, tweets_left=200):
+    path = os.path.join(script_dir, "..", "data", file_name)
     due_date = datetime.now() + timedelta(days=days_left) # TODO make sure the due date itself is allowed
     user_list = create_user_list(path, due_date, tweets_left)
 
     db = get_db_instance()
     for user in user_list:
         db.create_user(*user)
+
+
+if __name__ == "__main__":
+    file_name = "user_details.xlsx"
+    days_left = 30
+    tweets_left = 200
+
+    generate_users(file_name, days_left, tweets_left)

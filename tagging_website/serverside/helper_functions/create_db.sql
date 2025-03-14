@@ -37,7 +37,14 @@ CREATE TABLE users (
     creation_date DATE DEFAULT CURRENT_DATE,
     last_login TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     left_to_classify INT DEFAULT 0,
-    professional BOOLEAN DEFAULT FALSE,
+    professional BOOLEAN DEFAULT FALSE
+);
+
+CREATE TABLE assigned_tweets (
+    user_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE,
+    tweet_id TEXT REFERENCES tweets(tweet_id) ON DELETE CASCADE,
+    completed BOOLEAN DEFAULT FALSE,
+    PRIMARY KEY (user_id, tweet_id)
 );
 
 CREATE TABLE taggers_decisions (
@@ -58,18 +65,10 @@ CREATE TABLE tagging_results (
     decision_source TEXT
 );
 
-CREATE TABLE assigned_tweets (
-    user_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE,
-    tweet_id TEXT REFERENCES tweets(tweet_id) ON DELETE CASCADE,
-    completed BOOLEAN DEFAULT FALSE,
-    PRIMARY KEY (user_id, tweet_id)
-);
-
 -- Indexes for faster queries
 CREATE INDEX idx_tweets_user ON tweets(user_posted);
 CREATE INDEX idx_annotations_tweet ON taggers_decisions(tweet_id);
 CREATE INDEX idx_annotations_user ON taggers_decisions(tagged_by);
-CREATE INDEX idx_pro_bank_tweet ON pro_bank(tweet_id);
 CREATE INDEX idx_results_tweet ON tagging_results(tweet_id);
 
 -- Confirm creation
