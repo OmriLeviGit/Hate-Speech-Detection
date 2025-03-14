@@ -1,0 +1,170 @@
+.form-switch.form-switch-md .form-check-input {
+    height: 1.2rem;
+    width: calc(2rem + 0.75rem);
+    border-radius: 3rem;
+    margin-right: 1rem;
+}
+
+.form-check-input {
+    cursor: pointer;
+}
+
+
+.form-switch.form-switch-md .form-check-label {
+    /* Make the label align with the switch */
+    line-height: 1.2rem;
+    margin-top: 0.25rem;
+}
+
+.form-check-input:disabled {
+    cursor: not-allowed;
+}
+
+
+.small-side-button {
+    font: 300 16px 'Lato', sans-serif;
+    background-color: var(--main-disabled-bright);
+    color: var(--submit-button-disabled-text);
+    position: relative;
+    z-index: 1;
+    border: none;
+    border-radius: 5px;
+    height: 2.6rem;
+    margin: 10px 0px;
+    width: 49%;
+    transition: 0.4s;
+}
+
+.copy-to-clip-div {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    position: relative;
+    padding: 20px 5px;
+}
+
+.copy-status{
+    text-align: center;
+    width: 100%;
+    font-size: 1.2em;
+    margin-top: 0.5em;
+    margin-bottom: 0.5em;
+    visibility: hidden;
+}
+
+.copy-status.show{
+    visibility: visible;
+}
+
+.copy-to-clip-btn,.skip-tweet-btn {
+    position: relative;
+    margin: 10px;
+    width: 30%;
+    min-width: fit-content;
+    font: 500 16px 'Lato', sans-serif;
+    background-color: var(--main-dark);
+    color: var(--submit-button-text);
+    border: none;
+    border-radius: 5px;
+    height: 2.3rem;
+    transition: 0.4s;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.copy-to-clip-btn:hover:not([disabled]), .skip-tweet-btn:hover:not([disabled]) {
+    background-color: var(--main-bright);
+}
+
+
+.skip-tweet-btn:disabled, .copy-to-clip-btn:disabled {
+    background-image: linear-gradient(to right, var(--main-disabled-bright) 0%, var(--main-disabled-dark) 100%);
+    color: var(--submit-button-disabled-text);
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.small-side-button:hover:not([disabled]) {
+    background-color: var(--main-disabled-dark);
+}
+
+.small-side-button:disabled {
+    background-image: linear-gradient(to right, var(--main-disabled-bright) 0%, var(--main-disabled-dark) 100%);
+    color: var(--submit-button-disabled-text);
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.bottom-container-button {
+    font: 500 16px 'Lato', sans-serif;
+    background-color: var(--main-dark);
+    color: var(--submit-button-text);
+    /* position: relative; */
+    /* z-index: 1; */
+    border: none;
+    border-radius: 5px;
+    height: 2.3rem;
+    margin: 10px 0px;
+    width: 30%;
+    transition: 0.4s;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.bottom-container-button:hover {
+    background-color: var(--main-bright);
+}
+
+.bottom-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+
+.small-side-tooltip {
+    font: 12px 'Lato', sans-serif;
+    padding: 5px;
+    background-color: var(--main-disabled-dark);
+    color: var(--submit-button-disabled-text);
+}
+
+.features-container {
+    flex-direction: row;
+    flex-wrap: wrap;
+    margin-top: 6%;
+}
+
+.classify-submit-button:disabled {
+    background-color: var(--main-disabled-dark);
+    background-image: none;
+    opacity: 0.6;
+}
+
+.classifiy-tooltip {
+    z-index: 10;
+}
+
+.classify-count {
+    padding-top: 10px;
+    align-items: center;
+}
+
+html::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+}
+
+html::-webkit-scrollbar-thumb {
+    background-color: #ddd;
+    border-radius: 10px;
+}
+
+html::-webkit-scrollbar-track {
+    background-color: #ddd;
+    border-radius: 10px;
+}

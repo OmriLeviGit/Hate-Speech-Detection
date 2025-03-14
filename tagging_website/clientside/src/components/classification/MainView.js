@@ -10,7 +10,7 @@ import {CopyToClipboard} from 'react-copy-to-clipboard';
 
 
 const MainView = ({passcode, isPro, setPasscode, token, setToken}) => {
-  const [isAntiMil, setIsAntiMil] = useState(false);
+  const [isAntisemitic, setIsAntisemitic] = useState(false);
   const [isFinished, setIsFinished] = useState(true);
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [copyStatus, setCopyStatus] = useState(false);
@@ -26,7 +26,7 @@ const MainView = ({passcode, isPro, setPasscode, token, setToken}) => {
     username: '',
     tweetURL: '',
   });
-  const [classifiyCount, setClassifyCount] = useState(0);
+  const [classifyCount, setClassifyCount] = useState(0);
   const [featuresDetails, setFeaturesDetails] = useState([]);
 
   // Enable tooltips
@@ -64,7 +64,7 @@ const MainView = ({passcode, isPro, setPasscode, token, setToken}) => {
   }, []);
 
   const updateCount = () => {
-    fetch(window.API_URL + '/count_classifications', {
+    fetch(window.API_URL + '/count_tags_made_by_user', {
       method: "GET", headers: {
         "Content-Type": "application/json",
         "Authorization": "Bearer " + token,
@@ -84,7 +84,6 @@ const MainView = ({passcode, isPro, setPasscode, token, setToken}) => {
   }
 
   const getNewTweet = async () => {
-    console.log('MainView.js, line 87: Trying to get a tweet to tag from');
     // Get new tweet from server and set tweet state
     fetch(window.API_URL + '/get_tweet_to_tag', {
       method: "GET", headers: {
@@ -126,12 +125,11 @@ const MainView = ({passcode, isPro, setPasscode, token, setToken}) => {
     });
   }
 
+  // Updates whenever a token has changed
   useEffect(() => {
     let isMounted = true;
-
     const fetchData = async () => {
       try {
-        console.log('MainView.js, line 133: Trying to get a tweet to tag from');
         const response = await fetch(window.API_URL + '/get_tweet_to_tag', {
           method: "GET",
           headers: {
@@ -194,8 +192,8 @@ const MainView = ({passcode, isPro, setPasscode, token, setToken}) => {
   }, [token]);
 
 
+  // Unselects all selected tagging features
   const resetFeatures = () => {
-    // Reset features
     const featuresDetails_l = featuresDetails.map(feature => {
       return {
         key: feature.key,
@@ -206,9 +204,17 @@ const MainView = ({passcode, isPro, setPasscode, token, setToken}) => {
     setFeaturesDetails(featuresDetails_l);
   }
 
-  const submitClassification = async (classification, features_l) => {
-    // Send classification to server
-    fetch(window.API_URL + '/tag_tweet', {
+  // Submits a tagging of a tweet
+  const submitTweetTagging = async (classification, features_l) => {
+
+    console.log("submitTweetTagging - Submitting Request:", {
+      tweet_id: tweet.tweetId,
+      classification: classification,
+      features: features_l,  // Make sure this is an array!
+    });
+
+    // Send the tagging request to the server
+    fetch(window.API_URL + '/submit_tweet_tag', {
       method: "POST", headers: {
         "Content-Type": "application/json",
         "Authorization": "Bearer " + token,
@@ -216,25 +222,27 @@ const MainView = ({passcode, isPro, setPasscode, token, setToken}) => {
           {
             tweet_id: tweet.tweetId,
             classification: classification,
-            features: JSON.stringify(features_l),
+            features: features_l,
+            // The next line is commented due to a potential mismatch with the backend base_models.py file
+            // features: JSON.stringify(features_l),
           })
     }).then(response => {
       if (response.ok) {
         response.json().then(resj => {
           if (!resj.error) {
-            toast.success("Classification sent successfully", {
+            toast.success("Tag Sent Successfully", {
               position: toast.POSITION.TOP_RIGHT,
               autoClose: 2000
             });
           }
         });
+        // Get new tweet
+        getNewTweet();
+        // Update classification count
+        updateCount();
 
-        // // Get new tweet
-        // getNewTweet();
-        // // Update classification count
-        // updateCount();
       } else {
-        toast.error("Error sending classification", {
+        toast.error("Error Sending Tag", {
           position: toast.POSITION.TOP_RIGHT,
           autoClose: 2000
         });
@@ -247,116 +255,51 @@ const MainView = ({passcode, isPro, setPasscode, token, setToken}) => {
     });
   }
 
+  // Clears form
   const clearForm = () => {
-    // Clear form
     document.getElementById("flexSwitchCheckDefault").checked = false;
-    setIsAntiMil(false);
+    setIsAntisemitic(false);
     // Reset features
     resetFeatures();
   }
 
-  const notSureClick = () => {
+  const uncertainClick = () => {
     // Send a not sure classification to server
-    submitClassification("Unknown", null);
+    submitTweetTagging("Uncertain", null);
     // Clear form
     clearForm();
   }
+
 
   const irrelevantClick = () => {
     // Send an irrelevant classification to server
-    submitClassification("Irrelevant", null);
+    submitTweetTagging("Irrelevant", null);
 
     // Clear form
     clearForm();
   }
 
-  const skipTweet = async () => {
-    // Fetch a new tweet from the server and update the tweet state
-    getSkipTweet();
-  }
 
-  const getSkipTweet = async () => {
-    // Get new tweet from server and set tweet state
+  const getFeaturesList = () => {
+    // Convert the object into a list of selected feature descriptions
+    return featuresDetails
+        .filter(feature => feature.checked)  // Keep only selected features
+        .map(feature => feature.description);  // Extract only human-readable names
+  };
 
-    fetch(window.API_URL + '/get_skip_tweet', {
-      method: "POST", headers: {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer " + token,
-      }, body: JSON.stringify(
-          {
-            curr_id: tweet.tweetId
-          })
-    }).then(response => {
-      // If response is ok, get new tweet and set tweet state
-      if (response.ok) {
-        response.json().then(resj => {
-          if (resj.error) {
-            const errorTweet = {
-              tweetId: 'ERROR',
-              tweetText: resj.error === 'No unclassified tweets'
-                  ? 'Hurray! All tweets classified!'
-                  : 'Error, Please contact support.',
-              username: 'Guest',
-            };
-            setIsFinished(true);
-            setTweet(errorTweet);
-            toast.success(errorTweet.tweetText, {
-              position: toast.POSITION.TOP_RIGHT,
-              autoClose: 2000
-            });
-            return;
-          } else if (resj.id === tweet.tweetId) {
-            // Check if returned tweet equals to current tweet_id.
-            toast.error("Cannot skip current tweet", {
-              position: toast.POSITION.TOP_RIGHT,
-              autoClose: 2000
-            });
-          } else {
-            // Otherwise, create a tweet.
-            const tweet_l = {
-              tweetId: resj.id,
-              tweetText: resj.content,
-              username: resj.tweeter,
-            };
-            // Set tweet state
-            setIsFinished(false);
-            setTweet(tweet_l);
-          }
-        });
-      }
-    });
-  }
-
-
-  const getFeaturesObj = () => {
-    // Get checked features
-    const features_l = featuresDetails.filter((feature) => feature.checked);
-    // Get all features keys
-    const featuresKeys = featuresDetails.map((feature) => feature.key);
-    // Create features object
-    const featuresObj = {};
-    featuresKeys.forEach((key) => {
-      featuresObj[key] = false;
-    });
-    // Set features to true
-    features_l.forEach((feature) => {
-      featuresObj[feature.key] = true;
-    });
-    return featuresObj;
-  }
 
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     const isAntisemitic_l = document.getElementById("flexSwitchCheckDefault").checked;
     const classification = isAntisemitic_l ? "Positive" : "Negative";
-    const featuresObj = isAntisemitic_l ? getFeaturesObj() : null;
+    const featuresList = isAntisemitic_l ? getFeaturesList() : null;
 
     // Clear form
     clearForm();
 
     // Send classification to server
-    submitClassification(classification, featuresObj);
+    submitTweetTagging(classification, featuresList);
   }
 
   const setFeature = (feature, bool) => {
@@ -396,38 +339,31 @@ const MainView = ({passcode, isPro, setPasscode, token, setToken}) => {
                     <span style={{paddingLeft: "5%"}}/>
                     Copy
                   </button>
-
                 </CopyToClipboard>
                 <div className={`copy-status ${copyStatus ? "show" : ''}`}>Text copied to clipboard!</div>
-
-                <button disabled={isFinished} id="skip-tweet-btn" className="skip-tweet-btn" type="button"
-                        onClick={skipTweet}>
-                  Skip
-                  <span className="bi bi-skip-forward-fill ms-2"/>
-                </button>
               </div>
 
-              <p className="classify-count">Classifications made by your account: {classifiyCount}</p>
+              <p className="classify-count">Classifications made by your account: {classifyCount}</p>
 
               <br/>
               <div className="form-check form-switch form-switch-md">
                 <input className="form-check-input" type="checkbox" disabled={isFinished}
                        id="flexSwitchCheckDefault"
-                       onChange={() => setIsAntiMil(!isAntiMil)}/>
+                       onChange={() => setIsAntisemitic(!isAntisemitic)}/>
 
                 <label className="form-check-label" htmlFor="flexSwitchCheckDefault">
-                  {isAntiMil ? <span><strong>Antisemitic</strong></span> :
+                  {isAntisemitic ? <span><strong>Antisemitic</strong></span> :
                       <span>Not Antisemitic</span>}
                 </label>
               </div>
             </div>
-            {isAntiMil ? (
+            {isAntisemitic ? (
                 <div className="features-container">
                   {featuresDetails.map((feature, index) => (
                       <FeatureButton
                           key={index}
                           feature={feature}
-                          disabled={!isAntiMil}
+                          disabled={!isAntisemitic}
                           setFeature={setFeature}
                       />
                   ))}
@@ -440,14 +376,14 @@ const MainView = ({passcode, isPro, setPasscode, token, setToken}) => {
                       type="submit" id="classify-btn"
                       disabled={isFinished}
                       className="submit-button classify-submit-button"
-                  >Classify As {isAntiMil ? '' : 'Not'} Antisemitic
+                  >Classify As {isAntisemitic ? '' : 'Not'} Antisemitic
                   </button>
                 </div>
                 <button id="not-sure-btn"
                         className="small-side-button"
                         disabled={isFinished}
                         type="button"
-                        onClick={notSureClick}>
+                        onClick={uncertainClick}>
                   <span className="bi bi-question-octagon-fill"/>
                   <span style={{paddingLeft: "3%"}}/>
                   <span>Uncertain</span>

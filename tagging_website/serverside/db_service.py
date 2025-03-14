@@ -2,6 +2,7 @@ import os
 from datetime import datetime, timezone, timedelta
 from dotenv import load_dotenv
 from pathlib import Path
+import pytz
 from sqlalchemy import Engine, func, create_engine
 from sqlalchemy.orm import Session
 from model import *
@@ -16,6 +17,7 @@ if os.path.exists('/.dockerenv'):
 else:
     # if using the local machine, you need to start postgres by using 'sudo service postgresql start'
     DB = os.environ.get('DATABASE_LOCAL')
+
 
 class Singleton(type):
     def __init__(cls, name, bases, dict):
@@ -32,6 +34,7 @@ class get_db_instance(metaclass=Singleton):
     def __init__(self):
         self.engine: Engine = create_engine(DB)
         Base.metadata.create_all(self.engine)
+
 
     # Creates a user and generates a password to them
     # ToDo: Take care of last login to be null when first created,
@@ -51,6 +54,7 @@ class get_db_instance(metaclass=Singleton):
 
         return user
 
+
     # Returns a user object
     def get_user(self, user_id=None, password=None):
         with Session(self.engine) as session:
@@ -69,23 +73,57 @@ class get_db_instance(metaclass=Singleton):
             if user:
                 return user.professional
 
+
     # Updates the last_login field of a user to the current timestamp
     def update_last_login(self, user_id):
         with Session(self.engine) as session:
             user = session.query(User).filter(User.user_id == user_id).first()
             if user:
-                user.last_login = datetime.now(timezone.utc)
+                user.last_login = datetime.now(pytz.timezone('Asia/Jerusalem'))
                 session.commit()
+
+
+    # Decrements left_to_classify for a specific user
+    def decrement_left_to_classify(self, user_id):
+        with Session(self.engine) as session:
+            user = session.query(User).filter(User.user_id == user_id).first()
+
+            if not user or user.left_to_classify <= 0:
+                return # Either user doesn't exist or has no classifications left
+
+            user.left_to_classify -= 1  # Decrement count
+            session.commit()
+
+
+    # Returns the user's due_date from the database
+    def get_user_due_date(self, user_id):
+        with Session(self.engine) as session:
+            user = session.query(User.due_date).filter(User.user_id == user_id).first()
+            if user:
+                return user.due_date
+            return None
+
+
+    # Returns the user's left_to_classify from the database
+    def get_user_left_to_classify(self, user_id):
+        with Session(self.engine) as session:
+            user = session.query(User.left_to_classify).filter(User.user_id == user_id).first()
+            if user:
+                return user.left_to_classify
+            return None
+
 
     # Returns all users from users table
     def get_users(self):
         with Session(self.engine) as session:
             return session.query(User).all()
 
+
     # Returns a tweet object
     def get_tweet(self, tweet_id):
         with Session(self.engine) as session:
             return session.query(Tweet).filter(Tweet.tweet_id == tweet_id).one_or_none()
+
 
     # Adding a new tweet into the tweets table in the DB
     def insert_tweet(self, tweet_id, user_posted, content, date_posted, photos, tweet_url, tagged_users, replies, reposts, likes, views, hashtags):
@@ -128,6 +166,32 @@ class get_db_instance(metaclass=Singleton):
         
             return assigned_tweet[0] if assigned_tweet else None
 
+    # Assigns a specific tweet to the pro user with the least tweets assigned\completed by him
+    def assign_tweet_to_pro(self, tweet_id):
+        with Session(self.engine) as session:
+            pro_user_with_least_work = (
+                session.query(
+                    User,
+                    func.count(distinct(TaggersDecision.tweet_id)).label('tagged_count'),
+                    func.count(distinct(AssignedTweet.tweet_id)).label('assigned_count'),
+                    (func.count(distinct(TaggersDecision.tweet_id)) + 
+                    func.count(distinct(AssignedTweet.tweet_id))).label('total_count')
+                )
+                .outerjoin(TaggersDecision, User.user_id == TaggersDecision.tagged_by)
+                .outerjoin(AssignedTweet, User.user_id == AssignedTweet.user_id)
+                .filter(User.professional == True)
+                .group_by(User.user_id)
+                .order_by('total_count')
+                .first()
+            )
+
+            assignment = AssignedTweet(
+                tweet_id=tweet_id,
+                user_id=pro_user_with_least_work,
+                completed=False
+            )
+            session.add(assignment)
+
 
     # Assigns an unclassified tweet to the given user
     def assign_tweet(self, user_id):
@@ -163,24 +227,25 @@ class get_db_instance(metaclass=Singleton):
                     (func.bool_or(User.professional).is_(None) | ~func.bool_or(User.professional))  # No pro assignments
                 )
                 .order_by(func.random())
-                .all()
-                # .first()
+                # .all() # DEBUG: returns all valid tweets
+                .first()
             )
 
-            tweet_ids = [row.tweet_id for row in random_tweet]
+            # DEBUG: returns all valid tweet ids instead of 
+            # tweet_ids = [row.tweet_id for row in random_tweet]
+            # print("available tweets:", tweet_ids)
+            # random_tweet_id = tweet_ids[0]
 
-            print("available tweets:", tweet_ids)
-            random_tweet_id = tweet_ids[0]
-            if random_tweet_id:
+            if random_tweet:
                 # Assign the tweet to the user in the assigned_tweets table
                 assignment = AssignedTweet(
-                    tweet_id=random_tweet_id,
+                    tweet_id=random_tweet.tweet_id,
                     user_id=user_id,
                     completed=False
                 )
                 session.add(assignment)
                 session.commit()
-                return random_tweet_id
+                return random_tweet.tweet_id
             
             return None  # No available tweet
 
@@ -193,17 +258,19 @@ class get_db_instance(metaclass=Singleton):
         # TODO as it curently is, tagging duration is always none
 
         with Session(self.engine) as session:
+
             # Inserts new record into taggers_decisions
             new_entry = TaggersDecision(
                 tweet_id=tweet_id,
                 tagged_by=user_id,
                 classification=tag_result,
                 features=features if features else [],  # Ensure it's a list
-                tagging_date=datetime.now(timezone.utc),
-                tagging_duration=None  # If you have the duration, pass it; otherwise, it's NULL
+                tagging_date=datetime.now(pytz.timezone('Asia/Jerusalem')),
+                tagging_duration=None  # ToDo - Add the calculation of the tagging_duration
             )
-            session.add(new_entry)
 
+            session.add(new_entry)
+            
             # Remove from assigned_tweets table # TODO check if its called for pro users too
             assigned_tweet = session.query(AssignedTweet).filter(
                 AssignedTweet.tweet_id == tweet_id,
@@ -212,20 +279,11 @@ class get_db_instance(metaclass=Singleton):
 
             if assigned_tweet:
                 session.delete(assigned_tweet)
-
             session.commit()
-            return True
 
+
+    # Retrieves the last two classifications for a given tweet from the taggers_decisions table
     def get_tweet_decisions(self, tweet_id):
-        """
-        Retrieves the last two classifications for a given tweet from the taggers_decisions table.
-
-        Parameters:
-        - tweet_id (str): The ID of the tweet.
-
-        Returns:
-        - A list of dictionaries containing 'classification' and 'features' of the last two classifications.
-        """
         tweet_id = str(tweet_id)  # Ensure tweet_id is a string
 
         with Session(self.engine) as session:
@@ -240,6 +298,7 @@ class get_db_instance(metaclass=Singleton):
         # Convert to a list of dictionaries
         return [{"classification": d.classification, "features": d.features} for d in decisions]
 
+
     # Inserts a tagging result into the table
     def insert_to_tagging_results(self, tweet_id, tag_result, features, decision_source):
         # Ensures tweet_id is a string to match the type in the DB
@@ -250,7 +309,7 @@ class get_db_instance(metaclass=Singleton):
             exists = session.query(TaggingResult).filter(TaggingResult.tweet_id == tweet_id).first()
 
             if exists:
-                return False  # Tweet already classified, no need to insert
+                return
 
             # Insert new record into tagging_results
             new_entry = TaggingResult(
@@ -260,14 +319,19 @@ class get_db_instance(metaclass=Singleton):
                 decision_source=decision_source
             )
 
+            assigned_tweet = session.query(AssignedTweet).filter(
+                AssignedTweet.tweet_id == tweet_id,
+                AssignedTweet.user_id == user_id
+            ).first()
+
             session.add(new_entry)
             session.commit()
-            # Indicates successful insertion
-            return True
+
 
 
     # ToDo - Create def get_average_classification_time(self, classifier):
     #  - A method that calculates duration of a tweet tag called
+
 
     # Returns the number of classifications marked as "Positive" made by a specific user
     def get_positive_classification_count(self, user_id):
@@ -277,6 +341,7 @@ class get_db_instance(metaclass=Singleton):
 
         # Returns the number of classifications marked as "Negative" made by a specific user
 
+
     def get_negative_classification_count(self, user_id):
         with Session(self.engine) as session:
             return (
@@ -285,12 +350,14 @@ class get_db_instance(metaclass=Singleton):
                     TaggersDecision.tagged_by == "Negative")
                 .count())
 
+
     # Returns the number of classifications marked as "Irrelevant" made by a specific user
     def get_irrelevant_classification_count(self, user_id):
         with Session(self.engine) as session:
             return (session.query(TaggersDecision)
                     .filter(TaggersDecision.tagged_by == user_id)
                     .filter(TaggersDecision.tagged_by == "Irrelevant").count())
+
 
     # ToDo - This method probably will change according to how we use taggers_decisions implementation
     # Return the total number of classification made by the taggers
@@ -300,6 +367,7 @@ class get_db_instance(metaclass=Singleton):
                 .filter(TaggersDecision.classification != "N/A") \
                 .scalar()
 
+
     # ToDo - This method probably will change according to how we use taggers_decisions implementation
     # Return the total number of negatives classification made by the taggers
     def get_total_negative_classifications(self):
@@ -308,6 +376,7 @@ class get_db_instance(metaclass=Singleton):
                 .filter(TaggersDecision.classification != "Negative") \
                 .scalar()
 
+
     # ToDo - This method probably will change according to how we use taggers_decisions implementation
     # Return the total number of negatives classification made by the taggers
     def get_total_positive_classifications(self):
@@ -315,6 +384,7 @@ class get_db_instance(metaclass=Singleton):
             return session.query(func.count(func.distinct(TaggersDecision.tweet_id))) \
                 .filter(TaggersDecision.classification != "Positive") \
                 .scalar()
+
 
     # ToDo - This method probably will change according to how we use taggers_decisions implementation
     # Return the total number of negatives classification made by the taggers
@@ -334,6 +404,7 @@ class get_db_instance(metaclass=Singleton):
                 .scalar()
             )
 
+
     # Return the number of days reminded until due date for a specific user
     def get_days_left_to_classify(self, user_id):
         with Session(self.engine) as session:
@@ -345,9 +416,9 @@ class get_db_instance(metaclass=Singleton):
             else:
                 return 0
 
-    # ToDo - This method probably will change according to how we use taggers_decisions implementation
-    # Returns the number of tweets classified by a user.
-    def get_num_classifications(self, user_id):
+
+    # Returns the number of tweets tagged by a specific user
+    def count_tags_made(self, user_id):
         with Session(self.engine) as session:
             return session.query(TaggersDecision).filter(TaggersDecision.tagged_by == user_id).filter(
                 TaggersDecision.classification != "N/A").count()

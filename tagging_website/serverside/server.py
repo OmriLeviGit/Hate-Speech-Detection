@@ -2,21 +2,18 @@ import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from asyncio.locks import Lock
+
+from pyexpat import features
+
 from helper_functions.load_params import get_params
 
 import controller
 from base_models import Password, Classification
 from auth import login_required
 
+
 app = FastAPI()
 lock = Lock()
-
-"""
-ours            theirs
-User            Passcode
-User.user_id    Passcode.id
-User.password   Passcode.key
-"""
 
 app.add_middleware(
     CORSMiddleware,
@@ -38,17 +35,19 @@ async def get_tweet_to_tag(user_id):
     return await controller.get_tweet_to_tag(lock, user_id)
 
 
-@app.post("/tag_tweet")
+@app.post("/submit_tweet_tag")
 @login_required
 async def tag_tweet(user_id, data: Classification):
-    tweet_id, classification, reasons = data
-    return await controller.handle_tweet_tagging(lock, user_id, tweet_id, classification, reasons)
+    tweet_id=data.tweet_id
+    classification=data.classification
+    features=data.features
+    await controller.handle_tweet_tagging(lock, user_id, tweet_id, classification, features)
 
 
-# ToDo - Test this method
-@app.get("/count_classifications")
-async def count_classifications(user_id):
-    return await controller.count_classifications(user_id)
+@app.get("/count_tags_made_by_user")
+@login_required
+async def count_tags_made(user_id):
+    return await controller.count_tags_made(user_id)
 
 
 @app.get("/get_user_panel")

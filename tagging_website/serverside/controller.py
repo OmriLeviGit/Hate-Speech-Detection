@@ -1,6 +1,8 @@
-from auth import generate_token
+from datetime import datetime
+
 from fastapi import HTTPException
 from db_service import get_db_instance
+from auth import generate_token
 from types import SimpleNamespace
 
 # ToDO - Check if each method that has to use the lock actually uses it
@@ -9,9 +11,15 @@ async def handle_sign_in(password):
     db = get_db_instance()
 
     user = db.get_user(password=password)
-    # The next commented line is just for a mock for a user, in case there's no DB to work with
-    # user = SimpleNamespace(user_id="123", password="pass", key="something")
+
     if user is None:
+        raise HTTPException(status_code=401, detail="Unauthorized: Could not find user")
+
+    if not is_due_date_valid(user.user_id):
+        raise HTTPException(status_code=401, detail="Unauthorized: due-date has passed")
+
+    if not has_classifications_left(user.user_id):
+        raise HTTPException(status_code=401, detail="Unauthorized: user does not have any classifications left")
         print(f"Error: A user with the password '{password}' does not exist")
         raise HTTPException(status_code=401, detail="Unauthorized")
 
@@ -24,10 +32,24 @@ async def handle_sign_in(password):
     #     raise HTTPException(status_code=401, detail="Unauthorized")
 
     db.update_last_login(user.user_id)
-
     token = generate_token(user.user_id)
     return {'token': token, 'is_pro': user.professional}
 
+
+# Checks if the user's due_date is still valid (not expired)
+def is_due_date_valid(user_id):
+    db = get_instance()
+    due_date = db.get_user_due_date(user_id)
+    if due_date is None:
+        return False
+    return due_date > datetime.utcnow().date()
+
+
+# Checks if the user has classifications left to perform
+def has_classifications_left(user_id):
+    db = get_instance()
+    left_to_classify = db.get_user_left_to_classify(user_id)
+    return left_to_classify is not None and left_to_classify > 0
 
 # Returns a tweet to tag by a specific user.
 async def get_tweet_to_tag(lock, user_id):
@@ -41,63 +63,55 @@ async def get_tweet_to_tag(lock, user_id):
             'content': tweet.content,
             'tweet_url': tweet.tweet_url
         }
-        # else:
-        #     return {'error': 'No available tweets'}
 
-'''
-handle_tweet_tagging flow:
 
-- If tagged by a pro: 
-    Insert the tag to tagging_results
-    Remove tweet_id from pro_bank
-
-- If tagged by a regular user: 
-    Update the new classification in taggers_decisions table
-    Check if the same tweet_id has already been classified twice
-        If not:
-            return
-        Else: 
-            check if there's an agreement of both either: positive, negative or irrelevant
-                if so, put the classification under tagging_results table and take the features of both tags to put in
-                else, send the tweet_id to pro_bank
-'''
-# ToDo - Update left_to_classify after submitting a tagging
+# Handles a tweet tagging that was received and stores it in the right place (tagging_results for a pro user and taggers_decisions for regular users)
 async def handle_tweet_tagging(lock, user_id, tweet_id, classification, features):
+    db = get_instance()
+
+    if not has_classifications_left(user_id):
+        raise HTTPException(status_code=401, detail="Unauthorized")
     db = get_db_instance()
     is_pro = db.is_pro(user_id)
 
     async with lock:
+
+        # added for consistency and removes entry from the assigned_tweet table (even if pro)
+        db.insert_to_taggers_decisions(tweet_id, user_id, classification, features)
+
+        # Check if the user is a pro user or a regular one, and handle the tagging accordingly
+        is_pro = db.is_pro(user_id)
+
         if is_pro:
             db.insert_to_tagging_results(tweet_id, classification, features, "Pro user")
-            db.remove_tweet_from_pro_bank(tweet_id)
             return
 
         # Else, the tag was made by a regular user
-        db.insert_to_taggers_decisions(tweet_id, user_id, classification, features)
+        db.decrement_left_to_classify(user_id)
 
-        # Check if the tweet has already been classified twice
+        # Check if the tweet has already been classified twice by two different regular users
         decisions = db.get_tweet_decisions(tweet_id)
         if len(decisions) < 2:
             return
 
         # Extract classifications
-        first_class = decisions[0]["classification"]
-        second_class = decisions[1]["classification"]
+        first_classification = decisions[0]["classification"]
+        second_classification = decisions[1]["classification"]
 
-        # Check if both taggers agreed on tweet's sentiment
-        if first_class == second_class:
+        # Check if both taggers agreed on tweet's sentiment, and is in {Positive, Negative, Irrelevant}
+        if (first_classification == second_classification) and (first_classification !="Uncertain"):
             combined_features = list(set(decisions[0]["features"] + decisions[1]["features"]))
-            db.insert_to_tagging_results(tweet_id, first_class, combined_features, "User agreement")
+            db.insert_to_tagging_results(tweet_id, first_classification, combined_features, "User agreement")
             return
 
-        # Else, taggers didn't agree about tweet's sentiment
-        db.insert_tweet_to_pro_bank(tweet_id)
+        # Else, assign to pro bank
+        db.assign_tweet_pro(tweet_id)
 
 
 # Checks how many classifications where made by a specific user
-async def count_classifications(user_id):
+async def count_tags_made(user_id):
     db = get_db_instance()
-    return {"count": db.get_num_classifications(user_id)}
+    return {"count": db.count_tags_made(user_id)}
 
 
 async def get_user_panel(user_id, lock):
@@ -143,13 +157,13 @@ async def get_pro_panel(lock): # TODO probably remove the lock
         total_irrelevant = db.get_total_irrelevant_classifications()
 
         for user in user_data:
-            password = user.key
+            user_id = user.user_id
             email = user.email
-            classification_count = db.get_num_classifications(password)
-            positive_count = db.get_num_positive_classifications(password)
-            negative_count = db.get_num_negative_classifications(password)
-            irrelevant_count = db.get_num_irrelevant_classifications(password)
-            avg_time = db.get_average_classification_time(password)
+            classification_count = db.get_num_classifications(user_id)
+            positive_count = db.get_positive_classification_count(user_id)
+            negative_count = db.get_negative_classification_count(user_id)
+            irrelevant_count = db.get_irrelevant_classification_count(user_id)
+            avg_time = db.get_average_classification_time(user_id)
             
             if classification_count is not None:
 
