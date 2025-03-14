@@ -46,8 +46,8 @@ async def get_tweet_to_tag(lock, user_id):
     db = get_instance()
 
     async with lock:
-        user = db.get_user(user_id=user_id)
 
+        user = db.get_user(user_id=user_id)
         if user is None:
             return
 

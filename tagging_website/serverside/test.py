@@ -79,7 +79,7 @@ async def main():
     # features = ["a", "b"]
     # await handle_tweet_tagging(lock, user_id, tweet_id, classification, features)
 
-    print(await get_tweet_to_tag(lock, 2))
+    print(await get_tweet_to_tag(lock, 4))
 
 # Run the async function
 if __name__ == "__main__":

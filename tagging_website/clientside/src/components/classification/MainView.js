@@ -10,7 +10,7 @@ import {CopyToClipboard} from 'react-copy-to-clipboard';
 
 
 const MainView = ({passcode, isPro, setPasscode, token, setToken}) => {
-  const [isAntisemitic, setisAntisemitic] = useState(false);
+  const [isAntisemitic, setIsAntisemitic] = useState(false);
   const [isFinished, setIsFinished] = useState(true);
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [copyStatus, setCopyStatus] = useState(false);
@@ -26,7 +26,7 @@ const MainView = ({passcode, isPro, setPasscode, token, setToken}) => {
     username: '',
     tweetURL: '',
   });
-  const [classifiyCount, setClassifyCount] = useState(0);
+  const [classifyCount, setClassifyCount] = useState(0);
   const [featuresDetails, setFeaturesDetails] = useState([]);
 
   // Enable tooltips
@@ -258,7 +258,7 @@ const MainView = ({passcode, isPro, setPasscode, token, setToken}) => {
   // Clears form
   const clearForm = () => {
     document.getElementById("flexSwitchCheckDefault").checked = false;
-    setisAntisemitic(false);
+    setIsAntisemitic(false);
     // Reset features
     resetFeatures();
   }
@@ -343,13 +343,13 @@ const MainView = ({passcode, isPro, setPasscode, token, setToken}) => {
                 <div className={`copy-status ${copyStatus ? "show" : ''}`}>Text copied to clipboard!</div>
               </div>
 
-              <p className="classify-count">Classifications made by your account: {classifiyCount}</p>
+              <p className="classify-count">Classifications made by your account: {classifyCount}</p>
 
               <br/>
               <div className="form-check form-switch form-switch-md">
                 <input className="form-check-input" type="checkbox" disabled={isFinished}
                        id="flexSwitchCheckDefault"
-                       onChange={() => setisAntisemitic(!isAntisemitic)}/>
+                       onChange={() => setIsAntisemitic(!isAntisemitic)}/>
 
                 <label className="form-check-label" htmlFor="flexSwitchCheckDefault">
                   {isAntisemitic ? <span><strong>Antisemitic</strong></span> :

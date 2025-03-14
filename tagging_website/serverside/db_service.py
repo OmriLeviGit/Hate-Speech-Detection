@@ -42,6 +42,7 @@ class get_instance(metaclass=Singleton):
 
         return user
 
+
     # Returns a user object
     def get_user(self, user_id=None, password=None):
         with Session(self.engine) as session:
@@ -166,10 +167,6 @@ class get_instance(metaclass=Singleton):
             random_tweet = session.query(Tweet).filter(Tweet.tweet_id == subquery.c.tweet_id).first()
 
             if random_tweet:
-                # Assign the tweet to the user
-                user.current_tweet_id = random_tweet.tweet_id
-                session.add(user)  # Ensure user update is tracked
-
                 # Reserve the tweet in taggers_decisions table with "N/A"
                 reservation = TaggersDecision(
                     tweet_id=str(random_tweet.tweet_id),
@@ -177,12 +174,27 @@ class get_instance(metaclass=Singleton):
                     classification="N/A"
                 )
                 session.add(reservation)
-                session.commit()  # Commit both user update & new reservation
+                # Commit both user update & new reservation
+                session.commit()
                 return random_tweet.tweet_id
 
             else:
-                return None  # No available tweet
+                # No available tweet
+                return None
 
+
+    # Returns the first reserved tweet.tweet_id from taggers_decision for a specific user.
+    # A reserved tweet with *tweet_id* was assigned for *user_id* via assign_unclassified_tweet and has "N/A" classification
+    def get_unclassified_tweet_for_user(self, user_id):
+        with Session(self.engine) as session:
+            tweet_entry = (
+                session.query(TaggersDecision.tweet_id)
+                .filter(TaggersDecision.tagged_by == user_id)
+                .filter(TaggersDecision.classification == "N/A")
+                .order_by(TaggersDecision.tagging_date.desc())  # Most recent assigned tweet
+                .first()
+            )
+            return tweet_entry.tweet_id if tweet_entry else None
 
     # Inserts a tagging decision to the taggers_decisions table
     def insert_to_taggers_decisions(self, tweet_id, user_id, tag_result, features):
@@ -374,9 +386,8 @@ class get_instance(metaclass=Singleton):
                 return 0
 
 
-    # ToDo - This method probably will change according to how we use taggers_decisions implementation
-    # Returns the number of tweets classified by a user.
-    def get_num_classifications(self, user_id):
+    # Returns the number of tweets tagged by a specific user
+    def count_tags_made(self, user_id):
         with Session(self.engine) as session:
             return session.query(TaggersDecision).filter(TaggersDecision.tagged_by == user_id).filter(
                 TaggersDecision.classification != "N/A").count()
