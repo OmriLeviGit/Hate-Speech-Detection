@@ -10,7 +10,7 @@ export const fetchTweet = async (token) => {
 
         return response.ok ? await response.json() : null;
     } catch (error) {
-        console.error("❌ Error fetching tweet:", error);
+        console.error("Error fetching tweet:", error);
         return null;
     }
 };
@@ -28,7 +28,7 @@ export const submitClassification = async (token, tweetId, classification, featu
 
         return response.ok;
     } catch (error) {
-        console.error("❌ Error submitting classification:", error);
+        console.error("Error submitting classification:", error);
         return false;
     }
 };
@@ -44,7 +44,24 @@ export const fetchFeatures = async () => {
 
         return response.ok ? await response.json() : [];
     } catch (error) {
-        console.error("❌ Error fetching features:", error);
+        console.error("Error fetching features:", error);
         return [];
+    }
+};
+
+export const fetchClassificationCount = async (token) => {
+    try {
+        const response = await fetch(window.API_URL + "/count_tags_made_by_user", {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer " + token,
+            },
+        });
+
+        return response.ok ? await response.json() : null;
+    } catch (error) {
+        console.error("Error fetching classification count:", error);
+        return null;
     }
 };

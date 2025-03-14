@@ -369,6 +369,8 @@ const MainView = ({passcode, isPro, setPasscode, token, setToken}) => {
                   ))}
                 </div>
             ) : null}
+
+
             <div className="classification-zone">
               <div>
                 <div className="classify-container">
@@ -379,6 +381,7 @@ const MainView = ({passcode, isPro, setPasscode, token, setToken}) => {
                   >Classify As {isAntisemitic ? '' : 'Not'} Antisemitic
                   </button>
                 </div>
+
                 <button id="not-sure-btn"
                         className="small-side-button"
                         disabled={isFinished}
@@ -388,6 +391,7 @@ const MainView = ({passcode, isPro, setPasscode, token, setToken}) => {
                   <span style={{paddingLeft: "3%"}}/>
                   <span>Uncertain</span>
                 </button>
+
                 <span style={{paddingLeft: "2%"}}/>
                 <button id="irrelevant-btn"
                         className="small-side-button"
