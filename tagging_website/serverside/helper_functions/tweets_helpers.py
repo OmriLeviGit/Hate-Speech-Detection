@@ -2,6 +2,7 @@ import codecs
 import re
 import html
 import ftfy
+import emoji
 
 def fix_corrupted_text(text):
     # First handle HTML entities
@@ -24,8 +25,12 @@ def fix_corrupted_text(text):
                 text = codecs.decode(text, 'unicode_escape', errors='replace')
     except:
         pass
+    
+    text = text.replace('†', '"')   # Common character replacement
 
-    # Specific character replacement
-    text = text.replace('†', '"')
-
+    is_text_or_emoji = emoji.demojize(text).isascii()
+    
+    if not is_text_or_emoji:
+        return None
+    
     return text

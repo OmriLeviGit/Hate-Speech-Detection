@@ -81,6 +81,9 @@ class get_instance(metaclass=Singleton):
 
         processed_content = fix_corrupted_text(content)
 
+        if not processed_content:   # if could not be parsed correctly
+            return
+
         tweet = (Tweet
                  (tweet_id=tweet_id,
                   user_posted=user_posted,
