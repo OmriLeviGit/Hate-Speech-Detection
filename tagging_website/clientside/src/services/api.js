@@ -35,7 +35,7 @@ export const submitClassification = async (token, tweetId, classification, featu
 
 export const fetchFeatures = async () => {
     try {
-        const response = await fetch(window.API_URL + "/params_list", {
+        const response = await fetch(window.API_URL + "/features_list", {
             method: "GET",
             headers: {
                 "Content-Type": "application/json",
