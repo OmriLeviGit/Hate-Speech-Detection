@@ -187,12 +187,17 @@ class get_db_instance(metaclass=Singleton):
                 .first()
             )
 
+            user = pro_user_with_least_work[0]
+
             assignment = AssignedTweet(
                 tweet_id=tweet_id,
-                user_id=pro_user_with_least_work,
+                user_id=user.user_id,
                 completed=False
             )
+
             session.add(assignment)
+            session.commit()
+
 
     def get_or_assign_tweet(self, user_id):
         """Get an already assigned tweet or assign a new one to the user and return it."""
@@ -256,7 +261,7 @@ class get_db_instance(metaclass=Singleton):
             .outerjoin(AssignedTweet, Tweet.tweet_id == AssignedTweet.tweet_id)
             .outerjoin(User, AssignedTweet.user_id == User.user_id)
             .filter(TaggingResult.id.is_(None))
-            .filter(~Tweet.tweet_id.in_(previously_tagged))
+            .filter(~Tweet.tweet_id.in_(previously_tagged.select()))
             .group_by(Tweet.tweet_id)
             .having(func.count(AssignedTweet.tweet_id) <= 1)
             .having(or_(

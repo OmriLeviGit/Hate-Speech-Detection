@@ -15,8 +15,8 @@ def import_tweets_from_csv(path="../ready_to_load/tweet_table.csv", limit=None):
 
     df = pd.read_csv(path)
 
-    for _, row in df.iterrows():
-        if limit and limit <= i:
+    for i, (_, row) in enumerate(df.iterrows()):
+        if limit and i >= limit:
             break
 
         # Parse JSON fields
