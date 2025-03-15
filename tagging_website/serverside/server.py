@@ -38,9 +38,7 @@ async def get_tweet_to_tag(user_id):
 @app.post("/submit_tweet_tag")
 @login_required
 async def tag_tweet(user_id, data: Classification):
-    tweet_id=data.tweet_id
-    classification=data.classification
-    features=data.features
+    tweet_id, classification, features = data
     await controller.handle_tweet_tagging(lock, user_id, tweet_id, classification, features)
 
 

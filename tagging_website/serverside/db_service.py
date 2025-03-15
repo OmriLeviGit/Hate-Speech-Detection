@@ -107,10 +107,23 @@ class get_db_instance(metaclass=Singleton):
     # Returns the user's left_to_classify from the database
     def get_user_left_to_classify(self, user_id):
         with Session(self.engine) as session:
-            user = session.query(User.left_to_classify).filter(User.user_id == user_id).first()
-            if user:
+            user = session.query(User).filter(User.user_id == user_id).first()
+            
+            if not user:
+                return None
+                
+            if user.professional:
+                # For professional users, return count of assigned tweets
+                assigned_count = session.query(func.count(AssignedTweet.tweet_id))\
+                    .filter(
+                        AssignedTweet.user_id == user_id,
+                        AssignedTweet.completed == False
+                    ).scalar()
+                return assigned_count
+
+            else:
+                # For non-professional users, use existing logic
                 return user.left_to_classify
-            return None
 
 
     # Returns all users from users table
@@ -151,23 +164,10 @@ class get_db_instance(metaclass=Singleton):
             session.add(tweet)
             session.commit()
 
-
-    def get_assigned_tweet(self, user_id):
-        with Session(self.engine) as session:
-            assigned_tweet = (
-                session.query(AssignedTweet.tweet_id)
-                .filter(
-                    AssignedTweet.user_id == user_id,
-                    AssignedTweet.completed == False
-                )
-                .limit(1)
-                .first()
-            )
-        
-            return assigned_tweet[0] if assigned_tweet else None
-
     # Assigns a specific tweet to the pro user with the least tweets assigned\completed by him
     def assign_tweet_to_pro(self, tweet_id):
+        """Assigns a specific tweet to the pro user with the least amount of tweets assigned \\ completed by him"""
+
         with Session(self.engine) as session:
             pro_user_with_least_work = (
                 session.query(
@@ -192,63 +192,67 @@ class get_db_instance(metaclass=Singleton):
             )
             session.add(assignment)
 
-
-    # Assigns an unclassified tweet to the given user
-    def assign_tweet(self, user_id):
-        """
-        A tweet is considered unclassified if:
-        - It's NOT in tagging_results (not already finalized)
-        - It's NOT in pro_bank (not reserved for professionals)
-        - It appears less than 2 times in taggers_decisions (not assigned to 2 users yet)
-        """
-
-        """
-        new:
-        A tweet is considered unclassified if:
-        - It's NOT in tagging_results (not already finalized)
-        - It's assigned to 1 user at most, and that user is not pro user
-        """
-
-        assigned_tweet_id = self.get_assigned_tweet(user_id)
-
-        if assigned_tweet_id:
-            return assigned_tweet_id
-
+    def get_or_assign_tweet(self, user_id):
+        """Get an already assigned tweet or assign a new one to the user and return it."""
+        # First check if user already has an assigned tweet
         with Session(self.engine) as session:
-            random_tweet = (
+            # Join with Tweet to get the full tweet data
+            assigned_tweet = (
                 session.query(Tweet)
-                .outerjoin(TaggingResult, Tweet.tweet_id == TaggingResult.tweet_id)
-                .outerjoin(AssignedTweet, Tweet.tweet_id == AssignedTweet.tweet_id)
-                .outerjoin(User, AssignedTweet.user_id == User.user_id)
-                .filter(TaggingResult.id.is_(None))  # Not finalized
-                .group_by(Tweet.tweet_id)  # Group to count assignments
-                .having(
-                    (func.count(AssignedTweet.user_id) <= 1) &  # Has at most 1 assignment
-                    (func.bool_or(User.professional).is_(None) | ~func.bool_or(User.professional))  # No pro assignments
+                .join(AssignedTweet, Tweet.tweet_id == AssignedTweet.tweet_id)
+                .filter(
+                    AssignedTweet.user_id == user_id,
+                    AssignedTweet.completed == False
                 )
-                .order_by(func.random())
-                # .all() # DEBUG: returns all valid tweets
                 .first()
             )
-
-            # DEBUG: returns all valid tweet ids instead of 
-            # tweet_ids = [row.tweet_id for row in random_tweet]
-            # print("available tweets:", tweet_ids)
-            # random_tweet_id = tweet_ids[0]
-
-            if random_tweet:
-                # Assign the tweet to the user in the assigned_tweets table
-                assignment = AssignedTweet(
-                    tweet_id=random_tweet.tweet_id,
-                    user_id=user_id,
-                    completed=False
-                )
-                session.add(assignment)
-                session.commit()
-                return random_tweet.tweet_id
             
-            return None  # No available tweet
+            if assigned_tweet:
+                return assigned_tweet
+                
+            # Find and assign a new tweet
+            new_assigned_tweet = self._find_valid_tweet(session, user_id)
 
+            if not new_assigned_tweet:
+                return None  # No available tweet / pro user
+                
+            # Create the assignment
+            assignment = AssignedTweet(
+                tweet_id=new_assigned_tweet.tweet_id,
+                user_id=user_id,
+                completed=False
+            )
+            session.add(assignment)
+            session.commit()
+            return new_assigned_tweet
+                
+
+    def _find_valid_tweet(self, session, user_id):
+        """Find a valid tweet for assignment for regular users."""
+
+        user = session.query(User).filter(User.user_id == user_id).first()
+        if user and user.professional:
+            return None
+
+        previously_tagged_tweets = session.query(TaggersDecision.tweet_id).filter(
+            TaggersDecision.tagged_by == user_id
+        ).subquery()
+
+        return (
+            session.query(Tweet)
+            .outerjoin(TaggingResult, Tweet.tweet_id == TaggingResult.tweet_id)
+            .outerjoin(AssignedTweet, Tweet.tweet_id == AssignedTweet.tweet_id)
+            .outerjoin(User, AssignedTweet.user_id == User.user_id)
+            .filter(TaggingResult.id.is_(None))  # Not in final result
+            .filter(~Tweet.tweet_id.in_(previously_tagged_tweets))  # Not previously tagged by this user
+            .group_by(Tweet.tweet_id)  # Group to count assignments
+            .having(
+                (func.count(AssignedTweet.user_id) <= 1) &  # Has at most 1 assignment
+                ~func.bool_or(User.professional)  # No professional user assignments
+            )
+            .order_by(func.random())
+            .first()
+        )
 
     # Inserts a tagging decision to the taggers_decisions table
     def insert_to_taggers_decisions(self, tweet_id, user_id, tag_result, features):
@@ -271,7 +275,7 @@ class get_db_instance(metaclass=Singleton):
 
             session.add(new_entry)
             
-            # Remove from assigned_tweets table # TODO check if its called for pro users too
+            # Remove from assigned_tweets table
             assigned_tweet = session.query(AssignedTweet).filter(
                 AssignedTweet.tweet_id == tweet_id,
                 AssignedTweet.user_id == user_id

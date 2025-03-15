@@ -59,10 +59,7 @@ def login_required(func):
 
 
 def generate_token(user_id: str):
-    # Set the token expiration time
     expire = datetime.utcnow() + timedelta(hours=3)
-    # Create the payload containing the key
     payload = {"user_id": user_id, "exp": expire}
-    # Generate the JWT token
     token = jwt.encode(payload, JWT_SECRET_KEY, algorithm="HS256")
     return token

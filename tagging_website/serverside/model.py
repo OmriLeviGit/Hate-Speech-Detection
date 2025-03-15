@@ -41,7 +41,6 @@ class User(Base):
     left_to_classify = Column(Integer, default=0)
     professional = Column(Boolean, default=False)
 
-    # ToDO - next line might be useful. if not and there's no use of it, delete it
     # current_tweet = relationship("Tweet", back_populates="current_users")
 
     def __repr__(self):
@@ -54,10 +53,8 @@ class AssignedTweet(Base):
     
     user_id = Column(Integer, ForeignKey(User.user_id, ondelete="CASCADE"), primary_key=True, nullable=False)
     tweet_id = Column(Text, ForeignKey(Tweet.tweet_id, ondelete="CASCADE"), primary_key=True, nullable=False)
-
     completed = Column(Boolean, default=False)
     
-    # Define relationships
     # user = relationship("User", back_populates="assigned_tweets")
     # tweet = relationship("Tweet", back_populates="assigned_users")
     
