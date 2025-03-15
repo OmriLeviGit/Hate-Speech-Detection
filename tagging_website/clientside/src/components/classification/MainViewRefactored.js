@@ -267,7 +267,11 @@ const MainViewRefactored = ({ token, setToken, passcode, setPasscode, isPro }) =
                     <button id="panel-btn"
                             className="bottom-container-button"
                             type="button"
-                            onClick={() => setIsUserPanelOpen(true)}>
+                            onClick={() => {
+                                setIsAdminPanelOpen(true);
+                                setIsUserPanelOpen(false);  // Close the other panel
+                            }
+                            }>
                         <span>{"Admin Panel"}</span>
                         <span style={{paddingLeft: "5%"}}/>
                         <span className="bi bi-clipboard-data-fill"/>
@@ -277,12 +281,15 @@ const MainViewRefactored = ({ token, setToken, passcode, setPasscode, isPro }) =
                     </>
                 }
 
-
                 {/* Profile button - clicking it opens current logged-in user stats */}
                 <button id="panel-btn"
                         className="bottom-container-button"
                         type="button"
-                        onClick={() => setIsUserPanelOpen(true)}>
+                        onClick={() =>{
+                            setIsUserPanelOpen(true)
+                            setIsAdminPanelOpen(false);  // Close the other panel
+                        }
+                        }>
                     <span>{"Profile"}</span>
                     <span style={{ paddingLeft: "5%" }} />
                     <span className="bi bi-person-circle" />
@@ -290,9 +297,17 @@ const MainViewRefactored = ({ token, setToken, passcode, setPasscode, isPro }) =
 
             </div>
 
-            {isUserPanelOpen && (
-                <Panel token={token} passcode={passcode} isPro={isPro} onClose={() => setIsUserPanelOpen(false)} />
+            {(isUserPanelOpen || isAdminPanelOpen) && (
+                <Panel
+                    token={token}
+                    showAdminPanel={isAdminPanelOpen}  // ✅ Determines which panel to show
+                    onClose={() => {
+                        setIsUserPanelOpen(false);
+                        setIsAdminPanelOpen(false);
+                    }}
+                />
             )}
+
 
             <ToastContainer/>
         </div>
