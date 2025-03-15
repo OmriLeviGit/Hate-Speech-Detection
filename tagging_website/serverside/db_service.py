@@ -388,8 +388,10 @@ class get_db_instance(metaclass=Singleton):
     # Returns the number of classifications marked as "Positive" made by a specific user
     def get_positive_classification_count(self, user_id):
         with Session(self.engine) as session:
-            return session.query(TaggersDecision).filter(TaggersDecision.tagged_by == user_id).filter(
-                TaggersDecision.tagged_by == "Positive").count()
+            return (
+                session.query(TaggersDecision)
+                .filter(TaggersDecision.tagged_by == user_id)
+                .filter(TaggersDecision.classification == "Positive").count())
 
         # Returns the number of classifications marked as "Negative" made by a specific user
 
@@ -398,17 +400,18 @@ class get_db_instance(metaclass=Singleton):
         with Session(self.engine) as session:
             return (
                 session.query(TaggersDecision)
-                .filter(TaggersDecision.tagged_by == user_id).filter(
-                    TaggersDecision.tagged_by == "Negative")
+                .filter(TaggersDecision.tagged_by == user_id)
+                .filter(TaggersDecision.classification == "Negative")
                 .count())
 
 
     # Returns the number of classifications marked as "Irrelevant" made by a specific user
     def get_irrelevant_classification_count(self, user_id):
         with Session(self.engine) as session:
-            return (session.query(TaggersDecision)
-                    .filter(TaggersDecision.tagged_by == user_id)
-                    .filter(TaggersDecision.tagged_by == "Irrelevant").count())
+            return (
+                session.query(TaggersDecision)
+                .filter(TaggersDecision.tagged_by == user_id)
+                .filter(TaggersDecision.classification == "Irrelevant").count())
 
 
     # ToDo - This method probably will change according to how we use taggers_decisions implementation
@@ -472,7 +475,7 @@ class get_db_instance(metaclass=Singleton):
     # Returns the number of tweets tagged by a specific user
     def count_tags_made(self, user_id):
         with Session(self.engine) as session:
-            return session.query(TaggersDecision).filter(TaggersDecision.tagged_by == user_id).count()  # TODO make it work
+            return session.query(TaggersDecision).filter(TaggersDecision.tagged_by == user_id).count()
 
 
 

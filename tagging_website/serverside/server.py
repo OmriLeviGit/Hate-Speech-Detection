@@ -53,7 +53,7 @@ async def count_tags_made(user_id):
 @app.get("/get_user_panel")
 @login_required
 async def get_user_panel(user_id):
-    return await controller.get_user_panel(user_id, lock)
+    return await controller.get_user_panel(lock, user_id)
 
 
 @app.get("/get_pro_panel")

@@ -98,17 +98,18 @@ async def count_tags_made(user_id):
     return {"count": db.count_tags_made(user_id)}
 
 
-async def get_user_panel(user_id, lock):
+async def get_user_panel(lock, user_id):
     db = get_db_instance()
 
     async with lock:
-        classified_count = db.get_num_classifications(user_id)
+        classified_count = db.count_tags_made(user_id)
         positive_count = db.get_positive_classification_count(user_id)
         negative_count = db.get_negative_classification_count(user_id)
         irrelevant_count = db.get_irrelevant_classification_count(user_id)
         time_left = db.get_days_left_to_classify(user_id)
         num_remaining = db.get_number_of_tweets_left_to_classify(user_id)
-        avg_time = db.get_average_classification_time(user_id)
+        avg_time = None
+        # avg_time = db.get_average_classification_time(user_id)
 
     # Calculate average time in seconds (for demonstration purposes)
     if avg_time is not None:
@@ -129,7 +130,9 @@ async def get_user_panel(user_id, lock):
     else:
         return {'error': 'Error getting user data'}
 
-async def get_pro_panel(lock): # TODO probably remove the lock
+
+# TODO probably remove the lock
+async def get_pro_panel(lock):
     users = []
     async with lock:
         db = get_db_instance()
@@ -142,7 +145,7 @@ async def get_pro_panel(lock): # TODO probably remove the lock
         for user in user_data:
             user_id = user.user_id
             email = user.email
-            classification_count = db.get_num_classifications(user_id)
+            classification_count = db.count_tags_made(user_id)
             positive_count = db.get_positive_classification_count(user_id)
             negative_count = db.get_negative_classification_count(user_id)
             irrelevant_count = db.get_irrelevant_classification_count(user_id)

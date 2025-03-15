@@ -8,7 +8,6 @@ import Panel from "./Panels/Panel";
 import "react-toastify/dist/ReactToastify.css";
 import Tweet from "./Tweet";
 
-// ToDo - Show classifications count to the user
 // ToDo - Show the personal statistics when clicking the profile button
 // ToDo - For Pro users:
 //  - Keep Profile button for pro for pro user personal stats
@@ -16,8 +15,7 @@ import Tweet from "./Tweet";
 //  - Add download csv for users stats
 //  - Attach a link to the original tweet
 
-// ToDo - check if setToken and serPasscode still necessary
-const MainViewRefactored = ({ token, setToken, setPasscode, isPro }) => {
+const MainViewRefactored = ({ token, setToken, passcode, setPasscode, isPro }) => {
 
     // Helps the toggle button of tagging as antisemitic or not antisemitic
     const [isAntisemitic, setIsAntisemitic] = useState(false);
@@ -71,7 +69,7 @@ const MainViewRefactored = ({ token, setToken, setPasscode, isPro }) => {
             setTweet({ content: "Error connecting to server!" });
         } else if (resj.error) {
             setTweet({
-                tweetId: '0',
+                tweetId: '',
                 content: "No tweets left to classify! 🎉" });
             setDoneTagging(true);
 
@@ -182,6 +180,7 @@ const MainViewRefactored = ({ token, setToken, setPasscode, isPro }) => {
             </div>
 
 
+            {/* The next div has the "Classify As Antisemitic/Not Antisemitic", "Uncertain" and "Irrelevant" buttons */}
             <div className="classification-zone">
 
                 <button
@@ -194,17 +193,21 @@ const MainViewRefactored = ({ token, setToken, setPasscode, isPro }) => {
                     Classify As {isAntisemitic ? "" : "Not "}Antisemitic
                 </button>
 
+
                 <button
                     id="not-sure-btn"
                     className="small-side-button"
                     type="button"
-                    disabled={loading || doneTagging || isAntisemitic}
                     onClick={() => submitTweetTagging("Uncertain", [])}
+                    disabled={loading || doneTagging || isAntisemitic}
                 >
                     <span className="bi bi-question-octagon-fill"/>
                     <span style={{paddingLeft: "3%"}}/>
                     <span>Uncertain</span>
                 </button>
+
+                {/* ToDo - When a pro user is logged-in, consider remove "Uncertain" button instead of just disabling it and also make "Irrelevant" button spread like the classify button above
+                  */}
 
                 <span style={{paddingLeft: "2%"}}/>
 
@@ -212,7 +215,7 @@ const MainViewRefactored = ({ token, setToken, setPasscode, isPro }) => {
                     id="irrelevant-btn"
                     className="small-side-button"
                     type="button"
-                    disabled={loading || doneTagging || isAntisemitic}
+                    disabled={loading || doneTagging || isAntisemitic || isPro}
                     onClick={() => submitTweetTagging("Irrelevant", [])}
                 >
                     <span>Irrelevant</span>
@@ -222,7 +225,7 @@ const MainViewRefactored = ({ token, setToken, setPasscode, isPro }) => {
 
             </div>
 
-
+            {/* If the user has decided to tag as antisemitic, it opens the features list */}
             {isAntisemitic && (
                 <div className="features-container">
                     <div className="select-feature">
@@ -256,6 +259,7 @@ const MainViewRefactored = ({ token, setToken, setPasscode, isPro }) => {
                     <span>Sign Out</span>
                 </button>
 
+                {/* Profile button (to open user stats) */}
                 <button id="panel-btn"
                         className="bottom-container-button"
                         type="button"
@@ -268,7 +272,7 @@ const MainViewRefactored = ({ token, setToken, setPasscode, isPro }) => {
             </div>
 
             {isPanelOpen && (
-                <Panel token={token} isPro={isPro} onClose={() => setIsPanelOpen(false)} />
+                <Panel token={token} passcode={passcode} isPro={isPro} onClose={() => setIsPanelOpen(false)} />
             )}
 
             <ToastContainer/>

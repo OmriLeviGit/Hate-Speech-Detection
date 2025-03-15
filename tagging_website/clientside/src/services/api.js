@@ -75,8 +75,8 @@ export const fetchUserStats = async (token) => {
                 "Authorization": "Bearer " + token,
             },
         });
-
         return response.ok ? await response.json() : null;
+
     } catch (error) {
         console.error("Error fetching user stats:", error);
         return null;
