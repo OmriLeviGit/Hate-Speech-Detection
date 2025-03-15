@@ -1,7 +1,10 @@
 from datetime import datetime
 
+from datetime import datetime
+
 from fastapi import HTTPException
 from db_service import get_db_instance
+from auth import generate_token
 from auth import generate_token
 from types import SimpleNamespace
 
@@ -15,20 +18,35 @@ async def handle_sign_in(password):
     if user is None:
         raise HTTPException(status_code=401, detail="Unauthorized: Could not find user")
 
-    if not is_due_date_valid(user.user_id):
-        raise HTTPException(status_code=401, detail="Unauthorized: due-date has passed")
-
     db.update_last_login(user.user_id)
     token = generate_token(user.user_id)
     return {'token': token, 'is_pro': user.professional}
+
 
 # Checks if the user's due_date is still valid (not expired)
 def is_due_date_valid(user_id):
     db = get_db_instance()
     due_date = db.get_user_due_date(user_id)
     if due_date is None:
-        return False # TODO  shouldnt be true? i assume pro users should always be valid
+        return False
     return due_date > datetime.utcnow().date()
+
+
+async def get_tweet_to_tag(lock, user_id):
+    db = get_db_instance()
+
+    async with lock:
+        if not is_due_date_valid(user_id) and not db.is_pro(user_id):
+            return {'error': 'Due date has passed'}
+
+        tweet_data = db.get_or_assign_tweet(user_id)
+        print("tweet data: ", tweet_data)
+
+        if not tweet_data:
+            return {'error': 'No available tweets'} # no tweets left \ pro user has no assigned tweets
+
+        return tweet_data
+
 
 # Checks if the user has classifications left to perform
 def has_classifications_left(user_id):
@@ -36,19 +54,6 @@ def has_classifications_left(user_id):
     left_to_classify = db.get_user_left_to_classify(user_id)
     return left_to_classify is not None and left_to_classify > 0
 
-async def get_tweet_to_tag(lock, user_id):
-    db = get_db_instance()
-    async with lock:
-        tweet = db.get_or_assign_tweet(user_id)
-
-        if not tweet:
-            return None # no tweets left \ pro user has no assigned tweets
-
-        return {
-            'id': tweet.tweet_id,
-            'content': tweet.content,
-            'tweet_url': tweet.tweet_url
-        }
 
 # Handles a tweet tagging that was received and stores it in the right place (tagging_results for a pro user and taggers_decisions for regular users)
 async def handle_tweet_tagging(lock, user_id, tweet_id, classification, features):
@@ -57,7 +62,7 @@ async def handle_tweet_tagging(lock, user_id, tweet_id, classification, features
 
     db = get_db_instance()
     async with lock:
-        # Added for consistency and removes entry from the assigned_tweet table (even if pro)
+        # Removes entry from the assigned_tweet table (even if pro) and addsto the taggers decisions table
         db.insert_to_taggers_decisions(tweet_id, user_id, classification, features)
 
         is_pro = db.is_pro(user_id)
@@ -70,6 +75,7 @@ async def handle_tweet_tagging(lock, user_id, tweet_id, classification, features
 
         # Check if the tweet has already been classified twice by two different regular users
         decisions = db.get_tweet_decisions(tweet_id)
+        
         if len(decisions) < 2:
             return
 
@@ -78,7 +84,7 @@ async def handle_tweet_tagging(lock, user_id, tweet_id, classification, features
         second_classification = decisions[1]["classification"]
 
         # If if the user is uncertain, or the users do not agree, assign to pro bank
-        if first_classification == "Uncertain" or first_classification != second_classification:
+        if first_classification == "Uncertain" or second_classification == "Uncertain" or first_classification != second_classification:
             db.assign_tweet_to_pro(tweet_id)
             return
 

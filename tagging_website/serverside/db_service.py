@@ -1,12 +1,15 @@
 import os
 from datetime import datetime, timezone, timedelta
-from dotenv import load_dotenv
 from pathlib import Path
+
 import pytz
-from sqlalchemy import Engine, func, create_engine
+from dotenv import load_dotenv
+from sqlalchemy import Engine, Nullable, func, text, create_engine, func, or_, and_, exists, select, Boolean, distinct
+from sqlalchemy.sql import expression
 from sqlalchemy.orm import Session
+
 from model import *
-from model import User, Tweet,AssignedTweet, TaggersDecision, TaggingResult
+from model import User, Tweet, AssignedTweet, TaggersDecision, TaggingResult
 from helper_functions.utils import fix_corrupted_text
 
 
@@ -17,6 +20,7 @@ if os.path.exists('/.dockerenv'):
 else:
     # if using the local machine, you need to start postgres by using 'sudo service postgresql start'
     DB = os.environ.get('DATABASE_LOCAL')
+
 
 
 class Singleton(type):
@@ -34,6 +38,7 @@ class get_db_instance(metaclass=Singleton):
     def __init__(self):
         self.engine: Engine = create_engine(DB)
         Base.metadata.create_all(self.engine)
+
 
 
     # Creates a user and generates a password to them
@@ -113,7 +118,7 @@ class get_db_instance(metaclass=Singleton):
                 return None
                 
             if user.professional:
-                # For professional users, return count of assigned tweets
+                # For professional users, return count of assigned tweets that hasn't been tagged yet
                 assigned_count = session.query(func.count(AssignedTweet.tweet_id))\
                     .filter(
                         AssignedTweet.user_id == user_id,
@@ -121,9 +126,7 @@ class get_db_instance(metaclass=Singleton):
                     ).scalar()
                 return assigned_count
 
-            else:
-                # For non-professional users, use existing logic
-                return user.left_to_classify
+            return user.left_to_classify
 
 
     # Returns all users from users table
@@ -140,10 +143,9 @@ class get_db_instance(metaclass=Singleton):
 
     # Adding a new tweet into the tweets table in the DB
     def insert_tweet(self, tweet_id, user_posted, content, date_posted, photos, tweet_url, tagged_users, replies, reposts, likes, views, hashtags):
-
         processed_content = fix_corrupted_text(content)
 
-        if not processed_content:   # if could not be parsed correctly
+        if not processed_content:   # If could not be parsed correctly
             return
 
         tweet = (Tweet
@@ -208,14 +210,18 @@ class get_db_instance(metaclass=Singleton):
             )
             
             if assigned_tweet:
-                return assigned_tweet
-                
+                return {
+                    'id': assigned_tweet.tweet_id,
+                    'content': assigned_tweet.content,
+                    'tweet_url': assigned_tweet.tweet_url
+                }
+
             # Find and assign a new tweet
             new_assigned_tweet = self._find_valid_tweet(session, user_id)
 
             if not new_assigned_tweet:
                 return None  # No available tweet / pro user
-                
+   
             # Create the assignment
             assignment = AssignedTweet(
                 tweet_id=new_assigned_tweet.tweet_id,
@@ -223,36 +229,83 @@ class get_db_instance(metaclass=Singleton):
                 completed=False
             )
             session.add(assignment)
+
+            tweet_data = {
+                'id': new_assigned_tweet.tweet_id,
+                'content': new_assigned_tweet.content,
+                'tweet_url': new_assigned_tweet.tweet_url
+            }
+
             session.commit()
-            return new_assigned_tweet
+            return tweet_data
                 
 
     def _find_valid_tweet(self, session, user_id):
         """Find a valid tweet for assignment for regular users."""
 
-        user = session.query(User).filter(User.user_id == user_id).first()
-        if user and user.professional:
+        if self.is_pro(user_id):
             return None
 
-        previously_tagged_tweets = session.query(TaggersDecision.tweet_id).filter(
+        previously_tagged = session.query(TaggersDecision.tweet_id).filter(
             TaggersDecision.tagged_by == user_id
         ).subquery()
 
-        return (
+        query = (
             session.query(Tweet)
             .outerjoin(TaggingResult, Tweet.tweet_id == TaggingResult.tweet_id)
             .outerjoin(AssignedTweet, Tweet.tweet_id == AssignedTweet.tweet_id)
             .outerjoin(User, AssignedTweet.user_id == User.user_id)
-            .filter(TaggingResult.id.is_(None))  # Not in final result
-            .filter(~Tweet.tweet_id.in_(previously_tagged_tweets))  # Not previously tagged by this user
-            .group_by(Tweet.tweet_id)  # Group to count assignments
-            .having(
-                (func.count(AssignedTweet.user_id) <= 1) &  # Has at most 1 assignment
-                ~func.bool_or(User.professional)  # No professional user assignments
-            )
+            .filter(TaggingResult.id.is_(None))
+            .filter(~Tweet.tweet_id.in_(previously_tagged))
+            .group_by(Tweet.tweet_id)
+            .having(func.count(AssignedTweet.tweet_id) <= 1)
+            .having(or_(
+                func.count(User.professional) == 0,  # No users assigned at all
+                ~func.bool_or(User.professional)     # Or no professional users
+            ))
             .order_by(func.random())
             .first()
         )
+
+        # self._print_debug_find_valid_tweet(previously_tagged, query)
+
+        return query
+    
+    def _print_debug_find_valid_tweet(previously_tagged, query):
+        q1 = session.query(Tweet).outerjoin(TaggingResult).filter(TaggingResult.id.is_(None)).count()
+        print(f"Tweets not in tagging_results: {q1}")
+
+        # Check if there are tweets not tagged by this user
+        q2 = session.query(Tweet).filter(~Tweet.tweet_id.in_(previously_tagged)).count()
+        print(f"Tweets not tagged by user {user_id}: {q2}")
+
+        # Check if there are tweets with ≤1 assignment
+        q3 = session.query(Tweet).outerjoin(AssignedTweet).group_by(Tweet.tweet_id).having(func.count(AssignedTweet.tweet_id) <= 1).count()
+        print(f"Tweets with <=1 assignment: {q3}")
+
+        # Check for tweets not assigned to professionals
+        q4 = session.query(Tweet).outerjoin(AssignedTweet).outerjoin(User).group_by(Tweet.tweet_id).having(~func.bool_or(User.professional)).count()
+        print(f"Tweets not assigned to professionals: {q4}")
+
+        print(f"Total tweets: {session.query(Tweet).count()}")
+        print(f"Total assignments: {session.query(AssignedTweet).count()}")
+        print(f"Total tagging results: {session.query(TaggingResult).count()}")
+
+        print("@previously tagged: ", previously_tagged)
+        print("@query: ", query)
+
+    # Returns the first reserved tweet.tweet_id from taggers_decision for a specific user.
+    # A reserved tweet with *tweet_id* was assigned for *user_id* via assign_unclassified_tweet and has "N/A" classification
+    def get_unclassified_tweet_for_user(self, user_id):
+        with Session(self.engine) as session:
+            tweet_entry = (
+                session.query(TaggersDecision.tweet_id)
+                .filter(TaggersDecision.tagged_by == user_id)
+                .filter(TaggersDecision.classification == "N/A")
+                .order_by(TaggersDecision.tagging_date.desc())  # Most recent assigned tweet
+                .first()
+            )
+            return tweet_entry.tweet_id if tweet_entry else None
 
     # Inserts a tagging decision to the taggers_decisions table
     def insert_to_taggers_decisions(self, tweet_id, user_id, tag_result, features):
@@ -323,18 +376,8 @@ class get_db_instance(metaclass=Singleton):
                 decision_source=decision_source
             )
 
-            assigned_tweet = session.query(AssignedTweet).filter(
-                AssignedTweet.tweet_id == tweet_id,
-                AssignedTweet.user_id == user_id
-            ).first()
-
             session.add(new_entry)
             session.commit()
-
-
-
-    # ToDo - Create def get_average_classification_time(self, classifier):
-    #  - A method that calculates duration of a tweet tag called
 
 
     # Returns the number of classifications marked as "Positive" made by a specific user
@@ -424,8 +467,7 @@ class get_db_instance(metaclass=Singleton):
     # Returns the number of tweets tagged by a specific user
     def count_tags_made(self, user_id):
         with Session(self.engine) as session:
-            return session.query(TaggersDecision).filter(TaggersDecision.tagged_by == user_id).filter(
-                TaggersDecision.classification != "N/A").count()
+            return session.query(TaggersDecision).filter(TaggersDecision.tagged_by == user_id).count()  # TODO make it work
 
 
 

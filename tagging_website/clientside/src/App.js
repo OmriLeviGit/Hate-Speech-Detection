@@ -15,8 +15,7 @@ const App = () => {
         {
           // Check if user is signed in
           passcode ? (
-            // <MainView passcode={passcode} isPro={isPro} setPasscode={setPasscode} token={token} setToken={setToken} />
-              <MainViewRefactored token={token} />
+              <MainViewRefactored token={token} setToken={setToken} setPasscode={setPasscode} isPro={isPro} />
           ) : (
             <SignIn setIsPro={setIsPro} setPasscode={setPasscode} setToken={setToken} />
           )

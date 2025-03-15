@@ -17,20 +17,12 @@ auth = HTTPBearer()
 def login_required(func):
     async def wrapper(credentials: HTTPAuthorizationCredentials = Depends(auth), *args, **kwargs):
         try:
-            # DEBUG: Print the token
-            print(f"Received Token: {credentials.credentials}")
+            print(f"Received Token: {credentials.credentials}") # DEBUG: Print the token
 
-            # print(f"Received Token: {credentials.credentials}")  # DEBUG: Print the token
-            
             payload = jwt.decode(credentials.credentials, JWT_SECRET_KEY, algorithms=["HS256"])
+            print(f"Decoded Payload: {payload}")    # DEBUG: Print payload content
 
-            # Extract user_id from token
-            user_id = payload.get("user_id")
-
-            # DEBUG: Print payload content
-            # print(f"Decoded Payload: {payload}")
-
-            # print(f"Decoded Payload: {payload}")  # DEBUG: Print payload content
+            user_id = payload.get("user_id")    # Extract user_id from token
 
             if not user_id:
                 raise HTTPException(status_code=401, detail="Invalid token")

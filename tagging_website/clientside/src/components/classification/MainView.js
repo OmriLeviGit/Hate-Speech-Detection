@@ -326,13 +326,13 @@ const MainView = ({passcode, isPro, setPasscode, token, setToken}) => {
       <>
         <div id="form-frame">
           <h1 className="form-title">{isPro ? "S&O Classifier - Pro" : "S&O Classifier"}</h1>
+
           <form onSubmit={handleSubmit}>
             <div className="form-group">
 
               <Tweet tweet={tweet} isPro={isPro}/>
 
               <div className='copy-to-clip-div'>
-
                 <CopyToClipboard text={tweet.tweetText} onCopy={onCopyText}>
                   <button id="copy-to-clip-btn" className="copy-to-clip-btn" type="button">
                     <span className="bi bi-clipboard"/>
@@ -346,6 +346,7 @@ const MainView = ({passcode, isPro, setPasscode, token, setToken}) => {
               <p className="classify-count">Classifications made by your account: {classifyCount}</p>
 
               <br/>
+
               <div className="form-check form-switch form-switch-md">
                 <input className="form-check-input" type="checkbox" disabled={isFinished}
                        id="flexSwitchCheckDefault"
@@ -369,6 +370,8 @@ const MainView = ({passcode, isPro, setPasscode, token, setToken}) => {
                   ))}
                 </div>
             ) : null}
+
+
             <div className="classification-zone">
               <div>
                 <div className="classify-container">
@@ -379,6 +382,7 @@ const MainView = ({passcode, isPro, setPasscode, token, setToken}) => {
                   >Classify As {isAntisemitic ? '' : 'Not'} Antisemitic
                   </button>
                 </div>
+
                 <button id="not-sure-btn"
                         className="small-side-button"
                         disabled={isFinished}
@@ -388,6 +392,7 @@ const MainView = ({passcode, isPro, setPasscode, token, setToken}) => {
                   <span style={{paddingLeft: "3%"}}/>
                   <span>Uncertain</span>
                 </button>
+
                 <span style={{paddingLeft: "2%"}}/>
                 <button id="irrelevant-btn"
                         className="small-side-button"

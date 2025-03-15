@@ -1,5 +1,5 @@
 import hashlib
-
+import os
 
 def generate_key_value_pairs(strings, num_bytes):
     key_value_pairs = []
@@ -19,7 +19,10 @@ def has_collision(key_value_pairs):
 
 def get_params():
     # read features from file
-    with open('./data/features.txt', 'r', encoding='utf-8') as f:
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    file_path = os.path.join(script_dir, '..', 'data', 'features.txt')
+
+    with open(file_path, 'r', encoding='utf-8') as f:
         params = f.readlines()
     params = [p.strip() for p in params]
 

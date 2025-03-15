@@ -1,14 +1,15 @@
-.tweet-id {
-    font-size: 0.8em;
-    float: right;
-    font-style: italic;
-}
-
 .tweet-text {
-    text-align: center;
+    font: 500 16px 'Lato', sans-serif;
+    text-align: left;
     font-size: 1.2em;
     margin-top: 0.5em;
     margin-bottom: 0.5em;
+}
+
+.tweet-id {
+    font: 500 16px 'Lato', sans-serif;
+    font-size: 0.8em;
+    float: left;
 }
 
 .tweet-div {
