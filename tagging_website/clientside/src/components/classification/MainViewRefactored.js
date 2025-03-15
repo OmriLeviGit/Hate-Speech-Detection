@@ -20,8 +20,11 @@ const MainViewRefactored = ({ token, setToken, passcode, setPasscode, isPro }) =
     // Helps the toggle button of tagging as antisemitic or not antisemitic
     const [isAntisemitic, setIsAntisemitic] = useState(false);
 
-    // Helps with showing/hiding the stats panel
-    const [isPanelOpen, setIsPanelOpen] = useState(false);
+    // Helps with showing/hiding the personal user stats panel
+    const [isUserPanelOpen, setIsUserPanelOpen] = useState(false);
+
+    // Helps with showing/hiding the pro (admin) stats panel
+    const [isAdminPanelOpen, setIsAdminPanelOpen] = useState(false);
 
     // Helps with copying the text of the current displayed tweet
     const [copyStatus, setCopyStatus] = useState(false);
@@ -244,7 +247,7 @@ const MainViewRefactored = ({ token, setToken, passcode, setPasscode, isPro }) =
 
 
             <div>
-                Classifications Made: {classificationCount}
+                Classifications made by your account: {classificationCount}
             </div>
 
             <div className="bottom-container">
@@ -259,20 +262,36 @@ const MainViewRefactored = ({ token, setToken, passcode, setPasscode, isPro }) =
                     <span>Sign Out</span>
                 </button>
 
-                {/* Profile button (to open user stats) */}
+                {/* Admin panel button - clicking it opens all user stats */}
+                {isPro ?
+                    <button id="panel-btn"
+                            className="bottom-container-button"
+                            type="button"
+                            onClick={() => setIsUserPanelOpen(true)}>
+                        <span>{"Admin Panel"}</span>
+                        <span style={{paddingLeft: "5%"}}/>
+                        <span className="bi bi-clipboard-data-fill"/>
+                    </button>
+                    :
+                    <>
+                    </>
+                }
+
+
+                {/* Profile button - clicking it opens current logged-in user stats */}
                 <button id="panel-btn"
                         className="bottom-container-button"
                         type="button"
-                        onClick={() => setIsPanelOpen(true)}>
-                    <span>{isPro ? "Admin Panel" : "Profile"}</span>
+                        onClick={() => setIsUserPanelOpen(true)}>
+                    <span>{"Profile"}</span>
                     <span style={{ paddingLeft: "5%" }} />
                     <span className="bi bi-person-circle" />
                 </button>
 
             </div>
 
-            {isPanelOpen && (
-                <Panel token={token} passcode={passcode} isPro={isPro} onClose={() => setIsPanelOpen(false)} />
+            {isUserPanelOpen && (
+                <Panel token={token} passcode={passcode} isPro={isPro} onClose={() => setIsUserPanelOpen(false)} />
             )}
 
             <ToastContainer/>

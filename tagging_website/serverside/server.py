@@ -58,8 +58,8 @@ async def get_user_panel(user_id):
 
 @app.get("/get_pro_panel")
 @login_required
-async def get_pro_panel():
-    return controller.get_pro_panel(lock)
+async def get_pro_panel(user_id):
+    return await controller.get_pro_panel(lock)
 
 
 @app.get("/features_list")

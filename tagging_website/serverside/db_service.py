@@ -420,7 +420,7 @@ class get_db_instance(metaclass=Singleton):
         with Session(self.engine) as session:
             return session.query(func.count(func.distinct(TaggersDecision.tweet_id))) \
                 .filter(TaggersDecision.classification != "N/A") \
-                .scalar()
+                .count()
 
 
     # ToDo - This method probably will change according to how we use taggers_decisions implementation
@@ -429,7 +429,7 @@ class get_db_instance(metaclass=Singleton):
         with Session(self.engine) as session:
             return session.query(func.count(func.distinct(TaggersDecision.tweet_id))) \
                 .filter(TaggersDecision.classification != "Negative") \
-                .scalar()
+                .count()
 
 
     # ToDo - This method probably will change according to how we use taggers_decisions implementation
@@ -438,7 +438,7 @@ class get_db_instance(metaclass=Singleton):
         with Session(self.engine) as session:
             return session.query(func.count(func.distinct(TaggersDecision.tweet_id))) \
                 .filter(TaggersDecision.classification != "Positive") \
-                .scalar()
+                .count()
 
 
     # ToDo - This method probably will change according to how we use taggers_decisions implementation
@@ -447,7 +447,7 @@ class get_db_instance(metaclass=Singleton):
         with Session(self.engine) as session:
             return session.query(func.count(func.distinct(TaggersDecision.tweet_id))) \
                 .filter(TaggersDecision.classification != "Irrelevant") \
-                .scalar()
+                .count()
 
 
     # Returns the number of classifications left for a specific user

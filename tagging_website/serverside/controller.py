@@ -75,7 +75,7 @@ async def handle_tweet_tagging(lock, user_id, tweet_id, classification, features
 
         # Check if the tweet has already been classified twice by two different regular users
         decisions = db.get_tweet_decisions(tweet_id)
-        
+
         if len(decisions) < 2:
             return
 
@@ -116,8 +116,8 @@ async def get_user_panel(lock, user_id):
         average_time_seconds = f"{avg_time:.2f}"
     else:
         average_time_seconds = "N/A"
-    
-    # TODO update names and match to the client
+
+    # ToDo - Update sent arguments to match the client
     if classified_count is not None:
         return {'total': classified_count,
                 'pos': positive_count,
@@ -134,23 +134,28 @@ async def get_user_panel(lock, user_id):
 # TODO probably remove the lock
 async def get_pro_panel(lock):
     users = []
+
     async with lock:
         db = get_db_instance()
         user_data = db.get_users()
+
         total_classifications = db.get_total_classifications()
         total_negatives = db.get_total_negative_classifications()
         total_positives = db.get_total_positive_classifications()
         total_irrelevant = db.get_total_irrelevant_classifications()
 
         for user in user_data:
+
             user_id = user.user_id
             email = user.email
+
             classification_count = db.count_tags_made(user_id)
             positive_count = db.get_positive_classification_count(user_id)
             negative_count = db.get_negative_classification_count(user_id)
             irrelevant_count = db.get_irrelevant_classification_count(user_id)
-            avg_time = db.get_average_classification_time(user_id)
-            
+            avg_time = None
+            # avg_time = db.get_average_classification_time(user_id)
+
             if classification_count is not None:
 
                 # Calculate average time in seconds (for demonstration purposes)
@@ -175,8 +180,10 @@ async def get_pro_panel(lock):
                     "error": "Error getting user data"
                 })
 
-    return {"users": users,
-            "total": total_classifications,
-            "total_pos": total_positives,
-            "total_neg": total_negatives,
-            "total_irr": total_irrelevant}
+    return {
+        "users": users,
+        "total": total_classifications,
+        "total_pos": total_positives,
+        "total_neg": total_negatives,
+        "total_irr": total_irrelevant
+    }
