@@ -1,5 +1,6 @@
-serverside/data/**/*.csv
-serverside/data/**/*.xlsx
+taggers_details.xlsx
+
+scrape_command.txt
 
 .env.local
 
