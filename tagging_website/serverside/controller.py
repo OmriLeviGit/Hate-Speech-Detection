@@ -42,7 +42,7 @@ def has_classifications_left(user_id):
     return left_to_classify is not None and left_to_classify > 0
 
 
-# ToDo - Make sure no tweet is given to the same user twice!
+# ToDo - Make sure no tweet is given to the same user twice!!!
 # Returns a tweet to tag by a specific user.
 async def get_tweet_to_tag(lock, user_id):
     db = get_instance()

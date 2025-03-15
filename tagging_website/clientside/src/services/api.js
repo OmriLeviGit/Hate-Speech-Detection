@@ -65,3 +65,21 @@ export const fetchClassificationCount = async (token) => {
         return null;
     }
 };
+
+export const fetchUserStats = async (token) => {
+    try {
+        const response = await fetch(window.API_URL + "/get_user_panel", {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer " + token,
+            },
+        });
+
+        return response.ok ? await response.json() : null;
+    } catch (error) {
+        console.error("Error fetching user stats:", error);
+        return null;
+    }
+};
+

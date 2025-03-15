@@ -2,19 +2,21 @@ import './MainViewRefactored.css';
 import { useEffect, useState } from "react";
 import { toast, ToastContainer } from "react-toastify";
 import { CopyToClipboard } from "react-copy-to-clipboard";
-import { fetchTweet, submitClassification, fetchFeatures, fetchClassificationCount } from "../../services/api";
+import { fetchTweet, submitClassification, fetchFeatures, fetchClassificationCount, fetchUserStats  } from "../../services/api";
 import FeatureButton from './FeatureButton';
 import Panel from "./Panels/Panel";
 import "react-toastify/dist/ReactToastify.css";
+import Tweet from "./Tweet";
 
-// ToDo - Load the feature params from the server
-// ToDo - Enable selecting features only when tagging as positive
 // ToDo - Show classifications count to the user
-// ToDo - Add a sign out button
-// ToDo - Add profile button
-// ToDo - Show the personal statistics
-// ToDo - right the todos for Pro users
+// ToDo - Show the personal statistics when clicking the profile button
+// ToDo - For Pro users:
+//  - Keep Profile button for pro for pro user personal stats
+//  - Add a User Stats button to show them all users stats
+//  - Add download csv for users stats
+//  - Attach a link to the original tweet
 
+// ToDo - check if setToken and serPasscode still necessary
 const MainViewRefactored = ({ token, setToken, setPasscode, isPro }) => {
 
     // Helps the toggle button of tagging as antisemitic or not antisemitic
@@ -68,15 +70,19 @@ const MainViewRefactored = ({ token, setToken, setPasscode, isPro }) => {
         if (!resj) {
             setTweet({ content: "Error connecting to server!" });
         } else if (resj.error) {
+            setTweet({
+                tweetId: '0',
+                content: "No tweets left to classify! 🎉" });
             setDoneTagging(true);
-            setTweet({ content: "No tweets left to classify! 🎉" });
+
         } else {
-            setDoneTagging(false);
             setTweet({
                 tweetId: resj.id,
                 content: resj.content,
                 tweetURL: resj.tweet_url,
+
             });
+            setDoneTagging(false);
         }
 
         setLoading(false);
@@ -138,27 +144,24 @@ const MainViewRefactored = ({ token, setToken, setPasscode, isPro }) => {
 
             <h1 className="form-title">{isPro ? "Tweet Classifier - Pro" : " Tweet Classifier"}</h1>
 
-            {loading ? <p>Loading tweet...</p> :
-                <p>{tweet ? (
-                    <p>{tweet.content}</p>
-                ) : (
-                    <p style={{ color: "gray", fontStyle: "italic" }}>All tweets are classified! 🎉</p>
-                )}
-                </p>}
+            {tweet && tweet.tweetId ?
+                <div>
+                    <Tweet tweet={tweet}></Tweet>
 
-
-            {/* ToDo - Add the copy button (copies tweet's content)*/}
-            <div className="copy-to-clip-div">
-                <CopyToClipboard text={tweet ? tweet.content : ""} onCopy={() => {
-                    toast.success("Text copied to clipboard", { autoClose: 2000 });
-                }}>
-                    <button className="copy-to-clip-btn" type="button">
-                        <span className="bi bi-clipboard"></span>
-                        <span style={{ paddingLeft: "5%" }}></span>
-                        Copy
-                    </button>
-                </CopyToClipboard>
-            </div>
+                    <div className="copy-to-clip-div">
+                        <CopyToClipboard text={tweet ? tweet.content : ""} onCopy={() => {
+                            toast.success("Text copied to clipboard", { autoClose: 2000 });
+                        }}>
+                            <button className="copy-to-clip-btn" type="button">
+                                <span className="bi bi-clipboard"></span>
+                                <span style={{ paddingLeft: "5%" }}></span>
+                                Copy
+                            </button>
+                        </CopyToClipboard>
+                    </div>
+                </div>
+                : <div style={{textAlign: "center" }}>All tweets are classified! 🎉</div>
+            }
 
 
             {/* Toggle button for tagging as Antisemitic or Not Antisemitic*/}
@@ -237,7 +240,6 @@ const MainViewRefactored = ({ token, setToken, setPasscode, isPro }) => {
             )}
 
 
-            {/* ToDo - Consider adding "x classifications made out of y classifications needed" */}
             <div>
                 Classifications Made: {classificationCount}
             </div>

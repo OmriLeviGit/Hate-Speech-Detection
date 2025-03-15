@@ -224,7 +224,8 @@ class get_instance(metaclass=Singleton):
                     classification=tag_result,
                     features=features if features else [],  # Ensure it's a list
                     tagging_date=datetime.now(pytz.timezone('Asia/Jerusalem')),
-                    tagging_duration=None  # ToDo - Add the calculation of the tagging_duration
+                    # ToDo - Add the calculation of the tagging_duration
+                    tagging_duration=None
                 )
                 session.add(new_entry)
 
