@@ -5,8 +5,8 @@ from import_tweets import import_tweets_from_csv
 
 def initialize(batch_1=None):
     reset_database()
-    generate_users()
-    import_tweets_from_csv(file_name=batch_1, limit=10)
+    generate_users(10, 10)
+    import_tweets_from_csv(file_name=batch_1, limit=85)
     print("DB was reset and loaded")
 
 if __name__ == "__main__":

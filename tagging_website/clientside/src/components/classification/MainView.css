@@ -56,7 +56,7 @@
 
 .copy-to-clip-div {
     display: flex;
-    justify-content: space-between;
+    justify-content: right;
     align-items: center;
     flex-wrap: wrap;
     /*display: flex;*/
@@ -64,7 +64,9 @@
     /*justify-content: space-between;*/
     /*width: 100%;*/
     /*position: relative;*/
-    /*padding: 20px 5px;*/
+    margin-left: auto;
+    width: fit-content;
+    padding: 5px 5px;
 }
 
 .copy-status{
@@ -80,10 +82,11 @@
     visibility: visible;
 }
 
-.copy-to-clip-btn,.skip-tweet-btn, .tweet-link-btn {
+.copy-to-clip-btn, .skip-tweet-btn, .tweet-link-btn {
     position: relative;
     margin: 10px;
     width: 30%;
+    padding: 10px 10px;
     min-width: fit-content;
     font: 500 16px 'Lato', sans-serif;
     background-color: var(--main-dark);

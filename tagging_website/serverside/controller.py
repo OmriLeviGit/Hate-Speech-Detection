@@ -25,10 +25,8 @@ async def handle_sign_in(password):
 def is_due_date_valid(user_id):
     db = get_db_instance()
     due_date = db.get_user_due_date(user_id)
-
     if due_date and due_date >= datetime.utcnow().date():
         return True
-
     return False
 
 
@@ -39,17 +37,17 @@ async def get_tweet_to_tag(lock, user_id):
         if not is_due_date_valid(user_id) and not db.is_pro(user_id):
             return {'error': 'Due date has passed.'}
 
-        tweets_left = db.get_number_of_tweets_left_to_classify(user_id)
+        tweets_left = db.tweets_left_to_classify(user_id)
         
         if tweets_left < 1:
             return {'error': 'No tweets left to classify! 🎉'} # no tweets left \ pro user has no assigned tweets
 
         tweet_data = db.get_or_assign_tweet(user_id)
 
-        # print(f"controller.py - get_tweet_to_tag returns tweet data: {tweet_data['content'][:20]}...")
-
         if not tweet_data:
             return {'error': 'No available tweets'} # no tweets left \ pro user has no assigned tweets
+
+        # print(f"controller.py - get_tweet_to_tag returns tweet data: {tweet_data['content'][:20]}...")
 
         return tweet_data
 
@@ -57,7 +55,7 @@ async def get_tweet_to_tag(lock, user_id):
 # Checks if the user has classifications left to perform
 def has_classifications_left(user_id):
     db = get_db_instance()
-    left_to_classify = db.get_user_left_to_classify(user_id)
+    left_to_classify = db.tweets_left_to_classify(user_id)
     return left_to_classify is not None and left_to_classify > 0
 
 
@@ -72,12 +70,12 @@ async def handle_tweet_tagging(lock, user_id, tweet_id, classification, features
         db.insert_to_taggers_decisions(tweet_id, user_id, classification, features, tagging_duration)
 
         is_pro = db.is_pro(user_id)
+        db.decrement_left_to_classify(user_id) # even if pro, in case they want to be assigned tweets
 
         if is_pro:
             db.insert_to_tagging_results(tweet_id, classification, features, "Pro user")
             return
 
-        db.decrement_left_to_classify(user_id)
 
         # Check if the tweet has already been classified twice by two different regular users
         decisions = db.get_tweet_decisions(tweet_id)
@@ -114,7 +112,7 @@ async def get_user_panel(lock, user_id):
         irrelevant_count = db.get_irrelevant_classification_count(user_id)
         uncertain_count = db.get_uncertain_classification_count(user_id)
         time_left = db.get_days_left_to_classify(user_id)
-        num_remaining = db.get_number_of_tweets_left_to_classify(user_id)
+        num_remaining = db.tweets_left_to_classify(user_id)
         avg_time = db.get_average_classification_time(user_id)
 
     if classified_count is not None:

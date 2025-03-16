@@ -25,19 +25,16 @@ def create_user_list(path, due_date, tweets_left):
     user_list = []
    
     for email, is_pro in data:
-        password = generate_alphanumeric_password(5)
+        password = email    # kept separately in case we want to change in the future
 
-        if email == "qwe@gmail.com":
-            password = "qwe"
-        if email == "asd@gmail.com":
-            password = "asd"
-        if email == "zxc@gmail.com":
-            password = "zxc"
+        if email in ["qwe@gmail.com", "asd@gmail.com", "zxc@gmail.com"]:
+            break # temporary
+            password = email[:email.index('@')]
 
         if is_pro:
-            entry = [email, password, None, 0, is_pro]
+            entry = [email.lower(), password.lower(), None, 10, is_pro]
         else:
-            entry = [email, password, due_date, tweets_left, is_pro]
+            entry = [email.lower(), password.lower(), due_date, tweets_left, is_pro]
             
 
         user_list.append(entry)
@@ -45,7 +42,7 @@ def create_user_list(path, due_date, tweets_left):
     return user_list
 
 
-def generate_users(file_name="taggers_details.xlsx", days_left=30, tweets_left=200):
+def generate_users(days_left, tweets_left, file_name="taggers_details.xlsx"):
     path = os.path.join(script_dir, "..", "..", "data", file_name)
     due_date = datetime.now() + timedelta(days=days_left) # TODO make sure the due date itself is allowed
     user_list = create_user_list(path, due_date, tweets_left)
@@ -58,6 +55,6 @@ def generate_users(file_name="taggers_details.xlsx", days_left=30, tweets_left=2
 if __name__ == "__main__":
     file_name = "taggers_details.xlsx"
     days_left = 30
-    tweets_left = 200
+    tweets_left = 10
 
-    generate_users(file_name, days_left, tweets_left)
+    generate_users(days_left, tweets_left, file_name)

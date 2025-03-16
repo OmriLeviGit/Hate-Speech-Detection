@@ -73,6 +73,7 @@ async def params_list():
 
 if __name__ == '__main__':
     if platform.system() == 'Linux':
+        # otherwise, opens with docker
         print("Starting postgres..")
         os.system('sudo service postgresql start')
 

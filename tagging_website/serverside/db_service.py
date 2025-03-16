@@ -39,7 +39,6 @@ class get_db_instance(metaclass=Singleton):
         Base.metadata.create_all(self.engine)
 
 
-
     # Creates a user and generates a password to them
     def create_user(self, email, password, due_date, tweets_left, is_pro):
 
@@ -68,6 +67,7 @@ class get_db_instance(metaclass=Singleton):
             else:
                 print(f"error in db_service.get_user: {user_id}, {password}")
             return user.one_or_none()
+
 
     # Checks if a given user is a pro user (else, it's a regular user)
     def is_pro(self, user_id):
@@ -102,13 +102,11 @@ class get_db_instance(metaclass=Singleton):
     def get_user_due_date(self, user_id):
         with Session(self.engine) as session:
             user = session.query(User.due_date).filter(User.user_id == user_id).first()
-            if user:
-                return user.due_date
-            return None
+            return user.due_date if user else None
 
 
     # Returns the user's left_to_classify from the database
-    def get_user_left_to_classify(self, user_id):
+    def tweets_left_to_classify(self, user_id):
         with Session(self.engine) as session:
             user = session.query(User).filter(User.user_id == user_id).first()
             
@@ -122,7 +120,7 @@ class get_db_instance(metaclass=Singleton):
                         AssignedTweet.user_id == user_id,
                         AssignedTweet.completed == False
                     ).scalar()
-                return assigned_count
+                return assigned_count + user.left_to_classify   # adding left to classify if pro users want to be assigned tweets as well
 
             return user.left_to_classify
 
@@ -246,8 +244,10 @@ class get_db_instance(metaclass=Singleton):
     def _find_valid_tweet(self, session, user_id):
         """Find a valid tweet for assignment for regular users."""
 
-        if self.is_pro(user_id):
+        if self.is_pro(user_id) and self.tweets_left_to_classify(user_id) < 1:
+            print("here")
             return None
+        print("out", self.tweets_left_to_classify(user_id))
 
         previously_tagged = session.query(TaggersDecision.tweet_id).filter(
             TaggersDecision.tagged_by == user_id
@@ -270,45 +270,8 @@ class get_db_instance(metaclass=Singleton):
             .first()
         )
 
-        # self._print_debug_find_valid_tweet(previously_tagged, query)
-
         return query
-    
-    def _print_debug_find_valid_tweet(previously_tagged, query):
-        q1 = session.query(Tweet).outerjoin(TaggingResult).filter(TaggingResult.id.is_(None)).count()
-        print(f"Tweets not in tagging_results: {q1}")
 
-        # Check if there are tweets not tagged by this user
-        q2 = session.query(Tweet).filter(~Tweet.tweet_id.in_(previously_tagged)).count()
-        print(f"Tweets not tagged by user {user_id}: {q2}")
-
-        # Check if there are tweets with ≤1 assignment
-        q3 = session.query(Tweet).outerjoin(AssignedTweet).group_by(Tweet.tweet_id).having(func.count(AssignedTweet.tweet_id) <= 1).count()
-        print(f"Tweets with <=1 assignment: {q3}")
-
-        # Check for tweets not assigned to professionals
-        q4 = session.query(Tweet).outerjoin(AssignedTweet).outerjoin(User).group_by(Tweet.tweet_id).having(~func.bool_or(User.professional)).count()
-        print(f"Tweets not assigned to professionals: {q4}")
-
-        print(f"Total tweets: {session.query(Tweet).count()}")
-        print(f"Total assignments: {session.query(AssignedTweet).count()}")
-        print(f"Total tagging results: {session.query(TaggingResult).count()}")
-
-        print("@previously tagged: ", previously_tagged)
-        print("@query: ", query)
-
-    # Returns the first reserved tweet.tweet_id from taggers_decision for a specific user.
-    # A reserved tweet with *tweet_id* was assigned for *user_id* via assign_unclassified_tweet and has "N/A" classification
-    def get_unclassified_tweet_for_user(self, user_id):
-        with Session(self.engine) as session:
-            tweet_entry = (
-                session.query(TaggersDecision.tweet_id)
-                .filter(TaggersDecision.tagged_by == user_id)
-                .filter(TaggersDecision.classification == "N/A")
-                .order_by(TaggersDecision.tagging_date.desc())  # Most recent assigned tweet
-                .first()
-            )
-            return tweet_entry.tweet_id if tweet_entry else None
 
     # Inserts a tagging decision to the taggers_decisions table
     def insert_to_taggers_decisions(self, tweet_id, user_id, tag_result, features, tagging_duration):
@@ -419,7 +382,6 @@ class get_db_instance(metaclass=Singleton):
                 .filter(TaggersDecision.classification == "Irrelevant").count())
 
 
-
     # Calculates the average tagging duration for a given user
     def get_average_classification_time(self, user_id):
         with Session(self.engine) as session:
@@ -488,16 +450,6 @@ class get_db_instance(metaclass=Singleton):
             )
 
         return total_positive_tags if total_positive_tags is not None else 0  # Return 0 if no data
-
-
-    # Returns the number of classifications left for a specific user
-    def get_number_of_tweets_left_to_classify(self, user_id):
-        with Session(self.engine) as session:
-            return (
-                session.query(User.left_to_classify)
-                .filter(User.user_id == user_id)
-                .scalar()
-            )
 
 
     # Return the number of days reminded until due date for a specific user
