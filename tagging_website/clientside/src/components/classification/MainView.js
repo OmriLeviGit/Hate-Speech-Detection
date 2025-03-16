@@ -228,8 +228,8 @@ const MainView = ({ token, setToken, passcode, setPasscode, isPro }) => {
                     id="not-sure-btn"
                     className="small-side-button"
                     type="button"
+                    disabled={loading || doneTagging || isAntisemitic || isPro}
                     onClick={() => submitTweetTagging("Uncertain", [])}
-                    disabled={loading || doneTagging || isAntisemitic}
                 >
                     <span className="bi bi-question-octagon-fill"/>
                     <span style={{paddingLeft: "3%"}}/>
@@ -245,8 +245,8 @@ const MainView = ({ token, setToken, passcode, setPasscode, isPro }) => {
                     id="irrelevant-btn"
                     className="small-side-button"
                     type="button"
-                    disabled={loading || doneTagging || isAntisemitic || isPro}
                     onClick={() => submitTweetTagging("Irrelevant", [])}
+                    disabled={loading || doneTagging || isAntisemitic}
                 >
                     <span>Irrelevant</span>
                     <span style={{paddingLeft: "3%"}}/>
