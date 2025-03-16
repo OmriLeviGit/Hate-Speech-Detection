@@ -1,9 +1,9 @@
-import { useState } from "react";
+import {useState} from "react";
 import MainView from "./components/classification/MainView";
 import SignIn from "./components/auth/SignIn";
 
 const App = () => {
-  // Current signed in user
+  // Current signed-in user
   const [passcode, setPasscode] = useState("");
   const [token, setToken] = useState(null);
   const [isPro, setIsPro] = useState(true);

@@ -125,7 +125,6 @@ async def get_user_panel(lock, user_id):
         return {'error': 'Error getting user data'}
 
 
-# TODO probably remove the lock
 async def get_pro_panel(lock):
     users = []
 
