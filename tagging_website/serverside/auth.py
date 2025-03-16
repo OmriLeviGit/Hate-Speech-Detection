@@ -17,7 +17,7 @@ auth = HTTPBearer()
 def login_required(func):
     async def wrapper(credentials: HTTPAuthorizationCredentials = Depends(auth), *args, **kwargs):
         try:
-            print(f"Received Token: {credentials.credentials}") # DEBUG: Print the token
+            # print(f"Received Token: {credentials.credentials}") # DEBUG: Print the token
 
             payload = jwt.decode(credentials.credentials, JWT_SECRET_KEY, algorithms=["HS256"])
             # print(f"Decoded Payload: {payload}")    # DEBUG: Print payload content

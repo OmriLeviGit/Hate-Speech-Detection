@@ -27,9 +27,11 @@ async def handle_sign_in(password):
 def is_due_date_valid(user_id):
     db = get_db_instance()
     due_date = db.get_user_due_date(user_id)
-    if due_date is None:
-        return False
-    return due_date > datetime.utcnow().date()
+
+    if due_date and due_date >= datetime.utcnow().date():
+        return True
+
+    return False
 
 
 async def get_tweet_to_tag(lock, user_id):
@@ -37,11 +39,16 @@ async def get_tweet_to_tag(lock, user_id):
 
     async with lock:
         if not is_due_date_valid(user_id) and not db.is_pro(user_id):
-            return {'error': 'Due date has passed'}
+            return {'error': 'Due date has passed.'}
+
+        tweets_left = db.get_number_of_tweets_left_to_classify(user_id)
+        
+        if tweets_left < 1:
+            return {'error': 'No tweets left to classify! 🎉'} # no tweets left \ pro user has no assigned tweets
 
         tweet_data = db.get_or_assign_tweet(user_id)
         # ToDo - Delete this line after debugging
-        print("controller.py - get_tweet_to_tag returns tweet data: ", tweet_data)
+        print(f"controller.py - get_tweet_to_tag returns tweet data: {tweet_data['content'][:20]}...")
 
         if not tweet_data:
             return {'error': 'No available tweets'} # no tweets left \ pro user has no assigned tweets

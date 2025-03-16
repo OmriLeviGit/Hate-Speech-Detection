@@ -20,13 +20,13 @@ def import_tweets_from_csv(file_name="tweet_table.csv", limit=None):
 
     df = pd.read_csv(path)
 
-    count = 0
-    for i, (_, row) in enumerate(df.iterrows()):
-        if limit and i >= limit:
-            break
-
-        if not row['id']:
+    added_tweets = 0
+    for _, row in df.iterrows():
+        if pd.isna(row['id']):
             continue
+
+        if limit and added_tweets >= limit:
+            break
 
         # Parse JSON fields
         photos_list = json.loads(row['photos']) if pd.notna(row['photos']) and row['photos'] else []
@@ -85,9 +85,9 @@ def import_tweets_from_csv(file_name="tweet_table.csv", limit=None):
             hashtags=hashtags_list
         )
 
-        count += 1
+        added_tweets += 1
 
-    print(f"Added {count} tweets")
+    print(f"Added {added_tweets} tweets")
 
 
 if __name__ == "__main__":

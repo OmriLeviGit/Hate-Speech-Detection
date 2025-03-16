@@ -49,6 +49,8 @@ const MainView = ({ token, setToken, passcode, setPasscode, isPro }) => {
 
     // Stores the selected features of a tweet before submission, if is being tagged "Positive"
     const [selectedFeatures, setSelectedFeatures] = useState([]);
+    
+    const [message, setMessage] = useState('');
 
 
     const onCopyText = () => {
@@ -65,31 +67,36 @@ const MainView = ({ token, setToken, passcode, setPasscode, isPro }) => {
         );
     };
 
-
     // Sends a request to the server to fetch a tweet to tag
     const getNewTweet = async () => {
         setLoading(true);
         const resj = await fetchTweet(token);
-
+        let tweet = ''
         if (!resj) {
-            setTweet({ content: "Error connecting to server!" });
-        } else if (resj.error) {
-            setTweet({
+            tweet = {
                 tweetId: '',
-                content: "No tweets left to classify! 🎉" });
-            setDoneTagging(true);
+                content: "Error connecting to server!"
+            }
+        } else if (resj.error) {
+            tweet = {
+                tweetId: '',
+                content: resj.error
+            }
 
+            setDoneTagging(true);
         } else {
-            setTweet({
+            tweet = {
                 tweetId: resj.id,
                 content: resj.content,
                 tweetURL: resj.tweet_url,
+            }
 
-            });
             setDoneTagging(false);
             setStartTime(Date.now());
         }
 
+        setMessage(tweet.content)
+        setTweet(tweet)
         setLoading(false);
     };
 
@@ -113,9 +120,13 @@ const MainView = ({ token, setToken, passcode, setPasscode, isPro }) => {
         if (!tweet) return;
 
         setLoading(true);
-        const elapsedTime = startTime ? (Date.now() - startTime) / 1000 : null;
 
-        const success = await submitClassification(token, tweet.tweetId, classification, features, elapsedTime);
+        const elapsedTime = (Date.now() - startTime) / 1000;
+        const maxTime = 360 // 6 minutes
+        const validTime = elapsedTime < maxTime ? elapsedTime : null
+        // tagging duration above 6 minutes is considered an anomaly and will be ignored in average calculation
+
+        const success = await submitClassification(token, tweet.tweetId, classification, features, validTime);
         if (success) {
             // Shows the user a success message on screens
             toast.success("Classification submitted!", { autoClose: 2000 });
@@ -152,7 +163,6 @@ const MainView = ({ token, setToken, passcode, setPasscode, isPro }) => {
         <div id="form-frame">
 
             <h1 className="form-title">{isPro ? "Tweet Classifier - Pro" : " Tweet Classifier"}</h1>
-
             {tweet && tweet.tweetId ?
                 <div>
 
@@ -185,12 +195,9 @@ const MainView = ({ token, setToken, passcode, setPasscode, isPro }) => {
 
                     </div>
 
-
-
                 </div>
-                : <div style={{textAlign: "center" }}>All tweets are classified! 🎉</div>
-            }
-
+                : <div style={{textAlign: "center" }}>{message}</div>
+            }            
 
             {/* Toggle button for tagging as Antisemitic or Not Antisemitic*/}
             <div className="form-check form-switch form-switch-md">

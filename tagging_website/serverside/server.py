@@ -1,3 +1,5 @@
+import os
+import platform
 import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -70,5 +72,9 @@ async def params_list():
 
 
 if __name__ == '__main__':
+    if platform.system() == 'Linux':
+        print("Starting postgres..")
+        os.system('sudo service postgresql start')
+
     host_address = "0.0.0.0" if os.path.exists('/.dockerenv') else "localhost"
     uvicorn.run("server:app", host=host_address, port=8000, reload=True)
