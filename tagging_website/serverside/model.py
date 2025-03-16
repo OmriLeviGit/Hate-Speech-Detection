@@ -41,8 +41,6 @@ class User(Base):
     left_to_classify = Column(Integer, default=0)
     professional = Column(Boolean, default=False)
 
-    # current_tweet = relationship("Tweet", back_populates="current_users")
-
     def __repr__(self):
         return f"<User(user_id={self.user_id}, email={self.email}, professional={self.professional})>"
 
@@ -54,9 +52,6 @@ class AssignedTweet(Base):
     user_id = Column(Integer, ForeignKey(User.user_id, ondelete="CASCADE"), primary_key=True, nullable=False)
     tweet_id = Column(Text, ForeignKey(Tweet.tweet_id, ondelete="CASCADE"), primary_key=True, nullable=False)
     completed = Column(Boolean, default=False)
-    
-    # user = relationship("User", back_populates="assigned_tweets")
-    # tweet = relationship("Tweet", back_populates="assigned_users")
     
     def __repr__(self):
         return f"<AssignedTweet(user_id={self.user_id}, tweet_id={self.tweet_id}, completed={self.completed})>"
@@ -76,6 +71,7 @@ class TaggersDecision(Base):
 
     def __repr__(self):
         return f"<TaggersDecision(tagger_decision_id={self.tagger_decision_id}, classification={self.classification})>"
+
 
 class TaggingResult(Base):
     __tablename__ = 'tagging_results'

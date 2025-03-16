@@ -6,18 +6,27 @@ from datetime import datetime
 import sys
 import os
 
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+script_dir = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(os.path.dirname(os.path.dirname(script_dir)))
 
 import db_service
 
-def import_tweets_from_csv(path="../ready_to_load/tweet_table.csv", limit=None):
+def import_tweets_from_csv(file_name="tweet_table.csv", limit=None):
+
+    path = os.path.join(os.path.dirname(os.path.dirname(script_dir)), 
+                        "data", "ready_to_load", file_name)
+
     db = db_service.get_db_instance()
 
     df = pd.read_csv(path)
 
+    count = 0
     for i, (_, row) in enumerate(df.iterrows()):
         if limit and i >= limit:
             break
+
+        if not row['id']:
+            continue
 
         # Parse JSON fields
         photos_list = json.loads(row['photos']) if pd.notna(row['photos']) and row['photos'] else []
@@ -76,10 +85,11 @@ def import_tweets_from_csv(path="../ready_to_load/tweet_table.csv", limit=None):
             hashtags=hashtags_list
         )
 
-        print(f"Added tweet: {row['url']}")
+        count += 1
 
+    print(f"Added {count} tweets")
 
 
 if __name__ == "__main__":
-    path = "../ready_to_load/tweet_table.csv"
-    import_tweets_from_csv(path)
+    batch_1 = "antisemistic_batch1_bd_20250315_175811_0.csv"
+    import_tweets_from_csv(file_name=batch_1)
