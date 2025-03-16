@@ -475,5 +475,21 @@ class get_db_instance(metaclass=Singleton):
             return session.query(TaggersDecision).filter(TaggersDecision.tagged_by == user_id).count()  # TODO make it work
 
 
+    def get_tagged_users(self, min_count=1):
+        with Session(self.engine) as session:
+            return session.query(
+                func.unnest(Tweet.tagged_users).label('tagged_user'),
+                func.count('*').label('count')
+            ).group_by('tagged_user')\
+            .having(func.count('*') >= min_count)\
+            .order_by(func.count('*').desc()).all()
 
 
+    def get_hashtags(self, min_count=1):
+        with Session(self.engine) as session:
+            return session.query(
+                func.unnest(Tweet.hashtags).label('hashtag'),
+                func.count('*').label('count')
+            ).group_by('hashtag')\
+            .having(func.count('*') >= min_count)\
+            .order_by(func.count('*').desc()).all()

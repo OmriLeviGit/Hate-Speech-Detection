@@ -1,5 +1,5 @@
 from reset_database import reset_database
-from generate_taggers import generate_users
+from import_and_generate_taggers import generate_users
 from import_tweets import import_tweets_from_csv
 
 

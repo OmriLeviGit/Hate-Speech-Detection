@@ -27,7 +27,7 @@ def import_tweets_from_csv(file_name="tweet_table.csv", limit=None):
 
         if not row['id']:
             continue
-        
+
         # Parse JSON fields
         photos_list = json.loads(row['photos']) if pd.notna(row['photos']) and row['photos'] else []
         
@@ -88,7 +88,6 @@ def import_tweets_from_csv(file_name="tweet_table.csv", limit=None):
         count += 1
 
     print(f"Added {count} tweets")
-
 
 
 if __name__ == "__main__":
