@@ -5,7 +5,8 @@ import os
 import random
 import string
 
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+script_dir = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(os.path.dirname(os.path.dirname(script_dir)))
 from db_service import get_db_instance
 
 
@@ -38,8 +39,7 @@ def create_user_list(path, due_date, tweets_left):
 
 
 def generate_users(file_name="taggers_details.xlsx", days_left=30, tweets_left=200):
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    path = os.path.join(script_dir, "..", "data", file_name)
+    path = os.path.join(script_dir, "..", "..", "data", file_name)
     due_date = datetime.now() + timedelta(days=days_left) # TODO make sure the due date itself is allowed
     user_list = create_user_list(path, due_date, tweets_left)
 

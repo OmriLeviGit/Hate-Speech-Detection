@@ -1,6 +1,4 @@
 import psycopg2
-from generate_users import generate_users
-from import_tweets import import_tweets_from_csv
 
 def reset_database():
     db_params = {
@@ -123,5 +121,3 @@ def reset_database():
 
 if __name__ == "__main__":
     reset_database()
-    # generate_users()
-    # import_tweets_from_csv()
