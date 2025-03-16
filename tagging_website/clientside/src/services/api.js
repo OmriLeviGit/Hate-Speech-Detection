@@ -30,7 +30,6 @@ export const submitClassification = async (token, tweetId, classification, featu
                 tagging_duration: taggingDuration
             }),
         });
-
         return response.ok;
     } catch (error) {
         console.error("Error submitting classification:", error);
