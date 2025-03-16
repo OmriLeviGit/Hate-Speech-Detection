@@ -163,9 +163,9 @@ const MainViewRefactored = ({ token, setToken, passcode, setPasscode, isPro }) =
                             </button>
                         </CopyToClipboard>
 
-                        {isPro && (
+                        {isPro && tweet.tweetURL && (
                             <button
-                                className="copy-to-clip-btn"
+                                className="tweet-link-btn"
                                 type="button"
                                 onClick={() => window.open(tweet.tweetURL, "_blank")}
                             >

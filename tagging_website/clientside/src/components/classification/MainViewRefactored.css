@@ -80,7 +80,7 @@
     visibility: visible;
 }
 
-.copy-to-clip-btn,.skip-tweet-btn {
+.copy-to-clip-btn,.skip-tweet-btn, .tweet-link-btn {
     position: relative;
     margin: 10px;
     width: 30%;
@@ -97,12 +97,12 @@
     align-items: center;
 }
 
-.copy-to-clip-btn:hover:not([disabled]), .skip-tweet-btn:hover:not([disabled]) {
+.copy-to-clip-btn:hover:not([disabled]), .skip-tweet-btn:hover:not([disabled]), .tweet-link-btn:hover:not([disabled]) {
     background-color: var(--main-bright);
 }
 
 
-.skip-tweet-btn:disabled, .copy-to-clip-btn:disabled {
+.skip-tweet-btn:disabled, .copy-to-clip-btn:disabled, .tweet-link-btn:disabled {
     background-image: linear-gradient(to right, var(--main-disabled-bright) 0%, var(--main-disabled-dark) 100%);
     color: var(--submit-button-disabled-text);
     cursor: not-allowed;
