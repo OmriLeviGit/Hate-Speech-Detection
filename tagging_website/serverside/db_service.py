@@ -1,5 +1,4 @@
 import os
-from datetime import datetime, timezone, timedelta
 from pathlib import Path
 
 import pytz
@@ -42,7 +41,6 @@ class get_db_instance(metaclass=Singleton):
 
 
     # Creates a user and generates a password to them
-    # ToDo: Take care of last login to be null when first created,
     def create_user(self, email, password, due_date, tweets_left, is_pro):
 
         user = (User(
@@ -319,10 +317,7 @@ class get_db_instance(metaclass=Singleton):
         # Convert seconds (float) to PostgreSQL INTERVAL
         duration_interval = text(f"INTERVAL '{tagging_duration} seconds'")
 
-        # TODO as it curently is, tagging duration is always none
-
         with Session(self.engine) as session:
-
             # Inserts new record into taggers_decisions
             new_entry = TaggersDecision(
                 tweet_id=tweet_id,

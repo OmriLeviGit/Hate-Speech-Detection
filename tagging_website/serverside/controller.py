@@ -1,7 +1,5 @@
 from datetime import datetime
 
-from datetime import datetime
-
 from fastapi import HTTPException
 from db_service import get_db_instance
 from auth import generate_token
@@ -40,8 +38,6 @@ async def get_tweet_to_tag(lock, user_id):
             return {'error': 'Due date has passed'}
 
         tweet_data = db.get_or_assign_tweet(user_id)
-        # ToDo - Delete this line after debugging
-        print("controller.py - get_tweet_to_tag returns tweet data: ", tweet_data)
 
         if not tweet_data:
             return {'error': 'No available tweets'} # no tweets left \ pro user has no assigned tweets
@@ -112,7 +108,6 @@ async def get_user_panel(lock, user_id):
         num_remaining = db.get_number_of_tweets_left_to_classify(user_id)
         avg_time = db.get_average_classification_time(user_id)
 
-    # ToDo - Update sent arguments to match the client
     if classified_count is not None:
         return {'total': classified_count,
                 'pos': positive_count,

@@ -8,12 +8,6 @@ import "react-toastify/dist/ReactToastify.css";
 import Tweet from "./Tweet";
 import './MainView.css';
 
-// ToDo - Show the personal statistics when clicking the profile button
-// ToDo - For Pro users:
-//  - Keep Profile button for pro for pro user personal stats
-//  - Add a User Stats button to show them all users stats
-//  - Add download csv for users stats
-//  - Attach a link to the original tweet
 
 const MainView = ({ token, setToken, passcode, setPasscode, isPro }) => {
 

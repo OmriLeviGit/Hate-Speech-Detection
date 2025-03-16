@@ -57,8 +57,6 @@ const ProPanel = ({ token }) => {
     const percentUncertain = totalClassified > 0 ? (totalUncertain / totalClassified * 100).toFixed(2) : 0;
 
 
-
-    // ToDo - Take care of "Overall Statistics for X Users" as it does not show actual infromation
     return (
         <div className="pro-panel-container">
             <h2>Overall Statistics for {totalUsers} Users</h2>
