@@ -1,12 +1,11 @@
 import os
-from datetime import datetime, timezone, timedelta
 from pathlib import Path
 
 import pytz
 from dotenv import load_dotenv
 from sqlalchemy import Engine, Nullable, func, text, create_engine, func, or_, and_, exists, select, Boolean, distinct
 from sqlalchemy.sql import expression
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, session
 
 from model import *
 from model import User, Tweet, AssignedTweet, TaggersDecision, TaggingResult
@@ -42,7 +41,6 @@ class get_db_instance(metaclass=Singleton):
 
 
     # Creates a user and generates a password to them
-    # ToDo: Take care of last login to be null when first created,
     def create_user(self, email, password, due_date, tweets_left, is_pro):
 
         user = (User(
@@ -319,10 +317,7 @@ class get_db_instance(metaclass=Singleton):
         # Convert seconds (float) to PostgreSQL INTERVAL
         duration_interval = text(f"INTERVAL '{tagging_duration} seconds'")
 
-        # TODO as it curently is, tagging duration is always none
-
         with Session(self.engine) as session:
-
             # Inserts new record into taggers_decisions
             new_entry = TaggersDecision(
                 tweet_id=tweet_id,
@@ -395,9 +390,8 @@ class get_db_instance(metaclass=Singleton):
                 .filter(TaggersDecision.tagged_by == user_id)
                 .filter(TaggersDecision.classification == "Positive").count())
 
-        # Returns the number of classifications marked as "Negative" made by a specific user
 
-
+    # Returns the number of classifications marked as "Negative" made by a specific user from taggers_decisions table
     def get_negative_classification_count(self, user_id):
         with Session(self.engine) as session:
             return (
@@ -407,13 +401,23 @@ class get_db_instance(metaclass=Singleton):
                 .count())
 
 
-    # Returns the number of classifications marked as "Irrelevant" made by a specific user
+    # Returns the number of classifications marked as "Uncertain" made by a specific user from taggers_decisions table
+    def get_uncertain_classification_count(self, user_id):
+        with Session(self.engine) as session:
+            return (
+                session.query(TaggersDecision)
+                .filter(TaggersDecision.tagged_by == user_id)
+                .filter(TaggersDecision.classification == "Uncertain").count())
+
+
+    # Returns the number of classifications marked as "Irrelevant" made by a specific user from taggers_decisions table
     def get_irrelevant_classification_count(self, user_id):
         with Session(self.engine) as session:
             return (
                 session.query(TaggersDecision)
                 .filter(TaggersDecision.tagged_by == user_id)
                 .filter(TaggersDecision.classification == "Irrelevant").count())
+
 
 
     # Calculates the average tagging duration for a given user
@@ -428,36 +432,62 @@ class get_db_instance(metaclass=Singleton):
         return avg_duration if avg_duration is not None else 0  # Return 0 if no data
 
 
-    # Return the total number of classification made by the taggers
+    # Returns the total number of classifications in the taggers_decisions table
     def get_total_classifications(self):
         with Session(self.engine) as session:
-            return session.query(func.count(func.distinct(TaggersDecision.tweet_id))) \
-                .filter(TaggersDecision.classification != "N/A") \
-                .count()
+            total_tags = (
+                session.query(func.count(TaggersDecision.tagger_decision_id))  # Count rows in the table
+                .scalar()
+            )
+
+        return total_tags if total_tags is not None else 0  # Return 0 if there's no data
 
 
-    # Return the total number of negatives classification made by the taggers
+    # Returns the total number of classifications marked as "Negative" in taggers_decisions
     def get_total_negative_classifications(self):
         with Session(self.engine) as session:
-            return session.query(func.count(func.distinct(TaggersDecision.tweet_id))) \
-                .filter(TaggersDecision.classification != "Negative") \
-                .count()
+            total_negative_tags = (
+                session.query(func.count(TaggersDecision.tagger_decision_id))  # Count rows
+                .filter(TaggersDecision.classification == "Negative")  # Filter by classification
+                .scalar()
+            )
 
+        return total_negative_tags if total_negative_tags is not None else 0  # Return 0 if no data
 
-    # Return the total number of negatives classification made by the taggers
+    # Returns the total number of classifications marked as "Negative" in taggers_decisions
     def get_total_positive_classifications(self):
         with Session(self.engine) as session:
-            return session.query(func.count(func.distinct(TaggersDecision.tweet_id))) \
-                .filter(TaggersDecision.classification != "Positive") \
-                .count()
+            total_positive_tags = (
+                session.query(func.count(TaggersDecision.tagger_decision_id))  # Count rows
+                .filter(TaggersDecision.classification == "Positive")  # Filter by classification
+                .scalar()
+            )
+
+        return total_positive_tags if total_positive_tags is not None else 0  # Return 0 if no data
 
 
-    # Return the total number of negatives classification made by the taggers
+    # Returns the total number of classifications marked as "Uncertain" in taggers_decisions
+    def get_total_uncertain_classifications(self):
+        with Session(self.engine) as session:
+            total_positive_tags = (
+                session.query(func.count(TaggersDecision.tagger_decision_id))  # Count rows
+                .filter(TaggersDecision.classification == "Uncertain")  # Filter by classification
+                .scalar()
+            )
+
+        return total_positive_tags if total_positive_tags is not None else 0  # Return 0 if no data
+
+
+    # Returns the total number of classifications marked as "Irrelevant" in taggers_decisions
     def get_total_irrelevant_classifications(self):
         with Session(self.engine) as session:
-            return session.query(func.count(func.distinct(TaggersDecision.tweet_id))) \
-                .filter(TaggersDecision.classification != "Irrelevant") \
-                .count()
+            total_positive_tags = (
+                session.query(func.count(TaggersDecision.tagger_decision_id))  # Count rows
+                .filter(TaggersDecision.classification == "Irrelevant")  # Filter by classification
+                .scalar()
+            )
+
+        return total_positive_tags if total_positive_tags is not None else 0  # Return 0 if no data
 
 
     # Returns the number of classifications left for a specific user

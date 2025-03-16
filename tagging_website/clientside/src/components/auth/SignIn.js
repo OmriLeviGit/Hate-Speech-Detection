@@ -40,7 +40,7 @@ const SignIn = ({ setIsPro, setPasscode, setToken }) => {
       headers: {
         "Content-Type": "application/json",
       },
-        // ToDo: Change passcode to password
+        // ToDo: Change passcode to password for more readable code
         body: JSON.stringify({ password: passcode }),
     }).then((response) => {
       // If response is ok, set passcode

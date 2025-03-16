@@ -1,7 +1,5 @@
 from datetime import datetime
 
-from datetime import datetime
-
 from fastapi import HTTPException
 from db_service import get_db_instance
 from auth import generate_token
@@ -47,8 +45,8 @@ async def get_tweet_to_tag(lock, user_id):
             return {'error': 'No tweets left to classify! 🎉'} # no tweets left \ pro user has no assigned tweets
 
         tweet_data = db.get_or_assign_tweet(user_id)
-        # ToDo - Delete this line after debugging
-        print(f"controller.py - get_tweet_to_tag returns tweet data: {tweet_data['content'][:20]}...")
+
+        # print(f"controller.py - get_tweet_to_tag returns tweet data: {tweet_data['content'][:20]}...")
 
         if not tweet_data:
             return {'error': 'No available tweets'} # no tweets left \ pro user has no assigned tweets
@@ -114,11 +112,11 @@ async def get_user_panel(lock, user_id):
         positive_count = db.get_positive_classification_count(user_id)
         negative_count = db.get_negative_classification_count(user_id)
         irrelevant_count = db.get_irrelevant_classification_count(user_id)
+        uncertain_count = db.get_uncertain_classification_count(user_id)
         time_left = db.get_days_left_to_classify(user_id)
         num_remaining = db.get_number_of_tweets_left_to_classify(user_id)
         avg_time = db.get_average_classification_time(user_id)
 
-    # ToDo - Update sent arguments to match the client
     if classified_count is not None:
         return {'total': classified_count,
                 'pos': positive_count,
@@ -126,13 +124,14 @@ async def get_user_panel(lock, user_id):
                 'time': time_left,
                 'remain': num_remaining,
                 'avg': avg_time,
-                'irr': irrelevant_count}
+                'irr': irrelevant_count,
+                'unc': uncertain_count,
+                }
 
     else:
         return {'error': 'Error getting user data'}
 
 
-# TODO probably remove the lock
 async def get_pro_panel(lock):
     users = []
 
@@ -144,6 +143,7 @@ async def get_pro_panel(lock):
         total_negatives = db.get_total_negative_classifications()
         total_positives = db.get_total_positive_classifications()
         total_irrelevant = db.get_total_irrelevant_classifications()
+        total_uncertain = db.get_total_uncertain_classifications()
 
         for user in user_data:
 
@@ -154,7 +154,7 @@ async def get_pro_panel(lock):
             positive_count = db.get_positive_classification_count(user_id)
             negative_count = db.get_negative_classification_count(user_id)
             irrelevant_count = db.get_irrelevant_classification_count(user_id)
-            # avg_time = None
+            uncertain_count = db.get_uncertain_classification_count(user_id)
             avg_time = db.get_average_classification_time(user_id)
 
             if classification_count is not None:
@@ -166,7 +166,8 @@ async def get_pro_panel(lock):
                     "positiveClassified": positive_count,
                     "negativeClassified": negative_count,
                     "averageTime": avg_time,
-                    "irrelevantClassified":irrelevant_count
+                    "irrelevantClassified":irrelevant_count,
+                    "uncertainClassified": uncertain_count,
                 })
             else:
                 # Handle error case if data retrieval fails for the user
@@ -180,5 +181,6 @@ async def get_pro_panel(lock):
         "total": total_classifications,
         "total_pos": total_positives,
         "total_neg": total_negatives,
-        "total_irr": total_irrelevant
+        "total_irr": total_irrelevant,
+        "total_unc": total_uncertain
     }
