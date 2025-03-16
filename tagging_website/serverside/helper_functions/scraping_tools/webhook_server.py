@@ -110,7 +110,7 @@ async def start_scrape(data_type: str, file_name: str):
     """Endpoint to start a scraping job"""
     
     # Construct the complete file path
-    source_path = os.path.join(script_dir, "..", "..", "data", "scraped_data", data_type, file_name)
+    source_path = os.path.join(script_dir, "..", "..", "data", "scraping_input", data_type, file_name)
     
     # Make sure the file exists
     if not os.path.exists(source_path):
