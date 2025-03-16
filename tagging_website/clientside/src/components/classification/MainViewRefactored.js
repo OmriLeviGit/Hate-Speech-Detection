@@ -41,6 +41,9 @@ const MainViewRefactored = ({ token, setToken, passcode, setPasscode, isPro }) =
     // Disables the classifications button when there are no tweets to tag
     const [doneTagging, setDoneTagging] = useState(false);
 
+    // Counts the time since showing a new tweet and until tweet's tagging submission
+    const [startTime, setStartTime] = useState(null);
+
     // Stores the feature list
     const [featuresList, setFeaturesList] = useState([]);
 
@@ -84,6 +87,7 @@ const MainViewRefactored = ({ token, setToken, passcode, setPasscode, isPro }) =
 
             });
             setDoneTagging(false);
+            setStartTime(Date.now());
         }
 
         setLoading(false);
@@ -109,12 +113,16 @@ const MainViewRefactored = ({ token, setToken, passcode, setPasscode, isPro }) =
         if (!tweet) return;
 
         setLoading(true);
-        const success = await submitClassification(token, tweet.tweetId, classification, features);
+        const elapsedTime = startTime ? (Date.now() - startTime) / 1000 : null;
+
+        const success = await submitClassification(token, tweet.tweetId, classification, features, elapsedTime);
         if (success) {
             // Shows the user a success message on screens
             toast.success("Classification submitted!", { autoClose: 2000 });
             // Resets feature selection
             setSelectedFeatures([]);
+            // Resets counting timer for the next tweet
+            setStartTime(null);
             // Fetches next tweet
             await getNewTweet();
         } else {

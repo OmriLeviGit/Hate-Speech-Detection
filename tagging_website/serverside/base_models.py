@@ -13,3 +13,4 @@ class Classification(BaseModel):
     tweet_id: str
     classification: str
     features: List[str]
+    tagging_duration: float

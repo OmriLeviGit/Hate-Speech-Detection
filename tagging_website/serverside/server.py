@@ -41,7 +41,8 @@ async def tag_tweet(user_id, data: Classification):
     tweet_id=data.tweet_id
     classification=data.classification
     features=data.features
-    await controller.handle_tweet_tagging(lock, user_id, tweet_id, classification, features)
+    tagging_duration=data.tagging_duration
+    await controller.handle_tweet_tagging(lock, user_id, tweet_id, classification, features, tagging_duration)
 
 
 @app.get("/count_tags_made_by_user")

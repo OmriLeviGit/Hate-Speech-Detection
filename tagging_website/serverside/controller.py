@@ -57,14 +57,14 @@ def has_classifications_left(user_id):
 
 
 # Handles a tweet tagging that was received and stores it in the right place (tagging_results for a pro user and taggers_decisions for regular users)
-async def handle_tweet_tagging(lock, user_id, tweet_id, classification, features):
+async def handle_tweet_tagging(lock, user_id, tweet_id, classification, features, tagging_duration):
     if not has_classifications_left(user_id):
         raise HTTPException(status_code=401, detail="Unauthorized")
 
     db = get_db_instance()
     async with lock:
-        # Removes entry from the assigned_tweet table (even if pro) and addsto the taggers decisions table
-        db.insert_to_taggers_decisions(tweet_id, user_id, classification, features)
+        # Removes entry from the assigned_tweet table (even if pro) and adds to the taggers decisions table
+        db.insert_to_taggers_decisions(tweet_id, user_id, classification, features, tagging_duration)
 
         is_pro = db.is_pro(user_id)
 

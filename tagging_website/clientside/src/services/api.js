@@ -15,7 +15,7 @@ export const fetchTweet = async (token) => {
     }
 };
 
-export const submitClassification = async (token, tweetId, classification, features) => {
+export const submitClassification = async (token, tweetId, classification, features, taggingDuration) => {
     try {
         const response = await fetch(window.API_URL + "/submit_tweet_tag", {
             method: "POST",
@@ -23,7 +23,12 @@ export const submitClassification = async (token, tweetId, classification, featu
                 "Content-Type": "application/json",
                 "Authorization": "Bearer " + token,
             },
-            body: JSON.stringify({ tweet_id: tweetId, classification, features }),
+            body: JSON.stringify({
+                tweet_id: tweetId,
+                classification,
+                features,
+                tagging_duration: taggingDuration
+            }),
         });
 
         return response.ok;

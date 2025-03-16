@@ -313,9 +313,11 @@ class get_db_instance(metaclass=Singleton):
             return tweet_entry.tweet_id if tweet_entry else None
 
     # Inserts a tagging decision to the taggers_decisions table
-    def insert_to_taggers_decisions(self, tweet_id, user_id, tag_result, features):
+    def insert_to_taggers_decisions(self, tweet_id, user_id, tag_result, features, tagging_duration):
         # Ensures tweet_id is a string to match the type on the DB
         tweet_id = str(tweet_id)
+        # Convert seconds (float) to PostgreSQL INTERVAL
+        duration_interval = text(f"INTERVAL '{tagging_duration} seconds'")
 
         # TODO as it curently is, tagging duration is always none
 
@@ -328,7 +330,7 @@ class get_db_instance(metaclass=Singleton):
                 classification=tag_result,
                 features=features if features else [],  # Ensure it's a list
                 tagging_date=datetime.now(pytz.timezone('Asia/Jerusalem')),
-                tagging_duration=None  # ToDo - Add the calculation of the tagging_duration
+                tagging_duration=duration_interval
             )
 
             session.add(new_entry)
