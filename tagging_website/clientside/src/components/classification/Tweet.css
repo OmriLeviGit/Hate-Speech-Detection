@@ -16,3 +16,19 @@
     margin-bottom: 1em;
     margin-right: 5px;
 }
+
+.tweet-link-button {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    background-color: transparent;
+    border: 1px solid #ccc;
+    padding: 5px 10px;
+    cursor: pointer;
+    font-size: 14px;
+    border-radius: 5px;
+}
+
+.tweet-link-button:hover {
+    background-color: #f0f0f0;
+}

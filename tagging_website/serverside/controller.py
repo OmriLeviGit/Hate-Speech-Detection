@@ -40,7 +40,8 @@ async def get_tweet_to_tag(lock, user_id):
             return {'error': 'Due date has passed'}
 
         tweet_data = db.get_or_assign_tweet(user_id)
-        # print("tweet data: ", tweet_data)
+        # ToDo - Delete this line after debugging
+        print("controller.py - get_tweet_to_tag returns tweet data: ", tweet_data)
 
         if not tweet_data:
             return {'error': 'No available tweets'} # no tweets left \ pro user has no assigned tweets

@@ -147,19 +147,38 @@ const MainViewRefactored = ({ token, setToken, passcode, setPasscode, isPro }) =
 
             {tweet && tweet.tweetId ?
                 <div>
-                    <Tweet tweet={tweet}></Tweet>
+
+                    <Tweet tweet={tweet} isPro={isPro}></Tweet>
 
                     <div className="copy-to-clip-div">
                         <CopyToClipboard text={tweet ? tweet.content : ""} onCopy={() => {
                             toast.success("Text copied to clipboard", { autoClose: 2000 });
                         }}>
-                            <button className="copy-to-clip-btn" type="button">
+                            <button
+                                className="copy-to-clip-btn"
+                                type="button">
                                 <span className="bi bi-clipboard"></span>
                                 <span style={{ paddingLeft: "5%" }}></span>
                                 Copy
                             </button>
                         </CopyToClipboard>
+
+                        {isPro && (
+                            <button
+                                className="copy-to-clip-btn"
+                                type="button"
+                                onClick={() => window.open(tweet.tweetURL, "_blank")}
+                            >
+                                Tweet Link
+                                <span style={{ paddingRight: "5%" }}></span>
+                                <span className="bi bi-box-arrow-up-right"></span>
+                            </button>
+                        )}
+
                     </div>
+
+
+
                 </div>
                 : <div style={{textAlign: "center" }}>All tweets are classified! 🎉</div>
             }
