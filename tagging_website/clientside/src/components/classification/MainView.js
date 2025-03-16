@@ -1,440 +1,343 @@
-import {useEffect, useState} from 'react';
-import {toast, ToastContainer} from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
-import 'react-tooltip/dist/react-tooltip.css';
-import './MainView.css';
-import Tweet from './Tweet';
+import { useEffect, useState } from "react";
+import { toast, ToastContainer } from "react-toastify";
+import { CopyToClipboard } from "react-copy-to-clipboard";
+import { fetchTweet, submitClassification, fetchFeatures, fetchClassificationCount, fetchUserStats  } from "../../services/api";
 import FeatureButton from './FeatureButton';
-import Panel from './Panels/Panel';
-import {CopyToClipboard} from 'react-copy-to-clipboard';
+import Panel from "./Panels/Panel";
+import "react-toastify/dist/ReactToastify.css";
+import Tweet from "./Tweet";
+import './MainView.css';
+
+// ToDo - Show the personal statistics when clicking the profile button
+// ToDo - For Pro users:
+//  - Keep Profile button for pro for pro user personal stats
+//  - Add a User Stats button to show them all users stats
+//  - Add download csv for users stats
+//  - Attach a link to the original tweet
+
+const MainView = ({ token, setToken, passcode, setPasscode, isPro }) => {
+
+    // Helps the toggle button of tagging as antisemitic or not antisemitic
+    const [isAntisemitic, setIsAntisemitic] = useState(false);
+
+    // Helps with showing/hiding the personal user stats panel
+    const [isUserPanelOpen, setIsUserPanelOpen] = useState(false);
+
+    // Helps with showing/hiding the pro (admin) stats panel
+    const [isAdminPanelOpen, setIsAdminPanelOpen] = useState(false);
+
+    // Helps with copying the text of the current displayed tweet
+    const [copyStatus, setCopyStatus] = useState(false);
+
+    // Helps with showing how many tags were made by the current logged-in user
+    const [classificationCount, setClassificationCount] = useState(0);
+
+    // State for managing the tweet
+    const [tweet, setTweet] = useState(null);
+
+    // Disables the buttons while sending a tag submission
+    const [loading, setLoading] = useState(false);
+
+    // Disables the classifications button when there are no tweets to tag
+    const [doneTagging, setDoneTagging] = useState(false);
+
+    // Counts the time since showing a new tweet and until tweet's tagging submission
+    const [startTime, setStartTime] = useState(null);
+
+    // Stores the feature list
+    const [featuresList, setFeaturesList] = useState([]);
+
+    // Stores the selected features of a tweet before submission, if is being tagged "Positive"
+    const [selectedFeatures, setSelectedFeatures] = useState([]);
 
 
-const MainView = ({passcode, isPro, setPasscode, token, setToken}) => {
-  const [isAntisemitic, setIsAntisemitic] = useState(false);
-  const [isFinished, setIsFinished] = useState(true);
-  const [isPanelOpen, setIsPanelOpen] = useState(false);
-  const [copyStatus, setCopyStatus] = useState(false);
-
-  const onCopyText = () => {
-    setCopyStatus(true);
-    setTimeout(() => setCopyStatus(false), 2000);
-  };
-
-  const [tweet, setTweet] = useState({
-    tweetId: '',
-    tweetText: '',
-    username: '',
-    tweetURL: '',
-  });
-  const [classifyCount, setClassifyCount] = useState(0);
-  const [featuresDetails, setFeaturesDetails] = useState([]);
-
-  // Enable tooltips
-  useEffect(() => {
-    const tooltipTriggerList = document.querySelectorAll('[data-toggle="tooltip"]');
-    tooltipTriggerList.forEach(function (tooltipTriggerEl) {
-      new window.bootstrap.Tooltip(tooltipTriggerEl);
-    });
-  }, []);
+    const onCopyText = () => {
+        setCopyStatus(true);
+        setTimeout(() => setCopyStatus(false), 2000);
+    };
 
 
-  // Get features on component mount
-  useEffect(() => {
-    if (featuresDetails.length > 0) {
-      return;
-    }
-    fetch(window.API_URL + '/params_list', {
-      method: "GET", headers: {
-        "Content-Type": "application/json",
-      }
-    }).then(response => {
-      if (response.ok) {
-        response.json().then(resj => {
-          const featuresDetails_l = resj.map(feature => {
-            return {
-              key: feature[0],
-              description: feature[1],
-              checked: false,
-            }
-          });
-          setFeaturesDetails(featuresDetails_l);
-        });
-      }
-    });
-  }, []);
+    const handleFeatureSelection = (feature) => {
+        setSelectedFeatures((prevFeatures) =>
+            prevFeatures.includes(feature)
+                ? prevFeatures.filter(f => f !== feature)  // Remove if already selected
+                : [...prevFeatures, feature]  // Add if not selected
+        );
+    };
 
-  const updateCount = () => {
-    fetch(window.API_URL + '/count_tags_made_by_user', {
-      method: "GET", headers: {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer " + token,
-      }
-    }).then(response => {
-      if (response.ok) {
-        response.json().then(resj => {
-          setClassifyCount(resj.count);
-        });
-      }
-    });
-  }
 
-  const signOut = () => {
-    setPasscode(null);
-    setToken(null);
-  }
+    // Sends a request to the server to fetch a tweet to tag
+    const getNewTweet = async () => {
+        setLoading(true);
+        const resj = await fetchTweet(token);
 
-  const getNewTweet = async () => {
-    // Get new tweet from server and set tweet state
-    fetch(window.API_URL + '/get_tweet_to_tag', {
-      method: "GET", headers: {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer " + token,
-      }
-    }).then(response => {
-      // If response is ok, get new tweet and set tweet state
-      if (response.ok) {
-        response.json().then(resj => {
-          if (resj.error) {
-            const errorTweet = {
-              tweetId: 'ERROR',
-              tweetText: resj.error === 'No unclassified tweets'
-                  ? 'Hurray! All tweets classified!'
-                  : 'Error, Please contact support.',
-              username: 'Guest',
-            };
-            setIsFinished(true);
-            setTweet(errorTweet);
-            toast.success(errorTweet.tweetText, {
-              position: toast.POSITION.TOP_RIGHT,
-              autoClose: 2000
+        if (!resj) {
+            setTweet({ content: "Error connecting to server!" });
+        } else if (resj.error) {
+            setTweet({
+                tweetId: '',
+                content: "No tweets left to classify! 🎉" });
+            setDoneTagging(true);
+
+        } else {
+            setTweet({
+                tweetId: resj.id,
+                content: resj.content,
+                tweetURL: resj.tweet_url,
+
             });
-            return;
-          }
-          // Create tweet object
-          const tweet_l = {
-            tweetId: resj.id,
-            tweetText: resj.content,
-            username: resj.tweeter,
-            tweetURL: resj.tweet_url,
-          };
-          // Set tweet state
-          setIsFinished(false);
-          setTweet(tweet_l);
-        });
-      }
-    });
-  }
-
-  // Updates whenever a token has changed
-  useEffect(() => {
-    let isMounted = true;
-    const fetchData = async () => {
-      try {
-        const response = await fetch(window.API_URL + '/get_tweet_to_tag', {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": "Bearer " + token,
-          }
-        });
-        if (response.ok && isMounted) {
-          const resj = await response.json();
-          if (resj.error) {
-            // Handle error cases
-            const errorTweet = {
-              tweetId: 'ERROR',
-              tweetText: resj.error === 'No unclassified tweets'
-                  ? 'Hurray! All tweets classified!'
-                  : 'Error, Please contact support.',
-              username: 'Guest',
-            };
-            setIsFinished(true);
-            setTweet(errorTweet);
-            toast.success(errorTweet.tweetText, {
-              position: toast.POSITION.TOP_RIGHT,
-              autoClose: 2000
-            });
-          } else {
-            const tweet_l = {
-              tweetId: resj.id,
-              tweetText: resj.content,
-              username: resj.tweeter,
-              tweetURL: resj.tweet_url,
-            };
-            setIsFinished(false);
-            setTweet(tweet_l);
-          }
+            setDoneTagging(false);
+            setStartTime(Date.now());
         }
-      } catch (error) {
-        console.error("Error fetching new tweet:", error);
-        // Handle fetch error
-        const errorTweet = {
-          tweetId: 'ERROR',
-          tweetText: 'Error, Please contact support.',
-          username: 'Guest',
-        };
-        setIsFinished(true);
-        setTweet(errorTweet);
-        toast.error("Error getting new tweet", {
-          position: toast.POSITION.TOP_RIGHT,
-          autoClose: 2000
-        });
-      }
+
+        setLoading(false);
     };
 
-    fetchData();
-    updateCount();
 
-    return () => {
-      // Cleanup function to prevent state update on unmounted component
-      isMounted = false;
+    const fetchClassificationCountData = async () => {
+        const resj = await fetchClassificationCount(token);
+        if (resj) {
+            setClassificationCount(resj.count);
+        }
     };
-  }, [token]);
+
+    // Loads the feature list from the server
+    const loadFeatures = async () => {
+        const resj = await fetchFeatures();
+        setFeaturesList(resj.map(feature => feature[1]));
+    };
 
 
-  // Unselects all selected tagging features
-  const resetFeatures = () => {
-    const featuresDetails_l = featuresDetails.map(feature => {
-      return {
-        key: feature.key,
-        description: feature.description,
-        checked: false,
-      }
-    });
-    setFeaturesDetails(featuresDetails_l);
-  }
+    // Sends a request to the server to tag the current tweet
+    const submitTweetTagging = async (classification, features) => {
+        if (!tweet) return;
 
-  // Submits a tagging of a tweet
-  const submitTweetTagging = async (classification, features_l) => {
+        setLoading(true);
+        const elapsedTime = startTime ? (Date.now() - startTime) / 1000 : null;
 
-    console.log("submitTweetTagging - Submitting Request:", {
-      tweet_id: tweet.tweetId,
-      classification: classification,
-      features: features_l,  // Make sure this is an array!
-    });
+        const success = await submitClassification(token, tweet.tweetId, classification, features, elapsedTime);
+        if (success) {
+            // Shows the user a success message on screens
+            toast.success("Classification submitted!", { autoClose: 2000 });
+            // Resets feature selection
+            setSelectedFeatures([]);
+            // Resets counting timer for the next tweet
+            setStartTime(null);
+            // Fetches next tweet
+            await getNewTweet();
+        } else {
+            toast.error("Error submitting classification.");
+        }
+        setLoading(false);
+        setIsAntisemitic(false);
+    };
 
-    // Send the tagging request to the server
-    fetch(window.API_URL + '/submit_tweet_tag', {
-      method: "POST", headers: {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer " + token,
-      }, body: JSON.stringify(
-          {
-            tweet_id: tweet.tweetId,
-            classification: classification,
-            features: features_l,
-            // The next line is commented due to a potential mismatch with the backend base_models.py file
-            // features: JSON.stringify(features_l),
-          })
-    }).then(response => {
-      if (response.ok) {
-        response.json().then(resj => {
-          if (!resj.error) {
-            toast.success("Tag Sent Successfully", {
-              position: toast.POSITION.TOP_RIGHT,
-              autoClose: 2000
-            });
-          }
-        });
-        // Get new tweet
+
+    // Handles sign out
+    const signOut = () => {
+        setPasscode(null);
+        setToken(null);
+    }
+
+
+    // Happens on component mount
+    useEffect(() => {
         getNewTweet();
-        // Update classification count
-        updateCount();
-
-      } else {
-        toast.error("Error Sending Tag", {
-          position: toast.POSITION.TOP_RIGHT,
-          autoClose: 2000
-        });
-      }
-    }).finally(() => {
-      // Get new tweet
-      getNewTweet();
-      // Update classification count
-      updateCount();
-    });
-  }
-
-  // Clears form
-  const clearForm = () => {
-    document.getElementById("flexSwitchCheckDefault").checked = false;
-    setIsAntisemitic(false);
-    // Reset features
-    resetFeatures();
-  }
-
-  const uncertainClick = () => {
-    // Send a not sure classification to server
-    submitTweetTagging("Uncertain", null);
-    // Clear form
-    clearForm();
-  }
+        loadFeatures();
+        fetchClassificationCountData();
+    }, []);
 
 
-  const irrelevantClick = () => {
-    // Send an irrelevant classification to server
-    submitTweetTagging("Irrelevant", null);
-
-    // Clear form
-    clearForm();
-  }
-
-
-  const getFeaturesList = () => {
-    // Convert the object into a list of selected feature descriptions
-    return featuresDetails
-        .filter(feature => feature.checked)  // Keep only selected features
-        .map(feature => feature.description);  // Extract only human-readable names
-  };
-
-
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    const isAntisemitic_l = document.getElementById("flexSwitchCheckDefault").checked;
-    const classification = isAntisemitic_l ? "Positive" : "Negative";
-    const featuresList = isAntisemitic_l ? getFeaturesList() : null;
-
-    // Clear form
-    clearForm();
-
-    // Send classification to server
-    submitTweetTagging(classification, featuresList);
-  }
-
-  const setFeature = (feature, bool) => {
-    setFeaturesDetails((prevFeatures) => {
-      const index = prevFeatures.findIndex((f) => f.key === feature.key);
-      const updatedFeatures = [...prevFeatures];
-      updatedFeatures[index] = {
-        ...updatedFeatures[index],
-        checked: bool,
-      };
-      return updatedFeatures;
-    });
-  };
-
-  const closePanel = () => {
-    setIsPanelOpen(false);
-  };
-
-  const handlePanelButtonClick = () => {
-    setIsPanelOpen(true);
-  };
-
-  return (
-      <>
+    return (
         <div id="form-frame">
-          <h1 className="form-title">{isPro ? "S&O Classifier - Pro" : "S&O Classifier"}</h1>
 
-          <form onSubmit={handleSubmit}>
-            <div className="form-group">
+            <h1 className="form-title">{isPro ? "Tweet Classifier - Pro" : " Tweet Classifier"}</h1>
 
-              <Tweet tweet={tweet} isPro={isPro}/>
+            {tweet && tweet.tweetId ?
+                <div>
 
-              <div className='copy-to-clip-div'>
-                <CopyToClipboard text={tweet.tweetText} onCopy={onCopyText}>
-                  <button id="copy-to-clip-btn" className="copy-to-clip-btn" type="button">
-                    <span className="bi bi-clipboard"/>
-                    <span style={{paddingLeft: "5%"}}/>
-                    Copy
-                  </button>
-                </CopyToClipboard>
-                <div className={`copy-status ${copyStatus ? "show" : ''}`}>Text copied to clipboard!</div>
-              </div>
+                    <Tweet tweet={tweet} isPro={isPro}></Tweet>
 
-              <p className="classify-count">Classifications made by your account: {classifyCount}</p>
+                    <div className="copy-to-clip-div">
+                        <CopyToClipboard text={tweet ? tweet.content : ""} onCopy={() => {
+                            toast.success("Text copied to clipboard", { autoClose: 2000 });
+                        }}>
+                            <button
+                                className="copy-to-clip-btn"
+                                type="button">
+                                <span className="bi bi-clipboard"></span>
+                                <span style={{ paddingLeft: "5%" }}></span>
+                                Copy
+                            </button>
+                        </CopyToClipboard>
 
-              <br/>
+                        {isPro && tweet.tweetURL && (
+                            <button
+                                className="tweet-link-btn"
+                                type="button"
+                                onClick={() => window.open(tweet.tweetURL, "_blank")}
+                            >
+                                Tweet Link
+                                <span style={{ paddingRight: "5%" }}></span>
+                                <span className="bi bi-box-arrow-up-right"></span>
+                            </button>
+                        )}
 
-              <div className="form-check form-switch form-switch-md">
-                <input className="form-check-input" type="checkbox" disabled={isFinished}
-                       id="flexSwitchCheckDefault"
-                       onChange={() => setIsAntisemitic(!isAntisemitic)}/>
+                    </div>
 
+
+
+                </div>
+                : <div style={{textAlign: "center" }}>All tweets are classified! 🎉</div>
+            }
+
+
+            {/* Toggle button for tagging as Antisemitic or Not Antisemitic*/}
+            <div className="form-check form-switch form-switch-md">
+
+                <input
+                    className="form-check-input"
+                    type="checkbox"
+                    id="flexSwitchCheckDefault"
+                    checked={isAntisemitic}
+                    onChange={() => setIsAntisemitic(!isAntisemitic)}
+                    disabled={doneTagging}
+                />
                 <label className="form-check-label" htmlFor="flexSwitchCheckDefault">
-                  {isAntisemitic ? <span><strong>Antisemitic</strong></span> :
-                      <span>Not Antisemitic</span>}
+                    {isAntisemitic ? "Antisemitic" : "Not Antisemitic"}
                 </label>
-              </div>
+
             </div>
-            {isAntisemitic ? (
-                <div className="features-container">
-                  {featuresDetails.map((feature, index) => (
-                      <FeatureButton
-                          key={index}
-                          feature={feature}
-                          disabled={!isAntisemitic}
-                          setFeature={setFeature}
-                      />
-                  ))}
-                </div>
-            ) : null}
 
 
+            {/* The next div has the "Classify As Antisemitic/Not Antisemitic", "Uncertain" and "Irrelevant" buttons */}
             <div className="classification-zone">
-              <div>
-                <div className="classify-container">
-                  <button
-                      type="submit" id="classify-btn"
-                      disabled={isFinished}
-                      className="submit-button classify-submit-button"
-                  >Classify As {isAntisemitic ? '' : 'Not'} Antisemitic
-                  </button>
-                </div>
 
-                <button id="not-sure-btn"
-                        className="small-side-button"
-                        disabled={isFinished}
-                        type="button"
-                        onClick={uncertainClick}>
-                  <span className="bi bi-question-octagon-fill"/>
-                  <span style={{paddingLeft: "3%"}}/>
-                  <span>Uncertain</span>
+                <button
+                    type="submit" id="classify-btn"
+                    className="submit-button classify-submit-button"
+                    onClick={() =>
+                        submitTweetTagging(isAntisemitic ? "Positive" : "Negative", selectedFeatures)}
+                    disabled={loading || doneTagging || (isAntisemitic && selectedFeatures.length === 0)}
+                >
+                    Classify As {isAntisemitic ? "" : "Not "}Antisemitic
                 </button>
+
+
+                <button
+                    id="not-sure-btn"
+                    className="small-side-button"
+                    type="button"
+                    onClick={() => submitTweetTagging("Uncertain", [])}
+                    disabled={loading || doneTagging || isAntisemitic}
+                >
+                    <span className="bi bi-question-octagon-fill"/>
+                    <span style={{paddingLeft: "3%"}}/>
+                    <span>Uncertain</span>
+                </button>
+
+                {/* ToDo - When a pro user is logged-in, consider remove "Uncertain" button instead of just disabling it and also make "Irrelevant" button spread like the classify button above
+                  */}
 
                 <span style={{paddingLeft: "2%"}}/>
-                <button id="irrelevant-btn"
-                        className="small-side-button"
-                        disabled={isFinished}
-                        type="button"
-                        onClick={irrelevantClick}>
-                  <span>Irrelevant</span>
-                  <span style={{paddingLeft: "3%"}}/>
-                  <span className="bi bi-trash-fill"/>
+
+                <button
+                    id="irrelevant-btn"
+                    className="small-side-button"
+                    type="button"
+                    disabled={loading || doneTagging || isAntisemitic || isPro}
+                    onClick={() => submitTweetTagging("Irrelevant", [])}
+                >
+                    <span>Irrelevant</span>
+                    <span style={{paddingLeft: "3%"}}/>
+                    <span className="bi bi-trash-fill"/>
                 </button>
-              </div>
+
             </div>
-          </form>
-          <div className="bottom-container">
-            <button id="sign-out-btn"
-                    className="bottom-container-button"
-                    type="button"
-                    onClick={signOut}>
-              <span className="bi bi-door-closed"/>
-              <span style={{paddingLeft: "3%"}}/>
-              <span>Sign Out</span>
-            </button>
 
-            <button id="panel-btn"
-                    className="bottom-container-button"
-                    type="button"
-                    onClick={handlePanelButtonClick}>
-              <span>{isPro ? "Admin Panel" : "Profile"}</span>
-              <span style={{paddingLeft: "5%"}}/>
-              <span className="bi bi-person-circle"/>
-            </button>
-            {isPanelOpen ?
-                <Panel token={token} passcode={passcode} onClose={closePanel} isPro={isPro}/>
-                : ""}
-          </div>
-          {/* TODO: check if a break line is needed */}
-          {/* <br/> */}
+            {/* If the user has decided to tag as antisemitic, it opens the features list */}
+            {isAntisemitic && (
+                <div className="features-container">
+                    <div className="select-feature">
+                        Select at least one feature before classifying as antisemitic
+                    </div>
+                    {featuresList.map((feature) => (
+                        <FeatureButton
+                            key={feature}
+                            feature={{ description: feature, checked: selectedFeatures.includes(feature) }}
+                            disabled={loading}
+                            setFeature={(feature, bool) => handleFeatureSelection(feature.description)}
+                        />
+                    ))}
+                </div>
+            )}
 
+
+            <div>
+                Classifications made by your account: {classificationCount}
+            </div>
+
+            <div className="bottom-container">
+
+                {/* Sign out button */}
+                <button id="sign-out-btn"
+                        className="bottom-container-button"
+                        type="button"
+                        onClick={signOut}>
+                    <span className="bi bi-door-closed" />
+                    <span style={{ paddingLeft: "3%" }} />
+                    <span>Sign Out</span>
+                </button>
+
+                {/* Admin panel button - clicking it opens all user stats */}
+                {isPro ?
+                    <button id="panel-btn"
+                            className="bottom-container-button"
+                            type="button"
+                            onClick={() => {
+                                setIsAdminPanelOpen(true);
+                                setIsUserPanelOpen(false);  // Close the other panel
+                            }
+                            }>
+                        <span>{"Admin Panel"}</span>
+                        <span style={{paddingLeft: "5%"}}/>
+                        <span className="bi bi-clipboard-data-fill"/>
+                    </button>
+                    :
+                    <>
+                    </>
+                }
+
+                {/* Profile button - clicking it opens current logged-in user stats */}
+                <button id="panel-btn"
+                        className="bottom-container-button"
+                        type="button"
+                        onClick={() =>{
+                            setIsUserPanelOpen(true)
+                            setIsAdminPanelOpen(false);  // Close the other panel
+                        }
+                        }>
+                    <span>{"Profile"}</span>
+                    <span style={{ paddingLeft: "5%" }} />
+                    <span className="bi bi-person-circle" />
+                </button>
+
+            </div>
+
+            {(isUserPanelOpen || isAdminPanelOpen) && (
+                <Panel
+                    token={token}
+                    showAdminPanel={isAdminPanelOpen}  // Determines which panel to show
+                    onClose={() => {
+                        setIsUserPanelOpen(false);
+                        setIsAdminPanelOpen(false);
+                    }}
+                />
+            )}
+
+            <ToastContainer/>
         </div>
-        <ToastContainer/>
-      </>
-  );
-}
+    );
+};
 
 export default MainView;

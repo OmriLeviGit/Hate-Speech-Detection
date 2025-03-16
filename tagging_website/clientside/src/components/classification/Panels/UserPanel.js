@@ -59,7 +59,7 @@ const UserPanel = ({ token }) => {
                     <th>No. Positive</th>
                     <th>No. Negative</th>
                     <th>No. Irrelevant</th>
-                    <th>Average Time</th>
+                    <th>Average Time (seconds)</th>
                     <th>% Positive</th>
                     <th>% Negative</th>
                     <th>% Irrelevant</th>

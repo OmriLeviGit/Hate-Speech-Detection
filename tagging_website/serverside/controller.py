@@ -109,14 +109,7 @@ async def get_user_panel(lock, user_id):
         irrelevant_count = db.get_irrelevant_classification_count(user_id)
         time_left = db.get_days_left_to_classify(user_id)
         num_remaining = db.get_number_of_tweets_left_to_classify(user_id)
-        avg_time = None
-        # avg_time = db.get_average_classification_time(user_id)
-
-    # Calculate average time in seconds (for demonstration purposes)
-    if avg_time is not None:
-        average_time_seconds = f"{avg_time:.2f}"
-    else:
-        average_time_seconds = "N/A"
+        avg_time = db.get_average_classification_time(user_id)
 
     # ToDo - Update sent arguments to match the client
     if classified_count is not None:
@@ -125,7 +118,7 @@ async def get_user_panel(lock, user_id):
                 'neg': negative_count,
                 'time': time_left,
                 'remain': num_remaining,
-                'avg': average_time_seconds,
+                'avg': avg_time,
                 'irr': irrelevant_count}
 
     else:

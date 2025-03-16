@@ -20,6 +20,14 @@
     cursor: not-allowed;
 }
 
+.select-feature {
+    font: 300 16px 'Lato', sans-serif;
+    font-weight: 400;
+    text-align: center;
+    padding-bottom: 10px;
+    color: black;
+    }
+
 
 .small-side-button {
     font: 300 16px 'Lato', sans-serif;
@@ -35,13 +43,28 @@
     transition: 0.4s;
 }
 
+.copy-container {
+    display: flex;
+
+    margin-right: 10px;  /* Adjust to match the Sign Out button alignment */
+}
+
+.copy-btn {
+    width: fit-content;
+}
+
+
 .copy-to-clip-div {
     display: flex;
-    align-items: center;
     justify-content: space-between;
-    width: 100%;
-    position: relative;
-    padding: 20px 5px;
+    align-items: center;
+    flex-wrap: wrap;
+    /*display: flex;*/
+    /*align-items: center;*/
+    /*justify-content: space-between;*/
+    /*width: 100%;*/
+    /*position: relative;*/
+    /*padding: 20px 5px;*/
 }
 
 .copy-status{
@@ -57,7 +80,7 @@
     visibility: visible;
 }
 
-.copy-to-clip-btn,.skip-tweet-btn {
+.copy-to-clip-btn,.skip-tweet-btn, .tweet-link-btn {
     position: relative;
     margin: 10px;
     width: 30%;
@@ -74,12 +97,12 @@
     align-items: center;
 }
 
-.copy-to-clip-btn:hover:not([disabled]), .skip-tweet-btn:hover:not([disabled]) {
+.copy-to-clip-btn:hover:not([disabled]), .skip-tweet-btn:hover:not([disabled]), .tweet-link-btn:hover:not([disabled]) {
     background-color: var(--main-bright);
 }
 
 
-.skip-tweet-btn:disabled, .copy-to-clip-btn:disabled {
+.skip-tweet-btn:disabled, .copy-to-clip-btn:disabled, .tweet-link-btn:disabled {
     background-image: linear-gradient(to right, var(--main-disabled-bright) 0%, var(--main-disabled-dark) 100%);
     color: var(--submit-button-disabled-text);
     cursor: not-allowed;

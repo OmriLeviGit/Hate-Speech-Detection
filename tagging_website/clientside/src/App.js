@@ -1,7 +1,6 @@
 import { useState } from "react";
 import MainView from "./components/classification/MainView";
 import SignIn from "./components/auth/SignIn";
-import MainViewRefactored from "./components/classification/MainViewRefactored";
 
 const App = () => {
   // Current signed in user
@@ -15,7 +14,7 @@ const App = () => {
         {
           // Check if user is signed in
           passcode ? (
-              <MainViewRefactored token={token} setToken={setToken} passcode={passcode} setPasscode={setPasscode} isPro={isPro} />
+              <MainView token={token} setToken={setToken} passcode={passcode} setPasscode={setPasscode} isPro={isPro} />
           ) : (
             <SignIn setIsPro={setIsPro} setPasscode={setPasscode} setToken={setToken} />
           )
