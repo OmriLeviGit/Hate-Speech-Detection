@@ -300,14 +300,13 @@ const MainViewRefactored = ({ token, setToken, passcode, setPasscode, isPro }) =
             {(isUserPanelOpen || isAdminPanelOpen) && (
                 <Panel
                     token={token}
-                    showAdminPanel={isAdminPanelOpen}  // ✅ Determines which panel to show
+                    showAdminPanel={isAdminPanelOpen}  // Determines which panel to show
                     onClose={() => {
                         setIsUserPanelOpen(false);
                         setIsAdminPanelOpen(false);
                     }}
                 />
             )}
-
 
             <ToastContainer/>
         </div>

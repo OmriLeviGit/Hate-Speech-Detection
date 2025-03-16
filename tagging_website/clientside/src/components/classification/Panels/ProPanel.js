@@ -1,5 +1,6 @@
-import './ProPanel.css';
 import { useEffect, useState } from 'react';
+import {exportToCSV} from "../../../utils/CSVUtils";
+import './ProPanel.css';
 
 const ProPanel = ({ token }) => {
     const [users, setUsers] = useState([]);
@@ -115,6 +116,16 @@ const ProPanel = ({ token }) => {
                     ))}
                 </tbody>
             </table>
+
+            {/* Export to CSV button */}
+            <div className="col text-end">
+                <button onClick={() => exportToCSV(users)} className="export-button">
+                    Export to CSV
+                    <i className="bi bi-file-earmark-arrow-down ms-2"></i>
+                </button>
+            </div>
+
+
         </div>
     );
 };

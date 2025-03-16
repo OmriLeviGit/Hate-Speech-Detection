@@ -7,7 +7,6 @@
     overflow: auto;
 }
 
-
 .pro-panel-table {
     width: 100%;
     border-collapse: collapse;
@@ -44,4 +43,15 @@
 .pro-panel-container::-webkit-scrollbar-track {
     background-color: #ddd;
     border-radius: 10px;
+}
+
+.export-button {
+    margin-top: 20px; /* Adds space between table and button */
+    padding: 8px 12px;
+    font-size: 14px;
+    cursor: pointer;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
 }
