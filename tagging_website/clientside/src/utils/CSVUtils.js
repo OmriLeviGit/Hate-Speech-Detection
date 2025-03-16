@@ -5,15 +5,15 @@ export const exportToCSV = (users) => {
     }
 
     const headers = [
-        "Email,No. Classified,No. Positive,No. Negative,No. Irrelevant,Average Time,% Positive,% Negative,% Irrelevant"
+        "Email,No. Classified, Average Time (seconds), No. Positive,No. Negative,No. Irrelevant,% Positive,% Negative,% Irrelevant"
     ];
     const rows = users.map(user => [
         user.email,
         user.personalClassifications,
+        user.averageTime > 0 ? user.averageTime : 0,
         user.positiveClassified,
         user.negativeClassified,
         user.irrelevantClassified,
-        user.averageTime > 0 ? user.averageTime : 0,
         user.personalClassifications > 0 ? ((user.positiveClassified / user.personalClassifications) * 100).toFixed(2) : 0,
         user.personalClassifications > 0 ? ((user.negativeClassified / user.personalClassifications) * 100).toFixed(2) : 0,
         user.personalClassifications > 0 ? ((user.irrelevantClassified / user.personalClassifications) * 100).toFixed(2) : 0

@@ -61,25 +61,25 @@ const ProPanel = ({ token }) => {
                 <thead>
                     <tr>
                         <th>Total Classified</th>
+                        <th>Average Time (seconds)</th>
                         <th>No. Positive</th>
                         <th>No. Negative</th>
                         <th>No. Irrelevant</th>
                         <th>% Positive</th>
                         <th>% Negative</th>
                         <th>% Irrelevant</th>
-                        <th>Average Time</th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr>
                         <td>{totalClassified}</td>
+                        <td>{avgTime > 0 ? avgTime : 0}</td>
                         <td>{totalPositive}</td>
                         <td>{totalNegative}</td>
                         <td>{totalIrrelevant}</td>
                         <td>{percentPositive}%</td>
                         <td>{percentNegative}%</td>
                         <td>{percentIrrelevant}%</td>
-                        <td>{avgTime > 0 ? avgTime : 0}</td>
                     </tr>
                 </tbody>
             </table>
@@ -91,10 +91,10 @@ const ProPanel = ({ token }) => {
                     <tr>
                         <th>Email</th>
                         <th>No. Classified</th>
+                        <th>Average Time (seconds)</th>
                         <th>No. Positive</th>
                         <th>No. Negative</th>
                         <th>No. Irrelevant</th>
-                        <th>Average Time</th>
                         <th>% Positive</th>
                         <th>% Negative</th>
                         <th>% Irrelevant</th>
@@ -105,10 +105,10 @@ const ProPanel = ({ token }) => {
                         <tr key={index}>
                             <td>{user.email}</td>
                             <td>{user.personalClassifications}</td>
+                            <td>{user.averageTime > 0 ? user.averageTime : 0}</td>
                             <td>{user.positiveClassified}</td>
                             <td>{user.negativeClassified}</td>
                             <td>{user.irrelevantClassified}</td>
-                            <td>{user.averageTime > 0 ? user.averageTime : 0}</td>
                             <td>{user.personalClassifications > 0 ? ((user.positiveClassified / user.personalClassifications) * 100).toFixed(2) : 0}%</td>
                             <td>{user.personalClassifications > 0 ? ((user.negativeClassified / user.personalClassifications) * 100).toFixed(2) : 0}%</td>
                             <td>{user.personalClassifications > 0 ? ((user.irrelevantClassified / user.personalClassifications) * 100).toFixed(2) : 0}%</td>

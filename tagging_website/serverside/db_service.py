@@ -416,7 +416,18 @@ class get_db_instance(metaclass=Singleton):
                 .filter(TaggersDecision.classification == "Irrelevant").count())
 
 
-    # ToDo - This method probably will change according to how we use taggers_decisions implementation
+    # Calculates the average tagging duration for a given user
+    def get_average_classification_time(self, user_id):
+        with Session(self.engine) as session:
+            avg_duration = (
+                session.query(func.avg(TaggersDecision.tagging_duration))
+                .filter(TaggersDecision.tagged_by == user_id)
+                .scalar()
+            )
+
+        return avg_duration if avg_duration is not None else 0  # Return 0 if no data
+
+
     # Return the total number of classification made by the taggers
     def get_total_classifications(self):
         with Session(self.engine) as session:
@@ -425,7 +436,6 @@ class get_db_instance(metaclass=Singleton):
                 .count()
 
 
-    # ToDo - This method probably will change according to how we use taggers_decisions implementation
     # Return the total number of negatives classification made by the taggers
     def get_total_negative_classifications(self):
         with Session(self.engine) as session:
@@ -434,7 +444,6 @@ class get_db_instance(metaclass=Singleton):
                 .count()
 
 
-    # ToDo - This method probably will change according to how we use taggers_decisions implementation
     # Return the total number of negatives classification made by the taggers
     def get_total_positive_classifications(self):
         with Session(self.engine) as session:
@@ -443,7 +452,6 @@ class get_db_instance(metaclass=Singleton):
                 .count()
 
 
-    # ToDo - This method probably will change according to how we use taggers_decisions implementation
     # Return the total number of negatives classification made by the taggers
     def get_total_irrelevant_classifications(self):
         with Session(self.engine) as session:

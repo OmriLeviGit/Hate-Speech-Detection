@@ -84,12 +84,12 @@ async def handle_tweet_tagging(lock, user_id, tweet_id, classification, features
         first_classification = decisions[0]["classification"]
         second_classification = decisions[1]["classification"]
 
-        # If if the user is uncertain, or the users do not agree, assign to pro bank
+        # If one of the taggers is uncertain, or if the taggers do not agree, let a pro user decide
         if first_classification == "Uncertain" or second_classification == "Uncertain" or first_classification != second_classification:
             db.assign_tweet_to_pro(tweet_id)
             return
 
-        # The users agree and are certain
+        # The taggers agree and are certain
         combined_features = list(set(decisions[0]["features"] + decisions[1]["features"]))
         db.insert_to_tagging_results(tweet_id, first_classification, combined_features, "User agreement")
 
@@ -154,16 +154,10 @@ async def get_pro_panel(lock):
             positive_count = db.get_positive_classification_count(user_id)
             negative_count = db.get_negative_classification_count(user_id)
             irrelevant_count = db.get_irrelevant_classification_count(user_id)
-            avg_time = None
-            # avg_time = db.get_average_classification_time(user_id)
+            # avg_time = None
+            avg_time = db.get_average_classification_time(user_id)
 
             if classification_count is not None:
-
-                # Calculate average time in seconds (for demonstration purposes)
-                if avg_time is not None:
-                    average_time_seconds = f"{avg_time:.2f}"
-                else:
-                    average_time_seconds = "N/A"
 
                 # Append user data to the list
                 users.append({
@@ -171,7 +165,7 @@ async def get_pro_panel(lock):
                     "personalClassifications": classification_count,
                     "positiveClassified": positive_count,
                     "negativeClassified": negative_count,
-                    "averageTime": average_time_seconds,
+                    "averageTime": avg_time,
                     "irrelevantClassified":irrelevant_count
                 })
             else:
