@@ -36,6 +36,7 @@ const UserPanel = ({ token }) => {
                         tweetsRemaining: resj.remain,
                         averageTime: resj.avg,
                         irrelevantClassified: resj.irr,
+                        uncertainClassified: resj.unc,
                     };
                     setUser(currUser);
                 });
@@ -59,10 +60,12 @@ const UserPanel = ({ token }) => {
                     <th>No. Positive</th>
                     <th>No. Negative</th>
                     <th>No. Irrelevant</th>
+                    <th>No. Uncertain</th>
                     <th>Average Time (seconds)</th>
                     <th>% Positive</th>
                     <th>% Negative</th>
                     <th>% Irrelevant</th>
+                    <th>% Uncertain</th>
                 </tr>
                 </thead>
                 <tbody>
@@ -73,10 +76,12 @@ const UserPanel = ({ token }) => {
                     <td>{user.positiveClassified}</td>
                     <td>{user.negativeClassified}</td>
                     <td>{user.irrelevantClassified}</td>
+                    <td>{user.uncertainClassified}</td>
                     <td>{user.averageTime > 0 ? user.averageTime : 0}</td>
                     <td>{user.personalClassifications > 0 ? ((user.positiveClassified / user.personalClassifications) * 100).toFixed(2) : 0}%</td>
                     <td>{user.personalClassifications > 0 ? ((user.negativeClassified / user.personalClassifications) * 100).toFixed(2) : 0}%</td>
                     <td>{user.personalClassifications > 0 ? ((user.irrelevantClassified / user.personalClassifications) * 100).toFixed(2) : 0}%</td>
+                    <td>{user.personalClassifications > 0 ? ((user.uncertainClassified / user.personalClassifications) * 100).toFixed(2) : 0}%</td>
                 </tr>
                 </tbody>
             </table>

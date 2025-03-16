@@ -8,6 +8,8 @@ const ProPanel = ({ token }) => {
     const [totalPositive, setTotalPositive] = useState(0);
     const [totalNegative, setTotalNegative] = useState(0);
     const [totalIrrelevant, setTotalIrrelevant] = useState(0);
+    const [totalUncertain, setTotalUncertain] = useState(0);
+
 
     const getProStats = async () => {
         // Get new tweet from server and set tweet state
@@ -28,6 +30,7 @@ const ProPanel = ({ token }) => {
                     setTotalPositive(resj.total_pos);
                     setTotalNegative(resj.total_neg);
                     setTotalIrrelevant(resj.total_irr);
+                    setTotalUncertain(resj.total_unc)
                 });
             }
         });
@@ -51,6 +54,8 @@ const ProPanel = ({ token }) => {
     const percentPositive = totalClassified > 0 ? (totalPositive / totalClassified * 100).toFixed(2) : 0;
     const percentNegative = totalClassified > 0 ? (totalNegative / totalClassified * 100).toFixed(2) : 0;
     const percentIrrelevant = totalClassified > 0 ? (totalIrrelevant / totalClassified * 100).toFixed(2) : 0;
+    const percentUncertain = totalClassified > 0 ? (totalUncertain / totalClassified * 100).toFixed(2) : 0;
+
 
 
     // ToDo - Take care of "Overall Statistics for X Users" as it does not show actual infromation
@@ -65,9 +70,11 @@ const ProPanel = ({ token }) => {
                         <th>No. Positive</th>
                         <th>No. Negative</th>
                         <th>No. Irrelevant</th>
+                        <th>No. Uncertain</th>
                         <th>% Positive</th>
                         <th>% Negative</th>
                         <th>% Irrelevant</th>
+                        <th>% Uncertain</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -77,9 +84,11 @@ const ProPanel = ({ token }) => {
                         <td>{totalPositive}</td>
                         <td>{totalNegative}</td>
                         <td>{totalIrrelevant}</td>
+                        <td>{totalUncertain}</td>
                         <td>{percentPositive}%</td>
                         <td>{percentNegative}%</td>
                         <td>{percentIrrelevant}%</td>
+                        <td>{percentUncertain}%</td>
                     </tr>
                 </tbody>
             </table>
@@ -95,9 +104,11 @@ const ProPanel = ({ token }) => {
                         <th>No. Positive</th>
                         <th>No. Negative</th>
                         <th>No. Irrelevant</th>
+                        <th>No. Uncertain</th>
                         <th>% Positive</th>
                         <th>% Negative</th>
                         <th>% Irrelevant</th>
+                        <th>% Uncertain</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -109,9 +120,11 @@ const ProPanel = ({ token }) => {
                             <td>{user.positiveClassified}</td>
                             <td>{user.negativeClassified}</td>
                             <td>{user.irrelevantClassified}</td>
+                            <td>{user.uncertainClassified}</td>
                             <td>{user.personalClassifications > 0 ? ((user.positiveClassified / user.personalClassifications) * 100).toFixed(2) : 0}%</td>
                             <td>{user.personalClassifications > 0 ? ((user.negativeClassified / user.personalClassifications) * 100).toFixed(2) : 0}%</td>
                             <td>{user.personalClassifications > 0 ? ((user.irrelevantClassified / user.personalClassifications) * 100).toFixed(2) : 0}%</td>
+                            <td>{user.personalClassifications > 0 ? ((user.uncertainClassified / user.personalClassifications) * 100).toFixed(2) : 0}%</td>
                         </tr>
                     ))}
                 </tbody>
@@ -124,7 +137,6 @@ const ProPanel = ({ token }) => {
                     <i className="bi bi-file-earmark-arrow-down ms-2"></i>
                 </button>
             </div>
-
 
         </div>
     );

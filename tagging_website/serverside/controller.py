@@ -107,6 +107,7 @@ async def get_user_panel(lock, user_id):
         positive_count = db.get_positive_classification_count(user_id)
         negative_count = db.get_negative_classification_count(user_id)
         irrelevant_count = db.get_irrelevant_classification_count(user_id)
+        uncertain_count = db.get_uncertain_classification_count(user_id)
         time_left = db.get_days_left_to_classify(user_id)
         num_remaining = db.get_number_of_tweets_left_to_classify(user_id)
         avg_time = db.get_average_classification_time(user_id)
@@ -119,7 +120,9 @@ async def get_user_panel(lock, user_id):
                 'time': time_left,
                 'remain': num_remaining,
                 'avg': avg_time,
-                'irr': irrelevant_count}
+                'irr': irrelevant_count,
+                'unc': uncertain_count,
+                }
 
     else:
         return {'error': 'Error getting user data'}
@@ -136,6 +139,7 @@ async def get_pro_panel(lock):
         total_negatives = db.get_total_negative_classifications()
         total_positives = db.get_total_positive_classifications()
         total_irrelevant = db.get_total_irrelevant_classifications()
+        total_uncertain = db.get_total_uncertain_classifications()
 
         for user in user_data:
 
@@ -146,7 +150,7 @@ async def get_pro_panel(lock):
             positive_count = db.get_positive_classification_count(user_id)
             negative_count = db.get_negative_classification_count(user_id)
             irrelevant_count = db.get_irrelevant_classification_count(user_id)
-            # avg_time = None
+            uncertain_count = db.get_uncertain_classification_count(user_id)
             avg_time = db.get_average_classification_time(user_id)
 
             if classification_count is not None:
@@ -158,7 +162,8 @@ async def get_pro_panel(lock):
                     "positiveClassified": positive_count,
                     "negativeClassified": negative_count,
                     "averageTime": avg_time,
-                    "irrelevantClassified":irrelevant_count
+                    "irrelevantClassified":irrelevant_count,
+                    "uncertainClassified": uncertain_count,
                 })
             else:
                 # Handle error case if data retrieval fails for the user
@@ -172,5 +177,6 @@ async def get_pro_panel(lock):
         "total": total_classifications,
         "total_pos": total_positives,
         "total_neg": total_negatives,
-        "total_irr": total_irrelevant
+        "total_irr": total_irrelevant,
+        "total_unc": total_uncertain
     }

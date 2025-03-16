@@ -6,7 +6,7 @@ import pytz
 from dotenv import load_dotenv
 from sqlalchemy import Engine, Nullable, func, text, create_engine, func, or_, and_, exists, select, Boolean, distinct
 from sqlalchemy.sql import expression
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, session
 
 from model import *
 from model import User, Tweet, AssignedTweet, TaggersDecision, TaggingResult
