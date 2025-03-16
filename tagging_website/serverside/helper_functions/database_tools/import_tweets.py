@@ -92,4 +92,5 @@ def import_tweets_from_csv(file_name="tweet_table.csv", limit=None):
 
 if __name__ == "__main__":
     batch_1 = "antisemistic_batch1_bd_20250315_175811_0.csv"
+    print("Loading tweets...")
     import_tweets_from_csv(file_name=batch_1)

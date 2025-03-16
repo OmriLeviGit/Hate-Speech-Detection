@@ -27,6 +27,13 @@ def create_user_list(path, due_date, tweets_left):
     for email, is_pro in data:
         password = generate_alphanumeric_password(5)
 
+        if email == "qwe@gmail.com":
+            password = "qwe"
+        if email == "asd@gmail.com":
+            password = "asd"
+        if email == "zxc@gmail.com":
+            password = "zxc"
+
         if is_pro:
             entry = [email, password, None, 0, is_pro]
         else:

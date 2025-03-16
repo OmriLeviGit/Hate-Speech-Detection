@@ -70,5 +70,5 @@ async def params_list():
 
 
 if __name__ == '__main__':
-    # uvicorn.run("server:app", host="0.0.0.0", port=8000, reload=True)
-    uvicorn.run("server:app", host="localhost", port=8000, reload=True)
+    host_address = "0.0.0.0" if os.path.exists('/.dockerenv') else "localhost"
+    uvicorn.run("server:app", host=host_address, port=8000, reload=True)
