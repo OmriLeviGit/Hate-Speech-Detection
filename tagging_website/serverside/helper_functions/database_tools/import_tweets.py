@@ -25,7 +25,7 @@ def import_tweets_from_csv(file_name="tweet_table.csv", limit=None):
         if pd.isna(row['id']):
             continue
 
-        if limit and added_tweets >= limit:
+        if limit and added_tweets > limit:
             break
 
         # Parse JSON fields
