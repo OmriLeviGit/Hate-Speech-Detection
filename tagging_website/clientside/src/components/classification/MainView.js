@@ -178,7 +178,9 @@ const MainView = ({ token, setToken, passcode, setPasscode, isPro }) => {
       ) : (
         <div style={{textAlign: "center"}}>{tweet.content}</div>
       )}            
-
+    <a href="https://docs.google.com/spreadsheets/d/1qN6PNEhF44HznXzblx7JSLeRrmec5tTQZ-FIqBzZycE/edit?gid=1537961622#gid=1537961622">
+      <div>Google Sheets</div>
+    </a>
       {/* Classification Toggle Switch */}
       <div className="form-check form-switch form-switch-md">
         <input
