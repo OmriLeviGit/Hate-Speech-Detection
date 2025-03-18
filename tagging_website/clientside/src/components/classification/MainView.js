@@ -269,9 +269,9 @@ const MainView = ({ token, setToken, passcode, setPasscode, isPro }) => {
                     type="button"
                     onClick={signOut}
                 >
-                    <span className="bi bi-door-closed" />
-                    <span style={{ paddingLeft: "3%" }} />
                     <span>Sign Out</span>
+                    <span style={{ paddingRight: "3%" }} />
+                    <span className="bi bi-door-closed" />
                 </button>
 
                 {isPro && (

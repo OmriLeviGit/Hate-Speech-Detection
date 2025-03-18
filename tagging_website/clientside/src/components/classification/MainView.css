@@ -124,7 +124,7 @@
 }
 
 .bottom-container-button {
-    font: 500 16px 'Lato', sans-serif;
+    font: 500 14px 'Lato', sans-serif;
     background-color: var(--main-dark);
     color: var(--submit-button-text);
     /* position: relative; */
@@ -133,11 +133,13 @@
     border-radius: 5px;
     height: 2.3rem;
     margin: 10px 0px;
-    width: 30%;
+    /*width: 30%;*/
+    width: 23%; /* Ensures all 4 buttons fit */
     transition: 0.4s;
     display: flex;
     justify-content: center;
     align-items: center;
+
 }
 
 .bottom-container-button:hover {
@@ -148,7 +150,9 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    flex-wrap: wrap;
+    /*flex-wrap: wrap;*/
+    flex-wrap: nowrap; /* Prevents wrapping */
+    gap: 10px; /* Ensures consistent spacing */
 }
 
 
