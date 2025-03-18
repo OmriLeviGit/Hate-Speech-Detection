@@ -68,14 +68,13 @@ async def handle_tweet_tagging(lock, user_id, tweet_id, classification, features
     async with lock:
         # Removes entry from the assigned_tweet table (even if pro) and adds to the taggers decisions table
         db.insert_to_taggers_decisions(tweet_id, user_id, classification, features, tagging_duration)
+        db.decrement_left_to_classify(user_id)
 
         is_pro = db.is_pro(user_id)
-        db.decrement_left_to_classify(user_id) # even if pro, in case they want to be assigned tweets
 
         if is_pro:
             db.insert_to_tagging_results(tweet_id, classification, features, "Pro user")
             return
-
 
         # Check if the tweet has already been classified twice by two different regular users
         decisions = db.get_tweet_decisions(tweet_id)

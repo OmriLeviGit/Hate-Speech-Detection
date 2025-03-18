@@ -120,7 +120,7 @@ class get_db_instance(metaclass=Singleton):
                         AssignedTweet.user_id == user_id,
                         AssignedTweet.completed == False
                     ).scalar()
-                return assigned_count + user.left_to_classify   # adding left to classify if pro users want to be assigned tweets as well
+                return assigned_count
 
             return user.left_to_classify
 
@@ -473,11 +473,17 @@ class get_db_instance(metaclass=Singleton):
     def get_tagged_users(self, min_count=1):
         with Session(self.engine) as session:
             return session.query(
-                func.unnest(Tweet.tagged_users).label('tagged_user'),
-                func.count('*').label('count')
+                func.unnest(Tweet.tagged_users).label('tagged_user'), func.count('*').label('count')
             ).group_by('tagged_user')\
             .having(func.count('*') >= min_count)\
             .order_by(func.count('*').desc()).all()
+
+
+    def get_all_posters(self):
+        with Session(self.engine) as session:
+            return session.query(
+                Tweet.user_posted
+            ).order_by(Tweet.user_posted).all()
 
 
     def get_hashtags(self, min_count=1):

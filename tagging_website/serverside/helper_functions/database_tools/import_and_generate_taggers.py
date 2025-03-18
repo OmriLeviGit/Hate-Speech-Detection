@@ -28,11 +28,10 @@ def create_user_list(path, due_date, tweets_left):
         password = email    # kept separately in case we want to change in the future
 
         if email in ["qwe@gmail.com", "asd@gmail.com", "zxc@gmail.com"]:
-            break # temporary
             password = email[:email.index('@')]
 
         if is_pro:
-            entry = [email.lower(), password.lower(), None, 10, is_pro]
+            entry = [email.lower(), password.lower(), None, 0, is_pro]
         else:
             entry = [email.lower(), password.lower(), due_date, tweets_left, is_pro]
             
