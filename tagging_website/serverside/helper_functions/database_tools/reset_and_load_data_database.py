@@ -9,7 +9,6 @@ def initialize(batch_1=None):
     num_of_users = 14
     generate_users(5, tweets_per_user)
     total_tweets = tweets_per_user * num_of_users // 2
-    print(total_tweets)
     import_tweets_from_csv(file_name=batch_1, limit=total_tweets)
     print("DB was reset and loaded")
 
