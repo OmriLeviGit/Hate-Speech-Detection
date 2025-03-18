@@ -64,7 +64,7 @@ const MainView = ({ token, setToken, passcode, setPasscode, isPro }) => {
     // Sends a request to the server to fetch a tweet to tag
     const getNewTweet = async () => {
         setLoading(true);
-        fetchClassificationCountData();
+        await fetchClassificationCountData();
         const resj = await fetchTweet(token);
         let tweet = ''
         if (!resj) {
