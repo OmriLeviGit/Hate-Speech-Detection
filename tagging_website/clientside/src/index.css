@@ -25,7 +25,7 @@ code {
     --form-title-text: black;
     --form-help: gray;
     --submit-button-text: white;
-    --submit-button-disabled-text: gray;
+    --submit-button-disabled-text: #000000;
     --form-question: black;
 }
 
