@@ -78,4 +78,4 @@ if __name__ == '__main__':
         os.system('sudo service postgresql start')
 
     host_address = "0.0.0.0" if os.path.exists('/.dockerenv') else "localhost"
-    uvicorn.run("server:app", host=host_address, port=8000, reload=True)
+    uvicorn.run("server:app", host=host_address, port=8080, reload=True)
