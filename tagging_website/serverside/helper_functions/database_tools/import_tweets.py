@@ -70,7 +70,7 @@ def import_tweets_from_csv(file_name="tweet_table.csv", limit=None):
             except ValueError:
                 print(f"Error parsing date for tweet {row['url']}")
         
-        db.insert_tweet(
+        success = db.insert_tweet(
             tweet_id=row['id'],
             user_posted=row['user_posted'] if pd.notna(row['user_posted']) else None,
             content=row['description'] if pd.notna(row['description']) else "",
@@ -85,7 +85,9 @@ def import_tweets_from_csv(file_name="tweet_table.csv", limit=None):
             hashtags=hashtags_list
         )
 
-        added_tweets += 1
+        if success:
+            added_tweets += 1
+
 
     print(f"Added {added_tweets} tweets")
 
