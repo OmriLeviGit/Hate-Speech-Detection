@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { toast, ToastContainer } from "react-toastify";
 import { CopyToClipboard } from "react-copy-to-clipboard";
-import { fetchTweet, submitClassification, fetchFeatures, fetchClassificationCount} from "../../services/api";
+import { fetchTweet, submitClassification, fetchFeatures, fetchTweetsLeftToClassify} from "../../services/api";
 import FeatureButton from './FeatureButton';
 import Panel from "./Panels/Panel";
 import "react-toastify/dist/ReactToastify.css";
@@ -24,7 +24,7 @@ const MainView = ({ token, setToken, passcode, setPasscode, isPro }) => {
     const [isAdminPanelOpen, setIsAdminPanelOpen] = useState(false);
     const [loading, setLoading] = useState(false);
     const [doneTagging, setDoneTagging] = useState(false);
-    const [classificationCount, setClassificationCount] = useState(0);
+    const [tweetsLeftToClassify, setTweetsLeftToClassify] = useState(0);
 
     // Tracking state
     const [startTime, setStartTime] = useState(null);
@@ -44,17 +44,17 @@ const MainView = ({ token, setToken, passcode, setPasscode, isPro }) => {
         );
     };
 
-    const fetchClassificationCountData = async () => {
-        const resj = await fetchClassificationCount(token);
+    const fetchTweetsLeftData = async () => {
+        const resj = await fetchTweetsLeftToClassify(token);
         if (resj) {
-            setClassificationCount(resj.count);
+            setTweetsLeftToClassify(resj.tweets_left);
         }
     };
 
     // Data fetching functions
     const getNewTweet = async () => {
         setLoading(true);
-        await fetchClassificationCountData();
+        await fetchTweetsLeftData();
         const resj = await fetchTweet(token);
 
         if (!resj) {
@@ -135,7 +135,7 @@ const MainView = ({ token, setToken, passcode, setPasscode, isPro }) => {
     useEffect(() => {
         getNewTweet();
         loadFeatures();
-        fetchClassificationCountData();
+        fetchTweetsLeftData();
     }, []);
 
     // Component render
@@ -251,12 +251,26 @@ const MainView = ({ token, setToken, passcode, setPasscode, isPro }) => {
                 </div>
             )}
 
-            {/* Classification Counter */}
-            {!isPro && (
-                <div style={{ textAlign: "center" }}>
-                    You've tagged so far {classificationCount} out of 125 tweets for this tagging round
-                </div>
-            )
+
+            {tweet.tweetId ?
+                <>
+                    {/* Classification Counter */}
+                    {!isPro && (
+                        <div style={{ textAlign: "center" }}>
+                            You have {tweetsLeftToClassify} tweets left to classify for this tagging round
+                        </div>
+                    )
+                    }
+
+                    {isPro && (
+                        <div style={{ textAlign: "center" }}>
+                            You have {tweetsLeftToClassify} tweets left at this moment
+                        </div>
+                    )
+                    }
+                </>
+                :
+                <></>
             }
 
 

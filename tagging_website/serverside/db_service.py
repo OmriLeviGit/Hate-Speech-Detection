@@ -122,7 +122,8 @@ class get_db_instance(metaclass=Singleton):
                     ).scalar()
                 return assigned_count
 
-            return user.left_to_classify
+            left_to_classify = user.left_to_classify
+            return left_to_classify
 
 
     # Returns all users from users table
