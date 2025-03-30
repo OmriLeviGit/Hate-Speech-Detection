@@ -53,9 +53,9 @@ export const fetchFeatures = async () => {
     }
 };
 
-export const fetchClassificationCount = async (token) => {
+export const fetchTweetsLeftToClassify = async (token) => {
     try {
-        const response = await fetch(window.API_URL + "/count_tags_made_by_user", {
+        const response = await fetch(window.API_URL + "/tweets_left_to_classify", {
             method: "GET",
             headers: {
                 "Content-Type": "application/json",

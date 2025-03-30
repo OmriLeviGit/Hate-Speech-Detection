@@ -11,7 +11,8 @@ sys.path.append(os.path.dirname(os.path.dirname(script_dir)))
 
 import db_service
 
-def import_tweets_from_csv(file_name="tweet_table.csv", limit=None):
+def import_tweets_from_csv(file_name="tweet_table.csv", start=0, limit=None):
+    print("Loading tweets...")
 
     path = os.path.join(os.path.dirname(os.path.dirname(script_dir)), 
                         "data", "ready_to_load", file_name)
@@ -21,11 +22,15 @@ def import_tweets_from_csv(file_name="tweet_table.csv", limit=None):
     df = pd.read_csv(path)
 
     added_tweets = 0
-    for _, row in df.iterrows():
+    for index, row in df.iterrows():
         if pd.isna(row['id']):
             continue
 
+        if index < start:
+            continue
+
         if limit and added_tweets > limit:
+            print(f"The last row that was inserted from the excel is: {index - 1}")
             break
 
         # Parse JSON fields
@@ -70,7 +75,7 @@ def import_tweets_from_csv(file_name="tweet_table.csv", limit=None):
             except ValueError:
                 print(f"Error parsing date for tweet {row['url']}")
         
-        db.insert_tweet(
+        success = db.insert_tweet(
             tweet_id=row['id'],
             user_posted=row['user_posted'] if pd.notna(row['user_posted']) else None,
             content=row['description'] if pd.notna(row['description']) else "",
@@ -85,12 +90,15 @@ def import_tweets_from_csv(file_name="tweet_table.csv", limit=None):
             hashtags=hashtags_list
         )
 
-        added_tweets += 1
+        if success:
+            added_tweets += 1
+
 
     print(f"Added {added_tweets} tweets")
 
 
 if __name__ == "__main__":
     batch_1 = "antisemistic_batch1_bd_20250315_175811_0.csv"
-    print("Loading tweets...")
-    import_tweets_from_csv(file_name=batch_1)
+    starting_line = 0   # in the excel
+    offset = None   # starting_line + offset = last line
+    import_tweets_from_csv(file_name=batch_1, start=starting_line, limit=offset)

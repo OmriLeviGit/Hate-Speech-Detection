@@ -47,11 +47,16 @@ async def tag_tweet(user_id, data: Classification):
     tagging_duration=data.tagging_duration
     await controller.handle_tweet_tagging(lock, user_id, tweet_id, classification, features, tagging_duration)
 
-
+# Currently, not in use by the client
 @app.get("/count_tags_made_by_user")
 @login_required
 async def count_tags_made(user_id):
     return await controller.count_tags_made(user_id)
+
+@app.get("/tweets_left_to_classify")
+@login_required
+async def tweets_left_to_classify(user_id):
+    return await controller.tweets_left_to_classify(user_id)
 
 
 @app.get("/get_user_panel")

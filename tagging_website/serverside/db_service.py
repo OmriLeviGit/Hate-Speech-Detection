@@ -122,7 +122,8 @@ class get_db_instance(metaclass=Singleton):
                     ).scalar()
                 return assigned_count
 
-            return user.left_to_classify
+            left_to_classify = user.left_to_classify
+            return left_to_classify
 
 
     # Returns all users from users table
@@ -142,7 +143,8 @@ class get_db_instance(metaclass=Singleton):
         processed_content = fix_corrupted_text(content)
 
         if not processed_content:   # If could not be parsed correctly
-            return
+            print(f"could not parse tweet {tweet_id}")
+            return False
 
         tweet = (Tweet
                  (tweet_id=tweet_id,
@@ -161,6 +163,8 @@ class get_db_instance(metaclass=Singleton):
         with Session(self.engine) as session:
             session.add(tweet)
             session.commit()
+
+        return True
 
     # Assigns a specific tweet to the pro user with the least tweets assigned\completed by him
     def assign_tweet_to_pro(self, tweet_id):

@@ -52,6 +52,14 @@ async def get_tweet_to_tag(lock, user_id):
         return tweet_data
 
 
+# Returns the number of tweets left to classify for a specific user.
+# Don't confuse it with controller.has_classification_left
+# The current method is different by sending the data to the client
+async def tweets_left_to_classify(user_id):
+    db = get_db_instance()
+    return {"tweets_left": db.tweets_left_to_classify(user_id)}
+
+
 # Checks if the user has classifications left to perform
 def has_classifications_left(user_id):
     db = get_db_instance()
