@@ -1,0 +1,87 @@
+{
+  "obfuscation": {
+    "letter_map": {
+      "a": [
+        "4",
+        "@"
+      ],
+      "b": [
+        "8"
+      ],
+      "e": [
+        "3"
+      ],
+      "i": [
+        "1",
+        "!"
+      ],
+      "l": [
+        "1"
+      ],
+      "o": [
+        "0"
+      ],
+      "s": [
+        "$",
+        "5"
+      ],
+      "t": [
+        "7"
+      ]
+    },
+    "terms": [
+      {
+        "baseTerm": "zionist",
+        "staticReplacement": ["z1"],
+        "substitutable": ["zs"],
+        "substitutablePlural": ["zionist"]
+      },
+      {
+        "baseTerm": "jew",
+        "staticReplacement": ["j$"],
+        "substitutable": [],
+        "substitutablePlural": ["jew","joo"]
+      },
+      {
+        "baseTerm": "heil hitler",
+        "staticReplacement": ["hh", "88"],
+        "substitutable": ["heil hitler"],
+        "substitutablePlural": []
+      },
+      {
+        "baseTerm": "fourteenwords",
+        "staticReplacement": ["14"],
+        "substitutable": ["fourteenwords", "14 words", "14words"],
+        "substitutablePlural": []
+      },
+      {
+        "baseTerm": "fourteenwords heil hitler",
+        "staticReplacement": ["1488"],
+        "substitutable": [],
+        "substitutablePlural": []
+      }
+    ]
+  },
+    "slang": {
+    "rt": "retweet",
+    "oh": "overheard",
+    "ff": "follow friday",
+    "ht": "heard through",
+    "h\\t": "heard through",
+    "mm": "music monday",
+    "@": "at",
+    "dm": "direct message",
+    "tweetup": "meetup",
+    "sm": "social media",
+    "sb": "small business",
+    "icymi": "in case you missed it",
+    "mrt": "modified retweet",
+    "mt": "modified tweet",
+    "nts": "note to self",
+    "np": "now playing",
+    "cc": "carbon copy"
+  },
+    "emoji": {
+
+  }
+}

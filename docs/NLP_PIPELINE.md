@@ -42,21 +42,13 @@ provided valuable data for our broader research objectives.
 
 Our preprocessing pipeline implements a series of text transformation operations executed in the following order:
 
-### Linguistic Normalization
-
-1. Obfuscation Resolution - Converting intentionally altered terms like "z1on1st" to standard forms. Altered terms were gathered during the
-   anotation phase.
-2. Linguistic Correction - We chose **language_tool_python**, selected for:
-   - Both spelling AND grammar issues.
-   - Context-aware spelling, better than simpler spell checkers.
-   - Works well with informal text like social media content.
-
-### Social Media Element Processing
-
+### Linguistic and Social Media Normalization
 - Text Normalization - Converting all text to lowercase for consistency.
-- Hashtag Handling - Preserving hashtag content while removing the "#" symbol.
-- User Mention Management - Replacing `@usernames` with standardized `<USER>` token.
 - URL Removal - Eliminating links to focus on textual content.
+- User Mention Management - Replacing `@usernames` with standardized `<USER>` token.
+- Hashtag Handling - Preserving hashtag content while removing the "#" symbol.
+- Obfuscation Resolution - Converting intentionally altered terms like "z1on1st" to standard forms.
+- Slang Expansion - Converting internet slang to standard language forms.
 
 #### Emoji Interpretation & Tokenization
 
