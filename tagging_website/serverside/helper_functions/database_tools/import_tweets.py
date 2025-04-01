@@ -99,6 +99,6 @@ def import_tweets_from_csv(file_name="tweet_table.csv", start=0, limit=None):
 
 if __name__ == "__main__":
     batch_1 = "not_antisemistic_batch1_bd_20250315_184339_0.csv"
-    starting_line = 700   # in the excel
-    offset = 249   # starting_line + offset = last line
+    starting_line = 1200   # in the excel
+    offset = 159   # starting_line + offset = last line
     import_tweets_from_csv(file_name=batch_1, start=starting_line, limit=offset)

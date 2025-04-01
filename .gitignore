@@ -1,6 +1,7 @@
 taggers_details.xlsx
 
 scrape_command.txt
+initiate_job.sh
 
 .env.local
 
