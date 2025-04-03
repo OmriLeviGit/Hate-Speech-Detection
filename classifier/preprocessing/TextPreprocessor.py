@@ -1,6 +1,5 @@
 import json
 import re
-import spacy
 
 from ObfuscationMapGenerator import ObfuscationMapGenerator
 
@@ -39,83 +38,63 @@ class TextPreprocessor:
             self._remove_hashtags,
             self._deobfuscate,
             self._expand_slang,
-            self._process_emojis,
+            # self._process_emojis,
         ]
 
     def process_text(self, text):
-        """Process text through all replacement functions in the pipeline"""
-        processed_text = text.lower()
-        for process_func in self._processing_pipeline:
-            processed_text = process_func(processed_text)
-        return processed_text
-
-    def _process_words(self, text, processor_func):
-        """Process each word in text using the provided function"""
+        """Process text by applying all functions to each word before moving to next word"""
+        text = text.lower()
         words = text.split()
-        result_words = []
+        processed_words = []
 
         for word in words:
-            processed = processor_func(word)
-            if processed is not None:
-                result_words.append(processed)
+            original_word = word
 
-        return ' '.join(result_words)
+            for function in self._processing_pipeline:
+                result = function(word)
 
-    def _remove_url(self, text):
-        """Remove URLs"""
+                if result != original_word:
+                    word = result
+                    break
+
+            if word:
+                processed_words.append(word)
+
+        return ' '.join(processed_words)
+
+    def _remove_url(self, word):
+        """Remove URLs - returns None if word is a URL, otherwise returns the word"""
         url_pattern = r'^(https?://)?(www\.)?([a-zA-Z0-9-]+\.[a-zA-Z]{2,})(/.*)?$'
+        return None if re.match(url_pattern, word) else word
 
-        def process(word):
-            return None if re.match(url_pattern, word) else word
-
-        return self._process_words(text, process)
-
-    def _replace_mentions(self, text):
+    def _replace_mentions(self, word):
         """Replace @mentions with <USER> token"""
         pattern = r"^@[\w]+$"
+        return "<USER>" if re.match(pattern, word) else word
 
-        def process(word):
-            return "<USER>" if re.match(pattern, word) else word
-
-        return self._process_words(text, process)
-
-    def _remove_hashtags(self, text):
+    def _remove_hashtags(self, word):
         """Remove the pound symbol from words. Words starting with more than one hashtag remain unchanged."""
 
-        def process(word):
-            # if starts with a single hashtag, remove it
-            return word[1:] if word.startswith('#') and not word[1:].startswith('#') else word
-
-        return self._process_words(text, process)
-
-    def _deobfuscate(self, text):
-        """Replace obfuscated terms with their normal forms"""
-
-        def process(word):
-            return self._obfuscation_map.get(word, word)
-
-        return self._process_words(text, process)
-
-    def _expand_slang(self, text):
-        """Expand slang abbreviations to their full forms"""
-
-        def process(word):
-            return self._slang_map.get(word, word)
-
-        return self._process_words(text, process)
-
-    def _process_emojis(self, text):
-        """Convert emojis to their hidden contextual meanings"""
-
-        def process(word):
-            # Check if the word contains any emoji from our custom mapping
-            for emoji in self._emoji_meaning_map:
-                if emoji in word:
-                    # Replace the emoji with its contextual meaning
-                    word = word.replace(emoji, self._emoji_meaning_map[emoji])
+        if word == '#':
             return word
 
-        return self._process_words(text, process)
+        return word[1:] if word.startswith('#') and not word[1:].startswith('#') else word
+
+    def _deobfuscate(self, word):
+        """Replace obfuscated terms with their normal forms"""
+        return self._obfuscation_map.get(word, word)
+
+    def _expand_slang(self, word):
+        """Expand slang abbreviations to their full forms"""
+        return self._slang_map.get(word, word)
+
+    def _process_emojis(self, word):
+        """Convert emojis to their hidden contextual meanings"""
+        result = word
+        for emoji in self._emoji_meaning_map:
+            if emoji in result:
+                result = result.replace(emoji, self._emoji_meaning_map[emoji])
+        return result
 
     def save_maps(self, file_path):
         """Save all maps to a file for later use"""
@@ -129,9 +108,9 @@ def test_run():
         "88 brother, 14 words to live by",
         "1488 is my favorite number",
         "h\\t a reliable source",
-        "look up at https://www.google.com/",
+        "look up at link: https://www.google.com/",
         "my friend @friend has a dog",
-        "tell #him"
+        "tell #hashtag"
     ]
     processor = TextPreprocessor('config.json')
 

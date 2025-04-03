@@ -116,3 +116,10 @@ class ObfuscationMapGenerator:
         with open('obfuscation_map.json', 'w') as f:
             json.dump(self._obfuscation_map, f, indent=2)
         print("Obfuscation map saved to obfuscation_map.json")
+
+
+
+
+if __name__ == "__main__":
+    obf = ObfuscationMapGenerator(config_path='config.json')
+    obf.save_obfuscation_map()
