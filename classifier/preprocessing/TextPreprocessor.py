@@ -41,7 +41,7 @@ class TextPreprocessor:
             # self._process_emojis,
         ]
 
-    def process_text(self, text):
+    def process(self, text):
         """Process text by applying all functions to each word before moving to next word"""
         text = text.lower()
         words = text.split()
@@ -121,7 +121,7 @@ def test_run():
 
     print("\n", "-" * 20 + " After conversion " + "-" * 20)
     for text in example_texts:
-        print(processor.process_text(text))
+        print(processor.process(text))
 
 
 if __name__ == "__main__":

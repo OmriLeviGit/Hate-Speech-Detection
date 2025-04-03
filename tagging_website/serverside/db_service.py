@@ -498,3 +498,15 @@ class get_db_instance(metaclass=Singleton):
             ).group_by('hashtag')\
             .having(func.count('*') >= min_count)\
             .order_by(func.count('*').desc()).all()
+
+    def get_result_posts(self, label, count=None):
+        with Session(self.engine) as session:
+            query = session.query(TaggingResult). \
+                filter(TaggingResult.tag_result == label). \
+                join(Tweet, TaggingResult.tweet_id == Tweet.tweet_id). \
+                order_by(TaggingResult.id)
+
+            if count is not None:
+                query = query.limit(count)
+
+            return query.all()
