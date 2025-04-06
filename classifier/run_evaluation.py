@@ -1,14 +1,14 @@
+from classifier.TestModel import TestModel
+
+
 def run_evaluation():
-    # Create instances of different classifiers
 
-    classifier_list = [HuggingFaceClassifier(), SpacyClassifier()]
+    classifier = TestModel()
 
-    # Evaluate all classifiers
-    results = evaluate_classifiers(classifier_list)
+    data = classifier.load_data(1000, 1000, 1000, debug=True)
 
-    # You could also save the best model
-    best_classifier = max(results.columns, key=lambda x: results.loc["accuracy", x])
-    print(f"Best classifier: {best_classifier}")
+    prepared = classifier.prepare_datasets(data, combine_irrelevant=True)
+
 
 
 if __name__ == '__main__':

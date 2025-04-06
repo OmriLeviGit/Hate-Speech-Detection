@@ -1,12 +1,13 @@
 import json
 import re
+import os
 
-from ObfuscationMapGenerator import ObfuscationMapGenerator
+from .ObfuscationMapGenerator import ObfuscationMapGenerator
 
 
 class TextPreprocessor:
     def __init__(self, config_path='config.json'):
-        self._config_path = config_path
+        self._config_path = os.path.join(os.path.dirname(__file__), config_path)
         self._load_config()
 
         self._obfuscation_map_generator = ObfuscationMapGenerator(obfuscation_config=self._config.get('obfuscation', {}))
@@ -25,6 +26,7 @@ class TextPreprocessor:
         """Load configuration from file"""
         try:
             with open(self._config_path, 'r') as f:
+
                 self._config = json.load(f)
         except (FileNotFoundError, json.JSONDecodeError) as e:
             print(f"Error loading config: {e}")

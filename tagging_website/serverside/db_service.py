@@ -7,9 +7,9 @@ from sqlalchemy import Engine, Nullable, func, text, create_engine, func, or_, a
 from sqlalchemy.sql import expression
 from sqlalchemy.orm import Session, session
 
-from model import *
-from model import User, Tweet, AssignedTweet, TaggersDecision, TaggingResult
-from helper_functions.utils import fix_corrupted_text
+from .model import *
+from .model import User, Tweet, AssignedTweet, TaggersDecision, TaggingResult
+from .helper_functions.utils import fix_corrupted_text
 
 
 load_dotenv(os.path.join(Path(__file__).parent.absolute(), '.env.local'))
