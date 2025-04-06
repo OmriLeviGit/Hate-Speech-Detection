@@ -1,14 +1,32 @@
+import spacy
+from spacy.util import is_package
+from classifier.TestModel import TestModel
+from classifier.preprocessing.TextPreprocessor import TextPreprocessor
+
+
+def load_model(model_name):
+    if not is_package(model_name):
+        print(f"Model {model_name} is not installed. Installing...")
+        spacy.cli.download(model_name)
+
+    return spacy.load(model_name)
+
+
 def run_evaluation():
-    # Create instances of different classifiers
+    model_name = "en_core_web_sm"
+    nlp = load_model(model_name)
 
-    classifier_list = [HuggingFaceClassifier(), SpacyClassifier()]
+    text_preprocessor = TextPreprocessor(emoji=None)  # 'text' to convert to text, 'config' to get description from 'config.json'
 
-    # Evaluate all classifiers
-    results = evaluate_classifiers(classifier_list)
+    classifier = TestModel(nlp, text_preprocessor)
 
-    # You could also save the best model
-    best_classifier = max(results.columns, key=lambda x: results.loc["accuracy", x])
-    print(f"Best classifier: {best_classifier}")
+    data = classifier.load_data(1000, 1000, 1000, debug=True)
+
+    data = classifier.prepare_datasets(data)   # combine_irrelevant=True to combine irrelevant with not-antisemistic
+
+    data = classifier.preprocess_data(data)
+
+    classifier.train(data)
 
 
 if __name__ == '__main__':
