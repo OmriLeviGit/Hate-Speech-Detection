@@ -5,11 +5,12 @@ export const exportToCSV = (users) => {
     }
 
     const headers = [
-        "Email,No. Classified, Average Time (seconds), No. Positive,No. Negative,No. Irrelevant,No. Uncertain,% Positive,% Negative,% Irrelevant,% Uncertain"
+        "Email,No. Classified, Left to Classify, Average Time (seconds), No. Positive,No. Negative,No. Irrelevant,No. Uncertain,% Positive,% Negative,% Irrelevant,% Uncertain"
     ];
     const rows = users.map(user => [
         user.email,
         user.personalClassifications,
+        user.leftToClassify,
         user.averageTime > 0 ? user.averageTime : 0,
         user.positiveClassified,
         user.negativeClassified,
