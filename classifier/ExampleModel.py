@@ -1,26 +1,14 @@
-from spacy.symbols import ORTH
-
 from BaseTextClassifier import BaseTextClassifier
 
 
-class TestModel(BaseTextClassifier):
+class ExampleModel(BaseTextClassifier):
     def preprocess_data(self, datasets: any) -> any:
         """Apply preprocessing to datasets"""
         datasets = super().preprocess_data(datasets)
 
-        # Add special tokens to the tokenizer
-        special_tokens = self.get_text_preprocessor().get_special_tokens()
-        self._handle_special_tokens(special_tokens)
+        # additional preprocessing such as tokenization
 
         return datasets
-
-    def _handle_special_tokens(self, special_tokens):
-        """Register all special tokens with spaCy tokenizer"""
-        model = self.get_model()
-
-        for token in special_tokens:
-            special_case = [{ORTH: token}]
-            model.tokenizer.add_special_case(token, special_case)
 
     def train(self, processed_datasets: any, **kwargs) -> None:
         """Train the model"""
