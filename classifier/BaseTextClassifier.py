@@ -4,6 +4,7 @@ import os
 import random
 import copy
 
+
 from classifier.preprocessing.TextPreprocessor import TextPreprocessor
 from tagging_website.serverside.db_service import get_db_instance
 
@@ -180,7 +181,6 @@ class BaseTextClassifier(ABC):
         """Set text preprocessor"""
         return self._model
 
-
     def _initialize_test_dataset(self, class_2_exists):
         class_0 = [
             """Hitler is inevitable.""",
@@ -193,58 +193,58 @@ class BaseTextClassifier(ABC):
             students protesting at universities, vast cross-sections of the community joining weekly mass rallies 
             around the country, public servants, artists, teachers, doctors & health care workers, lawyers, 
             journalists, food & hospitality workers who have been vocal against Israel's genocide on Palestinians.""",
-            # """Are these all JEWS serving as "right wing influencers" and "gatekeepers"? \n\nH/T @observer4obs""",
-            # """Yes this actually happens. Israelis steal Palestinian homes.""",
-            # """@DrLoupis Is this the beginning of the end for the absurd Israeli and Jewish dominance of the west and
-            # their aggression with the Middle East?\n\nIs it time to deny Israel endless allowances for their genocide
-            # of the Palestinians?""",
-            # """@jewsagainstfash Jews chestpuffing after the fact, yet I didn't see you down there?\n\nPrefer to have
-            # your pigs, brown sludge and communist golems do the heavy lifting so you can play twitter toughguy a day
-            # later, shlomo?""",
-            # """@Pohl_MdB Sieg heil.""",
-            # """Where is the Australian government condemnation.  Where are the sanctions?
-            # #IsraelIsAnApartheidState\nIsrael's occupation of Palestinian territories is illegal, UN court rules -""",
+            """Are these all JEWS serving as "right wing influencers" and "gatekeepers"? \n\nH/T @observer4obs""",
+            """Yes this actually happens. Israelis steal Palestinian homes.""",
+            """@DrLoupis Is this the beginning of the end for the absurd Israeli and Jewish dominance of the west and
+            their aggression with the Middle East?\n\nIs it time to deny Israel endless allowances for their genocide
+            of the Palestinians?""",
+            """@jewsagainstfash Jews chestpuffing after the fact, yet I didn't see you down there?\n\nPrefer to have
+            your pigs, brown sludge and communist golems do the heavy lifting so you can play twitter toughguy a day
+            later, shlomo?""",
+            """@Pohl_MdB Sieg heil.""",
+            """Where is the Australian government condemnation.  Where are the sanctions?
+            #IsraelIsAnApartheidState\nIsrael's occupation of Palestinian territories is illegal, UN court rules -""",
         ]
         class_1 = [
-            # """@KeithWoodsYT I agree that we shouldn't try and copy paste a movement. It's not even possible but what
-            # about those of us who identify with these things for their economic ideas? Or rather how their economic
-            # policies helped to supplement their race?""",
-            # """We have the right to protest, despise, call for the end of an ideology and state that can only exist
-            # by pursuing our non-existence. We have the right to say we cannot co-exist with our genocidal oppressors.
-            # We have the right to demand an end to settler colonialism, apartheid and occupation without factoring in
-            # how our oppressors "feel". We have the right to imagine that another world is possible. We have the
-            # right to refuse to be held hostage to confected feelings by people who support our annihilation. (4)""",
-            # """The Fascist stadium""",
-            # """@SamParkerSenate @Lucas_Gage_ The 4 be 2's are gonna keep the war going till 2025 . A lot of people
-            # are gonna start noticing .""",
-            # """If a certain group were another color, would more people notice their concentration of power?H/T
-            # @tonyrigatonee 👈 Give him a follow""",
-            # """Friendly reminder this is not an argument and merely an assertion. Nowhere in Christianity does it
-            # imply that there aren't superior & inferior people on some level. Equality only exists insofar as souls
-            # are of equal value in the eyes of God & are likewise loved and judged equally""",
-            # """@PeterDutton_MP "Properly managed migration" lolSounds like certain someone who shall remain nameless
-            # but has Peter as a first name will still import record amounts of immigrants like his Liberal and Labor
-            # predecessors 🤨The people want calls for mass deportation, end of story""",
-            # """When I say 'Pan-Europeanism' I don't mean the dissolution of specific European identities I mean to
-            # cooperation of all European ethnicities inside and outside Europe.""",
-            # """Getting dwarfed by the Mussolini Obelisk""",
+            """@KeithWoodsYT I agree that we shouldn't try and copy paste a movement. It's not even possible but what
+            about those of us who identify with these things for their economic ideas? Or rather how their economic
+            policies helped to supplement their race?""",
+            """We have the right to protest, despise, call for the end of an ideology and state that can only exist
+            by pursuing our non-existence. We have the right to say we cannot co-exist with our genocidal oppressors.
+            We have the right to demand an end to settler colonialism, apartheid and occupation without factoring in
+            how our oppressors "feel". We have the right to imagine that another world is possible. We have the
+            right to refuse to be held hostage to confected feelings by people who support our annihilation. (4)""",
+            """The Fascist stadium""",
+            """@SamParkerSenate @Lucas_Gage_ The 4 be 2's are gonna keep the war going till 2025 . A lot of people
+            are gonna start noticing .""",
+            """If a certain group were another color, would more people notice their concentration of power?H/T
+            @tonyrigatonee 👈 Give him a follow""",
+            """Friendly reminder this is not an argument and merely an assertion. Nowhere in Christianity does it
+            imply that there aren't superior & inferior people on some level. Equality only exists insofar as souls
+            are of equal value in the eyes of God & are likewise loved and judged equally""",
+            """@PeterDutton_MP "Properly managed migration" lolSounds like certain someone who shall remain nameless
+            but has Peter as a first name will still import record amounts of immigrants like his Liberal and Labor
+            predecessors 🤨The people want calls for mass deportation, end of story""",
+            """When I say 'Pan-Europeanism' I don't mean the dissolution of specific European identities I mean to
+            cooperation of all European ethnicities inside and outside Europe.""",
+            """Getting dwarfed by the Mussolini Obelisk""",
             """🎶🎵 Fuck off we're full, fuck off we're full. 🎵🎶🎶🎵 Fuck off we're full Australia for the White 
             man, fuck off we're full! 🎵🎶""",
             ]
 
         class_2 = [
-            # """'Sex work' is just the ultimate commodification of self. Truly a weird form of self exploitation.
-            # Nothing more disrespectful to yourself to offer yourself as nothing but a vessel for the pleasure of
-            # others. Those who do this do not understand they're a human with a soul.""",
-            # """It's really fucking simple!""",
-            # """I AM MOVING ON THE KING'S HIGHWAY""",
-            # """One year from now?""",
-            # """@MarkJesser @bordermail Problem?""",
+            """'Sex work' is just the ultimate commodification of self. Truly a weird form of self exploitation.
+            Nothing more disrespectful to yourself to offer yourself as nothing but a vessel for the pleasure of
+            others. Those who do this do not understand they're a human with a soul.""",
+            """It's really fucking simple!""",
+            """I AM MOVING ON THE KING'S HIGHWAY""",
+            """One year from now?""",
+            """@MarkJesser @bordermail Problem?""",
             """@DrewPavlou Obvious being satirical, this conversation would not make sense unironically""",
             """📍Grampians national park @WhiteAusVic""",
-            # """@DrewPavlou I'm amazed that you didn't pop the tyres when you sat on the scooter""",
-            # """Seems like a film about Fiume is coming out""",
-            # """Not a finer group of lads in the country. Shrug off your inaction and join today"""
+            """@DrewPavlou I'm amazed that you didn't pop the tyres when you sat on the scooter""",
+            """Seems like a film about Fiume is coming out""",
+            """Not a finer group of lads in the country. Shrug off your inaction and join today"""
         ]
 
         data = {
