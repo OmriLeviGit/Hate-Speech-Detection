@@ -3,6 +3,7 @@ import re
 import html
 import ftfy
 import emoji
+import unicodedata
 
 def fix_corrupted_text(text):
 
@@ -17,6 +18,7 @@ def fix_corrupted_text(text):
 
     # general text encoding fixes
     text = ftfy.fix_text(text)
+    text = unicodedata.normalize('NFKD', text)
 
     # specific Unicode escape sequences if ftfy didn't catch them
     try:
