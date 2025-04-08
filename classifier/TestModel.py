@@ -2,10 +2,13 @@ from BaseTextClassifier import BaseTextClassifier
 
 
 class TestModel(BaseTextClassifier):
-
     def preprocess_data(self, datasets: any) -> any:
         """Apply preprocessing to datasets."""
-        pass
+        datasets = super().preprocess_data(datasets)
+
+        # additional preprocessing such as tokenization
+
+        return datasets
 
     def train(self, processed_datasets: any, **kwargs) -> None:
         """Train the model."""

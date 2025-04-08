@@ -1,12 +1,13 @@
 import json
 import re
 import os
+from emoji import demojize
 
 from .ObfuscationMapGenerator import ObfuscationMapGenerator
 
 
 class TextPreprocessor:
-    def __init__(self, config_path='config.json'):
+    def __init__(self, config_path='config.json', emoji: str = None):
         self._config_path = os.path.join(os.path.dirname(__file__), config_path)
         self._load_config()
 
@@ -20,7 +21,7 @@ class TextPreprocessor:
         self._emoji_meaning_map = self._config.get('emoji', {})
 
         self._processing_pipeline = []
-        self._setup_pipeline()
+        self._setup_pipeline(emoji)
 
     def _load_config(self):
         """Load configuration from file"""
@@ -32,7 +33,7 @@ class TextPreprocessor:
             print(f"Error loading config: {e}")
             self._config = {}
 
-    def _setup_pipeline(self):
+    def _setup_pipeline(self, emoji):
         """Set up the processing pipeline with functions in the correct order"""
         self._processing_pipeline = [
             self._remove_url,
@@ -40,8 +41,13 @@ class TextPreprocessor:
             self._remove_hashtags,
             self._deobfuscate,
             self._expand_slang,
-            # self._process_emojis,
         ]
+
+        if emoji == "text":
+            self._processing_pipeline.append(self._emoji_to_text)
+
+        elif emoji == "config":
+            self._processing_pipeline.append(self._emojis_by_config)
 
     def process(self, text):
         """Process text by applying all functions to each word before moving to next word"""
@@ -90,7 +96,15 @@ class TextPreprocessor:
         """Expand slang abbreviations to their full forms"""
         return self._slang_map.get(word, word)
 
-    def _process_emojis(self, word):
+    def _emoji_to_text(self, word):
+        """Convert emojis to their hidden contextual meanings"""
+        result = word
+        for emoji in self._emoji_meaning_map:
+            if emoji in result:
+                result = result.replace(emoji, demojize(emoji))
+        return result
+
+    def _emojis_by_config(self, word):
         """Convert emojis to their hidden contextual meanings"""
         result = word
         for emoji in self._emoji_meaning_map:
