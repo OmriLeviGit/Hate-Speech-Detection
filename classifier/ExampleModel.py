@@ -2,6 +2,7 @@ from BaseTextClassifier import BaseTextClassifier
 
 
 class ExampleModel(BaseTextClassifier):
+
     def preprocess_data(self, datasets: any) -> any:
         """Apply preprocessing to datasets"""
         datasets = super().preprocess_data(datasets)
@@ -9,6 +10,9 @@ class ExampleModel(BaseTextClassifier):
         # additional preprocessing such as tokenization
 
         return datasets
+
+    def _handle_special_tokens(self, special_tokens):
+        pass
 
     def train(self, processed_datasets: any, **kwargs) -> None:
         """Train the model"""

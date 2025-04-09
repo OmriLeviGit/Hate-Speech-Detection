@@ -3,12 +3,13 @@ import re
 import html
 import ftfy
 import emoji
+import unicodedata
+
 
 def fix_corrupted_text(text):
-
     if not text:
         return None
-    
+
     # handle HTML entities
     try:
         text = html.unescape(text)
@@ -17,6 +18,7 @@ def fix_corrupted_text(text):
 
     # general text encoding fixes
     text = ftfy.fix_text(text)
+    text = unicodedata.normalize('NFKD', text)
 
     # specific Unicode escape sequences if ftfy didn't catch them
     try:
@@ -29,15 +31,12 @@ def fix_corrupted_text(text):
                 text = codecs.decode(text, 'unicode_escape', errors='replace')
     except:
         pass
-    
-    text = text.replace('†', '"')   # Common character replacement
 
-    # Common character replacement
-    text = text.replace('†', '"')
+    text = text.replace('†', '"')  # Common character replacement
 
     is_text_or_emoji = emoji.demojize(text).isascii()
-    
+
     if not is_text_or_emoji:
         return None
-    
+
     return text

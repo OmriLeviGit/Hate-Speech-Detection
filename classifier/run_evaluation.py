@@ -20,7 +20,7 @@ def run_evaluation():
     model_name = "en_core_web_sm"
     nlp = load_model(model_name)
 
-    text_preprocessor = TextPreprocessor()  # 'text' to convert to text, 'config' to get description from 'config.json'
+    text_preprocessor = TextPreprocessor(emoji=None)  # 'text' to convert to text, 'config' to get description from 'config.json'
 
     classifier = BasicModel(nlp, text_preprocessor)
 
