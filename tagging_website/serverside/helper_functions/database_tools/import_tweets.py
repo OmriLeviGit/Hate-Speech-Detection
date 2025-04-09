@@ -19,7 +19,7 @@ def import_tweets_from_csv(file_name="tweet_table.csv", start=0, limit=None):
 
     db = db_service.get_db_instance()
 
-    df = pd.read_csv(path)
+    df = pd.read_csv(path, dtype={'tweet_id': str})
 
     added_tweets = 0
     for index, row in df.iterrows():
@@ -30,7 +30,7 @@ def import_tweets_from_csv(file_name="tweet_table.csv", start=0, limit=None):
             continue
 
         if limit and added_tweets > limit:
-            print(f"The last row that was inserted from the excel is: {index - 1}")
+            print(f"The last row that was inserted from '{file_name}' was: {index - 1}")
             break
 
         # Parse JSON fields
@@ -98,8 +98,12 @@ def import_tweets_from_csv(file_name="tweet_table.csv", start=0, limit=None):
 
 
 if __name__ == "__main__":
-    batch_1 = "not_antisemistic_batch1_bd_20250315_184339_0.csv"
-    batch_2 = "antisemistic_batch_2_bd_20250402_153450_0.csv"     # batch 2 of antisemistic
-    starting_line = 1200   # in the excel
-    offset = 159   # starting_line + offset = last line
-    import_tweets_from_csv(file_name=batch_1, start=starting_line, limit=offset)
+    # batch 1 of antisemistic is *done*
+
+    batch = "antisemistic_batch2_bd_20250402_153450_0.csv"  # antisemistic
+    # batch = "not_antisemistic_batch1_bd_20250315_184339_0.csv"    # not antisemistic
+
+    starting_line = 0   # in the excel
+    num_of_tweets = 800   # num of tweets to insert
+    import_tweets_from_csv(file_name=batch, start=starting_line, limit=num_of_tweets)
+    

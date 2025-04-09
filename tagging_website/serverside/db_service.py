@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 from sqlalchemy import Engine, Nullable, func, text, create_engine, func, or_, and_, exists, select, Boolean, distinct
 from sqlalchemy.sql import expression
 from sqlalchemy.orm import Session, session
+from sqlalchemy.exc import IntegrityError
 
 from model import *
 from model import User, Tweet, AssignedTweet, TaggersDecision, TaggingResult
@@ -144,6 +145,8 @@ class get_db_instance(metaclass=Singleton):
 
         if not processed_content:   # If could not be parsed correctly
             print(f"could not parse tweet {tweet_id}")
+            # print(f"could not parse tweet {tweet_id}: \n{content}")
+
             return False
 
         tweet = (Tweet
@@ -160,11 +163,15 @@ class get_db_instance(metaclass=Singleton):
                   views=views,
                   hashtags=hashtags))
 
-        with Session(self.engine) as session:
-            session.add(tweet)
-            session.commit()
-
-        return True
+        try:
+            with Session(self.engine) as session:
+                session.add(tweet)
+                session.commit()
+            return True
+            
+        except IntegrityError:
+            print(f"Tweet with ID {tweet_id} already exists in the database")
+            return False
 
     # Assigns a specific tweet to the pro user with the least tweets assigned\completed by him
     def assign_tweet_to_pro(self, tweet_id):
@@ -249,9 +256,7 @@ class get_db_instance(metaclass=Singleton):
         """Find a valid tweet for assignment for regular users."""
 
         if self.is_pro(user_id) and self.tweets_left_to_classify(user_id) < 1:
-            print("here")
             return None
-        print("out", self.tweets_left_to_classify(user_id))
 
         previously_tagged = session.query(TaggersDecision.tweet_id).filter(
             TaggersDecision.tagged_by == user_id
