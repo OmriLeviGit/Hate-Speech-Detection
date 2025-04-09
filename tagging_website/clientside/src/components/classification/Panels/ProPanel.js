@@ -97,7 +97,8 @@ const ProPanel = ({ token }) => {
                 <thead>
                     <tr>
                         <th>Email</th>
-                        <th>No. Classified</th>
+                        <th>Total Classified</th>
+                        <th>Left to Classify</th>
                         <th>Average Time (seconds)</th>
                         <th>No. Positive</th>
                         <th>No. Negative</th>
@@ -114,6 +115,7 @@ const ProPanel = ({ token }) => {
                         <tr key={index}>
                             <td>{user.email}</td>
                             <td>{user.personalClassifications}</td>
+                            <td>{user.leftToClassify}</td>
                             <td>{user.averageTime > 0 ? user.averageTime : 0}</td>
                             <td>{user.positiveClassified}</td>
                             <td>{user.negativeClassified}</td>

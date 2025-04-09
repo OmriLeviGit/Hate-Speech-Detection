@@ -156,6 +156,7 @@ async def get_pro_panel(lock):
             email = user.email
 
             classification_count = db.count_tags_made(user_id)
+            left_to_classify = db.tweets_left_to_classify(user_id)
             positive_count = db.get_positive_classification_count(user_id)
             negative_count = db.get_negative_classification_count(user_id)
             irrelevant_count = db.get_irrelevant_classification_count(user_id)
@@ -168,6 +169,7 @@ async def get_pro_panel(lock):
                 users.append({
                     "email": email,
                     "personalClassifications": classification_count,
+                    "leftToClassify": left_to_classify,
                     "positiveClassified": positive_count,
                     "negativeClassified": negative_count,
                     "averageTime": avg_time,
