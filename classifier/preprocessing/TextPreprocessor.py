@@ -1,7 +1,8 @@
 import json
 import re
 import os
-from emoji import demojize
+
+from emoji import demojize, is_emoji
 
 from .ObfuscationMapGenerator import ObfuscationMapGenerator
 
@@ -22,6 +23,7 @@ class TextPreprocessor:
 
         self._processing_pipeline = []
         self._setup_pipeline(emoji)
+        self._special_tokens = set()
 
     def _load_config(self):
         """Load configuration from file"""
@@ -78,7 +80,13 @@ class TextPreprocessor:
     def _replace_mentions(self, word):
         """Replace @mentions with <USER> token"""
         pattern = r"^@[\w]+$"
-        return "<USER>" if re.match(pattern, word) else word
+
+        if re.match(pattern, word):
+            user = "<USER>"
+            self._special_tokens.add(user)
+            return user
+
+        return word
 
     def _remove_hashtags(self, word):
         """Remove the pound symbol from words. Words starting with more than one hashtag remain unchanged."""
@@ -98,23 +106,28 @@ class TextPreprocessor:
 
     def _emoji_to_text(self, word):
         """Convert emojis to their hidden contextual meanings"""
-        result = word
-        for emoji in self._emoji_meaning_map:
-            if emoji in result:
-                result = result.replace(emoji, demojize(emoji))
-        return result
+
+        for char in word:
+            if is_emoji(char):
+                emoji_text = demojize(char)
+                self._special_tokens.add(emoji_text)
+
+        return demojize(word)
 
     def _emojis_by_config(self, word):
         """Convert emojis to their hidden contextual meanings"""
         result = word
         for emoji in self._emoji_meaning_map:
             if emoji in result:
-                result = result.replace(emoji, self._emoji_meaning_map[emoji])
+                meaning = ':' + self._emoji_meaning_map[emoji] + ':'
+                self._special_tokens.add(meaning)
+                result = result.replace(emoji, meaning)
+
         return result
 
-    def save_maps(self, file_path):
-        """Save all maps to a file for later use"""
-        pass
+    def get_special_tokens(self):
+        """Return set of special tokens identified during processing"""
+        return self._special_tokens
 
 
 def test_run():
