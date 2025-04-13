@@ -3,6 +3,7 @@ import sys
 import os
 import random
 import copy
+import pandas as pd
 
 
 from classifier.preprocessing.TextPreprocessor import TextPreprocessor
@@ -14,17 +15,14 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 class BaseTextClassifier(ABC):
     """Abstract base class for text classifiers"""
 
-    def __init__(self, model: any, label_count: int, preprocessor: TextPreprocessor() = None, seed: int = 42):
+    def __init__(self, model: any, preprocessor: TextPreprocessor() = None, seed: int = 42):
         self._model = model
         self._preprocessor = preprocessor
 
         self.random_generator = random.Random(seed)  # use this instead of random.random() to keep results consistent
         self.LABELS = ["antisemistic", "not_antisemistic"]
-        if label_count == 3:
-            self.LABELS.append("irrelevant")
 
-
-    def load_data(self, class_0_count, class_1_count, class_2_count=None, debug=False) -> dict[str, list]:
+    def load_data(self, class_0_count, class_1_count, class_2_count=None, source=None) -> dict[str, list]:
         """Load data from file or use sample data.
 
         This function loads text data for classification either from a database (when debug=False)
@@ -34,25 +32,44 @@ class BaseTextClassifier(ABC):
             class_0_count: Number of samples to load for class 0 (antisemistic)
             class_1_count: Number of samples to load for class 1 (not_antisemistic)
             class_2_count: Number of samples to load for class 2 (irrelevant), optional
-            debug: True works with local data, False with data from the database
+            source: 'test' works with generated data, 'csv_files' with local data, else data from the database
 
         Returns:
             Dictionary mapping class labels to lists of text samples.
             In debug mode, the lists contain placeholder values (zeros).
         """
+        # Initialize data dictionary
+        data = {}
 
-        if debug:
-            return self._initialize_test_dataset(class_2_count)
+        if source == 'csv_files':
+            # Load data from CSV files
+            data[self.LABELS[0]] = pd.read_csv('../positive_results.csv', header=None, nrows=class_0_count)[0].tolist()
+            data[self.LABELS[1]] = pd.read_csv('../negative_results.csv', header=None, nrows=class_1_count)[0].tolist()
 
-        db = get_db_instance()
+            if class_2_count is not None:
+                self.LABELS.append("irrelevant")
 
-        data = {
-            self.LABELS[0]: db.get_result_posts(label=self.LABELS[0], count=class_0_count),
-            self.LABELS[1]: db.get_result_posts(label=self.LABELS[1], count=class_1_count)
-        }
+                data[self.LABELS[2]] = pd.read_csv('../irrelevant_results.csv', header=None, nrows=class_2_count)[
+                    0].tolist()
 
-        if class_2_count is not None:
-            data[self.LABELS[2]] = db.get_result_posts(label=self.LABELS[2], count=class_2_count)
+        elif source == 'test':
+            if class_2_count is not None:
+                self.LABELS.append("irrelevant")
+
+            data = self._initialize_test_dataset(class_2_count)
+
+
+        else:
+            # Get data from database
+            db = get_db_instance()
+
+            data[self.LABELS[0]] = db.get_result_posts(label=self.LABELS[0], count=class_0_count)
+            data[self.LABELS[1]] = db.get_result_posts(label=self.LABELS[1], count=class_1_count)
+
+            if class_2_count is not None:
+                self.LABELS.append("irrelevant")
+
+                data[self.LABELS[2]] = db.get_result_posts(label=self.LABELS[2], count=class_2_count)
 
         return data
 
@@ -138,6 +155,7 @@ class BaseTextClassifier(ABC):
 
         return datasets
 
+    @abstractmethod
     def add_lemmas(self, custom_lemmas: dict):
         """
         Add custom lemmatization rules to spaCy's lemmatizer
@@ -145,29 +163,7 @@ class BaseTextClassifier(ABC):
         Args:
             custom_lemmas: dict mapping words to their desired lemma forms
         """
-
-        nlp = self.get_model()
-        # Get the lemmatizer if it exists
-        if 'lemmatizer' not in nlp.pipe_names:
-            return
-
-        custom_lemmas = {word: word for word in custom_lemmas}
-
-        lemmatizer = nlp.get_pipe('lemmatizer')
-        lemma_exc = lemmatizer.lookups.get_table("lemma_exc")
-
-        # Add custom exceptions for each POS tag
-        for word, lemma in custom_lemmas.items():
-            for pos in ['NOUN', 'VERB', 'ADJ', 'ADV', 'PROPN']:
-                # Check if this POS tag exists in the exceptions
-                if pos not in lemma_exc:
-                    lemma_exc[pos] = {}
-
-                # Add our exception
-                lemma_exc[pos][word.lower()] = [lemma.lower()]
-
-        # Update the lookups table
-        lemmatizer.lookups.set_table("lemma_exc", lemma_exc)
+        pass
 
     @abstractmethod
     def add_tokens(self, special_tokens):
@@ -208,8 +204,12 @@ class BaseTextClassifier(ABC):
         self._preprocessor = preprocessor
 
     def get_model(self):
-        """Set text preprocessor"""
+        """Get text preprocessor"""
         return self._model
+
+    def set_model(self, model):
+        """Set text preprocessor"""
+        self._model = model
 
     def _initialize_test_dataset(self, class_2_exists):
         class_0 = [
