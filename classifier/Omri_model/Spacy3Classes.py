@@ -1,15 +1,11 @@
 from spacy.symbols import ORTH
 
-from BaseTextClassifier import BaseTextClassifier
-
-"""
-this is the classifier im working on, you can ignore it
-"""
+from classifier.BaseTextClassifier import BaseTextClassifier
 
 
-class BasicModel(BaseTextClassifier):
+class Spacy3Classes(BaseTextClassifier):
 
-    def preprocess_data(self, datasets: any, exclude_from_lemma: list[str] = None) -> any:
+    def preprocess_data(self, datasets: any, exclude_from_lemma: list[str] = None) -> dict[str, list[tuple[str, str]]]:
         """Apply preprocessing to datasets"""
 
         datasets = super().preprocess_data(datasets)
@@ -48,6 +44,7 @@ class BasicModel(BaseTextClassifier):
 
     def train(self, processed_datasets: any, **kwargs) -> None:
         """Train the model"""
+
         pass
 
     def evaluate(self, test_dataset: any) -> dict[str, float]:

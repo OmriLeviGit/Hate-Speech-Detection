@@ -77,6 +77,10 @@ class BaseTextClassifier(ABC):
             print("training, test, and validation sizes must sum up to 1")
             return
 
+        # Find the size of the smallest class to determine validation set size. Validation size should be consistent between classes regardless of their size.
+        min_class_size = min(len(posts) for posts in data.values())
+        validation_count_per_class = int(min_class_size * validation_size)
+
         # Handle combining irrelevant with not-antisemistic if specified
         if combine_irrelevant and self._CLASS_1 in data and self._CLASS_2 in data:
             data[self._CLASS_1] = data[self._CLASS_1] + data.pop(self._CLASS_2)
@@ -87,14 +91,13 @@ class BaseTextClassifier(ABC):
 
         # Process each class separately to maintain class distribution
         for label, posts in data.items():
-            total_posts = len(posts)
-            test_count = int(total_posts * test_size)
-            validation_count = int(total_posts * validation_size)
-            train_count = total_posts - test_count - validation_count
+            validation_posts = posts[:validation_count_per_class]   # Take equal validation samples from each class
 
-            train_posts = posts[:train_count]
-            validation_posts = posts[train_count:train_count + validation_count]
-            test_posts = posts[train_count + validation_count:]
+            remaining_posts = posts[validation_count_per_class:]
+            test_count = int(len(remaining_posts) * test_size / (1 - validation_size))
+
+            test_posts = remaining_posts[:test_count]
+            train_posts = remaining_posts[test_count:]
 
             train_data['posts'].extend(train_posts)
             train_data['labels'].extend([label] * len(train_posts))
@@ -109,10 +112,6 @@ class BaseTextClassifier(ABC):
         validation_combined = list(zip(validation_data['posts'], validation_data['labels']))
         test_combined = list(zip(test_data['posts'], test_data['labels']))
 
-        self._random_generator.shuffle(train_combined)
-        self._random_generator.shuffle(validation_combined)
-        self._random_generator.shuffle(test_combined)
-
         return {
             'train': train_combined,
             'validation': validation_combined,
@@ -120,7 +119,7 @@ class BaseTextClassifier(ABC):
         }
 
     @abstractmethod
-    def preprocess_data(self, datasets: any) -> any:
+    def preprocess_data(self, datasets: any, exclude_from_lemma: list[str] = None) -> dict[str, list[tuple[str, str]]]:
         """Apply preprocessing to datasets.
 
         Can be called using super() as preliminary step before additional preprocessing.

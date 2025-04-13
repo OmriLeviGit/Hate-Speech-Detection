@@ -1,9 +1,9 @@
-from BaseTextClassifier import BaseTextClassifier
+from classifier.BaseTextClassifier import BaseTextClassifier
 
 
 class ExampleModel(BaseTextClassifier):
 
-    def preprocess_data(self, datasets: any) -> any:
+    def preprocess_data(self, datasets: any, exclude_from_lemma: list[str] = None) -> dict[str, list[tuple[str, str]]]:
         """Apply preprocessing to datasets"""
         datasets = super().preprocess_data(datasets)
 

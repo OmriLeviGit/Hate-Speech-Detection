@@ -1,7 +1,7 @@
 import spacy
 from spacy.util import is_package
 
-from classifier.ExampleModel import ExampleModel
+from classifier.Omri_model.Spacy3Classes import Spacy3Classes
 from classifier.preprocessing.TextPreprocessor import TextPreprocessor
 
 
@@ -22,7 +22,7 @@ def run_evaluation():
 
     text_preprocessor = TextPreprocessor(emoji=None)  # 'text' to convert to text, 'config' to get description from 'config.json'
 
-    classifier = ExampleModel(nlp, text_preprocessor)
+    classifier = Spacy3Classes(nlp, text_preprocessor)
 
     data = classifier.load_data(1000, 1000, 1000, debug=True)
 
@@ -31,12 +31,6 @@ def run_evaluation():
     data = classifier.preprocess_data(data, exclude_from_lemmatization)
 
     classifier.train(data)
-
-    evaluation = classifier.evaluate(data)
-
-    print(evaluation)
-
-
 
 
 if __name__ == '__main__':
