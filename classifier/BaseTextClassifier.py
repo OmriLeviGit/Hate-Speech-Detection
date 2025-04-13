@@ -14,14 +14,14 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 class BaseTextClassifier(ABC):
     """Abstract base class for text classifiers"""
 
-    def __init__(self, model: any = None, preprocessor: TextPreprocessor() = None, seed: int = 42):
+    def __init__(self, model: any, label_count: int, preprocessor: TextPreprocessor() = None, seed: int = 42):
         self._model = model
         self._preprocessor = preprocessor
-        self._random_generator = random.Random(seed)  # use this instead of random.random() to keep results consistent
 
-        self._CLASS_0 = "antisemistic"
-        self._CLASS_1 = "not_antisemistic"
-        self._CLASS_2 = "irrelevant"
+        self.random_generator = random.Random(seed)  # use this instead of random.random() to keep results consistent
+        self.LABELS = ["antisemistic", "not_antisemistic"]
+        if label_count == 3:
+            self.LABELS.append("irrelevant")
 
 
     def load_data(self, class_0_count, class_1_count, class_2_count=None, debug=False) -> dict[str, list]:
@@ -47,12 +47,12 @@ class BaseTextClassifier(ABC):
         db = get_db_instance()
 
         data = {
-            self._CLASS_0: db.get_result_posts(label=self._CLASS_0, count=class_0_count),
-            self._CLASS_1: db.get_result_posts(label=self._CLASS_1, count=class_1_count)
+            self.LABELS[0]: db.get_result_posts(label=self.LABELS[0], count=class_0_count),
+            self.LABELS[1]: db.get_result_posts(label=self.LABELS[1], count=class_1_count)
         }
 
         if class_2_count is not None:
-            data[self._CLASS_2] = db.get_result_posts(label=self._CLASS_2, count=class_2_count)
+            data[self.LABELS[2]] = db.get_result_posts(label=self.LABELS[2], count=class_2_count)
 
         return data
 
@@ -82,8 +82,8 @@ class BaseTextClassifier(ABC):
         validation_count_per_class = int(min_class_size * validation_size)
 
         # Handle combining irrelevant with not-antisemistic if specified
-        if combine_irrelevant and self._CLASS_1 in data and self._CLASS_2 in data:
-            data[self._CLASS_1] = data[self._CLASS_1] + data.pop(self._CLASS_2)
+        if combine_irrelevant and self.LABELS[1] in data and self.LABELS[2] in data:
+            data[self.LABELS[1]] = data[self.LABELS[1]] + data.pop(self.LABELS[2])
 
         train_data = {'posts': [], 'labels': []}
         validation_data = {'posts': [], 'labels': []}
@@ -138,13 +138,44 @@ class BaseTextClassifier(ABC):
 
         return datasets
 
+    def add_lemmas(self, custom_lemmas: dict):
+        """
+        Add custom lemmatization rules to spaCy's lemmatizer
+
+        Args:
+            custom_lemmas: dict mapping words to their desired lemma forms
+        """
+
+        nlp = self.get_model()
+        # Get the lemmatizer if it exists
+        if 'lemmatizer' not in nlp.pipe_names:
+            return
+
+        custom_lemmas = {word: word for word in custom_lemmas}
+
+        lemmatizer = nlp.get_pipe('lemmatizer')
+        lemma_exc = lemmatizer.lookups.get_table("lemma_exc")
+
+        # Add custom exceptions for each POS tag
+        for word, lemma in custom_lemmas.items():
+            for pos in ['NOUN', 'VERB', 'ADJ', 'ADV', 'PROPN']:
+                # Check if this POS tag exists in the exceptions
+                if pos not in lemma_exc:
+                    lemma_exc[pos] = {}
+
+                # Add our exception
+                lemma_exc[pos][word.lower()] = [lemma.lower()]
+
+        # Update the lookups table
+        lemmatizer.lookups.set_table("lemma_exc", lemma_exc)
+
     @abstractmethod
-    def _handle_special_tokens(self, special_tokens):
+    def add_tokens(self, special_tokens):
         """Hook method for subclasses to handle special tokens"""
         pass
 
     @abstractmethod
-    def train(self, processed_datasets: any, **kwargs) -> None:
+    def train(self, processed_datasets: dict[str, list[tuple[str, str]]], epochs: int, lr: float, l2: float, batch_size: int = 8, dropout: float = 0.2) -> None:
         """Train the model"""
         pass
 
@@ -247,11 +278,11 @@ class BaseTextClassifier(ABC):
         ]
 
         data = {
-            self._CLASS_0: class_0,
-            self._CLASS_1: class_1
+            self.LABELS[0]: class_0,
+            self.LABELS[1]: class_1
         }
 
         if class_2_exists is not None:
-            data[self._CLASS_2] = class_2
+            data[self.LABELS[2]] = class_2
 
         return data

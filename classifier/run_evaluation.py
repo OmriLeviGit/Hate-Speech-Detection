@@ -4,8 +4,7 @@ from spacy.util import is_package
 from classifier.ExampleModel import ExampleModel
 from classifier.preprocessing.TextPreprocessor import TextPreprocessor
 
-
-exclude_from_lemmatization = ["hamas"]  # if you encounter words that don't get lemmitized correctly, add them here
+custom_lemmas = ["hamas"]  # if you encounter words that don't get lemmatized correctly, add them here
 
 
 def load_model(model_name):
@@ -28,7 +27,7 @@ def run_evaluation():
 
     data = classifier.prepare_datasets(data)   # combine_irrelevant=True to combine irrelevant with not-antisemistic
 
-    data = classifier.preprocess_data(data, exclude_from_lemmatization)
+    data = classifier.preprocess_data(data, custom_lemmas)
 
     classifier.train(data)
 

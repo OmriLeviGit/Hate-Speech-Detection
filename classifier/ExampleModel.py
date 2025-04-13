@@ -11,7 +11,7 @@ class ExampleModel(BaseTextClassifier):
 
         return datasets
 
-    def _handle_special_tokens(self, special_tokens):
+    def add_tokens(self, special_tokens):
         pass
 
     def train(self, processed_datasets: any, **kwargs) -> None:
