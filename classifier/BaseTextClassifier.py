@@ -1,3 +1,4 @@
+import time
 from abc import ABC, abstractmethod
 import sys
 import os
@@ -73,7 +74,7 @@ class BaseTextClassifier(ABC):
 
         return data
 
-    def prepare_datasets(self, data: dict[str, list], test_size: float = 0.2, validation_size: float = 0.1, combine_irrelevant: bool = False) -> any:
+    def prepare_datasets(self, data: dict[str, list], test_size: float = 0.15, validation_size: float = 0.1, combine_irrelevant: bool = False) -> any:
         """Prepare train, validation and test datasets.
 
         This function splits the input data into training, validation, and test sets
@@ -155,10 +156,9 @@ class BaseTextClassifier(ABC):
 
         return datasets
 
-    @abstractmethod
     def add_lemmas(self, custom_lemmas: dict):
         """
-        Add custom lemmatization rules to spaCy's lemmatizer
+        Add custom lemmatization rules
 
         Args:
             custom_lemmas: dict mapping words to their desired lemma forms
@@ -172,7 +172,7 @@ class BaseTextClassifier(ABC):
 
     @abstractmethod
     def train(self, processed_datasets: dict[str, list[tuple[str, str]]], learning_rate: float,
-              l2_regularization: float, epochs: int = 100, batch_size: int = 8, dropout: float = 0.2) -> None:
+              l2_regularization: float, epochs: int = 100, batch_size: int = 32, dropout: float = 0.2) -> None:
         """Train the model"""
         pass
 
@@ -181,17 +181,78 @@ class BaseTextClassifier(ABC):
         """Evaluate the model"""
         pass
 
-    @abstractmethod
+    def _record_metrics(self, epoch, losses, train_results, eval_results, epoch_time):
+        """Record metrics for an epoch"""
+        return {
+            "epoch": epoch,
+            "train_loss": losses["textcat"],
+            "train_accuracy": train_results["cats_score"],
+            "val_accuracy": eval_results["cats_score"],
+            "accuracy_gap": train_results["cats_score"] - eval_results["cats_score"],
+            "precision": eval_results["cats_micro_p"],
+            "recall": eval_results["cats_micro_r"],
+            "f1": eval_results["cats_micro_f"],
+            "time": epoch_time
+        }
+
+    def _log_progress(self, epoch, total_epochs, epoch_time, losses, train_results, eval_results):
+        """Log training progress"""
+        print(f"Epoch {epoch}/{total_epochs}, Time: {epoch_time:.2f}s, "
+              f"Train Loss: {losses['textcat']:.4f}, "
+              f"Train Accuracy: {train_results['cats_score']:.4f}, "
+              f"Val Accuracy: {eval_results['cats_score']:.4f}, "
+              f"F1 Score: {eval_results['cats_micro_f']:.4f}, "
+              f"Gap: {(train_results['cats_score'] - eval_results['cats_score']):.4f}")
+
+    def _compile_evaluation_metrics(self, results):
+        """Compile evaluation metrics into a dictionary"""
+        metrics = {
+            "accuracy": results["cats_score"],
+            "precision": results["cats_micro_p"],
+            "recall": results["cats_micro_r"],
+            "f1": results["cats_micro_f"],
+        }
+
+        # Add per-category scores
+        for label in self.LABELS:
+            if f"cats_{label}_p" in results:
+                metrics[f"{label}_precision"] = results[f"cats_{label}_p"]
+                metrics[f"{label}_recall"] = results[f"cats_{label}_r"]
+                metrics[f"{label}_f1"] = results[f"cats_{label}_f"]
+
+        # Add training history if available
+        if hasattr(self, 'training_history'):
+            metrics["training_history"] = self.training_history
+
+        if hasattr(self, 'training_time'):
+            metrics["total_training_time"] = self.training_time
+
+        # Add learning curves data for plotting
+        if hasattr(self, 'training_history'):
+            epochs = [entry["epoch"] for entry in self.training_history]
+            train_losses = [entry["train_loss"] for entry in self.training_history]
+            train_accuracies = [entry.get("train_accuracy", 0) for entry in self.training_history]
+            val_accuracies = [entry.get("val_accuracy", 0) for entry in self.training_history]
+            accuracy_gaps = [entry.get("accuracy_gap", 0) for entry in self.training_history]
+
+            metrics["learning_curves"] = {
+                "epochs": epochs,
+                "train_losses": train_losses,
+                "train_accuracies": train_accuracies,
+                "val_accuracies": val_accuracies,
+                "accuracy_gaps": accuracy_gaps
+            }
+
+        return metrics
+
     def predict(self, text: str) -> dict[str, float]:
         """Make prediction on a single text"""
         pass
 
-    @abstractmethod
     def save_model(self, path: str) -> None:
         """Save the model"""
         pass
 
-    @abstractmethod
     def load_model(self, path: str) -> None:
         """Load a saved model"""
         pass

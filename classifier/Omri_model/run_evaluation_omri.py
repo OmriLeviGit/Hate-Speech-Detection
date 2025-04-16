@@ -4,7 +4,8 @@ import spacy
 from spacy.util import is_package
 
 from classifier import utils
-from classifier.Omri_model.Spacy3Classes import Spacy3Classes
+from classifier.Omri_model.SpacyModels_SM_LG import SpacyModels_SM_LG
+from classifier.Omri_model.SpacyModels_TRF import SpacyModels_TRF
 from classifier.preprocessing.TextPreprocessor import TextPreprocessor
 from classifier.utils import print_model_header
 
@@ -15,8 +16,8 @@ custom_lemmas = {"hamas": "hamas"}
 Example:
 
 {
-    "model_name": "3 classes spacy",    # just a visual name
-    "base_model": "en_core_web_lg",     # name of the spacy model
+    "model_name": "3 classes spacy sm",    # name
+    "base_model": "en_core_web_lg",     # model type
     "emoji_processing": 'text',  # None: no processing, 'text': demojize, 'config': custom meaning in config.json()
     "distribution": {"negative": 700, "positive": 700, "irrelevant": 700},  # irrelevant can be None
     "source": "csv_files",  # possible values: None: db, 'debug': mock data, 'csv_files': predownloaded data
@@ -28,39 +29,53 @@ Example:
 },
 """
 
+# configs = [
+#     {
+#         "model_name": "3 classes spacy",
+#         "base_model": "en_core_web_sm",
+#         "emoji_processing": 'text',
+#         "distribution": {"negative": 700, "positive": 700, "irrelevant": 700},
+#         "source": "csv_files",
+#         "combine_irrelevant": False,
+#         "hyper_parameters": {
+#             "learning_rate": 0.001,
+#             "l2_regularization": 0.001,
+#         }
+#     },
+#     {
+#         "model_name": "2 classes spacy",
+#         "base_model": "en_core_web_sm",
+#         "emoji_processing": 'text',
+#         "distribution": {"negative": 700, "positive": 700},
+#         "source": "csv_files",
+#         "combine_irrelevant": False,
+#         "hyper_parameters": {
+#             "learning_rate": 0.001,
+#             "l2_regularization": 0.001,
+#         }
+#     },
+#     {
+#         "model_name": "2 classes spacy with irrelevant as not antisemistic",
+#         "base_model": "en_core_web_sm",
+#         "emoji_processing": 'text',
+#         "distribution": {"negative": 700, "positive": 700, "irrelevant": 350},
+#         "source": "csv_files",
+#         "combine_irrelevant": True,
+#         "hyper_parameters": {
+#             "learning_rate": 0.001,
+#             "l2_regularization": 0.001,
+#         }
+#     },
+# ]
 
 configs = [
     {
         "model_name": "3 classes spacy",
-        "base_model": "en_core_web_lg",
-        "emoji_processing": 'text',
+        "base_model": "en_core_web_trf",
+        "emoji_processing": None,
         "distribution": {"negative": 700, "positive": 700, "irrelevant": 700},
         "source": "csv_files",
         "combine_irrelevant": False,
-        "hyper_parameters": {
-            "learning_rate": 0.001,
-            "l2_regularization": 0.001,
-        }
-    },
-    {
-        "model_name": "2 classes spacy ",
-        "base_model": "en_core_web_lg",
-        "emoji_processing": 'text',
-        "distribution": {"negative": 700, "positive": 700},
-        "source": "csv_files",
-        "combine_irrelevant": False,
-        "hyper_parameters": {
-            "learning_rate": 0.001,
-            "l2_regularization": 0.001,
-        }
-    },
-    {
-        "model_name": "2 classes spacy with more irrelevant",
-        "base_model": "en_core_web_lg",
-        "emoji_processing": 'text',
-        "distribution": {"negative": 700, "positive": 700, "irrelevant": 350},
-        "source": "csv_files",
-        "combine_irrelevant": True,
         "hyper_parameters": {
             "learning_rate": 0.001,
             "l2_regularization": 0.001,
@@ -92,7 +107,10 @@ def run_evaluation(models_config):
         nlp = load_model(base_model)
         text_preprocessor = TextPreprocessor(emoji=config["emoji_processing"])
 
-        classifier = Spacy3Classes(model=nlp, preprocessor=text_preprocessor)
+        if base_model.endswith('trf'):
+            classifier = SpacyModels_TRF(model=nlp, preprocessor=text_preprocessor)
+        else:
+            classifier = SpacyModels_SM_LG(model=nlp, preprocessor=text_preprocessor)
 
         print("Loading and preprocessing data...")
         data = classifier.load_data(
@@ -104,7 +122,10 @@ def run_evaluation(models_config):
 
         prepared_data = classifier.prepare_datasets(data, combine_irrelevant=config["combine_irrelevant"])
 
-        processed_data = classifier.preprocess_data(prepared_data, custom_lemmas)
+        if base_model.endswith('sm'):
+            processed_data = classifier.preprocess_data(prepared_data, custom_lemmas)
+        else:
+            processed_data = classifier.preprocess_data(prepared_data)
 
         classifier.train(processed_data, **config["hyper_parameters"])
 
@@ -129,7 +150,7 @@ def run_evaluation(models_config):
 
 
 if __name__ == '__main__':
-    learning_rates = [0.01, 0.005, 0.001]
-    l2_values = [0.01, 0.005, 0.001]
-    # configs = utils.generate_model_configs(configs, learning_rates, l2_values)
+    learning_rates = [0.005, 0.001, 0.0005]
+    l2_values = [0.005, 0.001, 0.0005]
+    # configs = utils.generate_model_configs(configs, learning_rates, l2_values)    # check with differnt parameters
     run_evaluation(configs)

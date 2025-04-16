@@ -16,3 +16,4 @@ pytz==2024.1
 spacy~=3.8.5
 matplotlib~=3.10.1
 numpy~=2.2.4
+spacy-transformers
