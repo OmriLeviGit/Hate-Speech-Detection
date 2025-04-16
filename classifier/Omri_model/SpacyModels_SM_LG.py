@@ -91,13 +91,7 @@ class SpacyModels_SM_LG(BaseTextClassifier):
         """
         nlp = self.get_model()
 
-        if len(self.LABELS) == 2:
-            textcat = nlp.add_pipe("textcat", last=True,
-                                   config={"exclusive_classes": True,
-                                           "positive_label": self.LABELS[0]})
-        else:
-            textcat = nlp.add_pipe("textcat", last=True)
-
+        textcat = nlp.add_pipe("textcat", last=True)
         for category in self.LABELS:
             textcat.add_label(category)
 
@@ -107,8 +101,8 @@ class SpacyModels_SM_LG(BaseTextClassifier):
         optimizer.L2 = l2_regularization
 
         # Prepare for spacy format (for cnn based models, must come after 'nlp.begin_training()')
-        train_examples = self._create_spacy_examples(nlp, processed_datasets['train'], self.LABELS)
-        validation_examples = self._create_spacy_examples(nlp, processed_datasets.get('validation'), self.LABELS)
+        train_examples = self._create_spacy_examples(nlp, processed_datasets['train'])
+        validation_examples = self._create_spacy_examples(nlp, processed_datasets.get('validation'))
 
         pipe_exceptions = ["textcat"]
         other_pipes = [pipe for pipe in nlp.pipe_names if pipe not in pipe_exceptions]
@@ -177,30 +171,46 @@ class SpacyModels_SM_LG(BaseTextClassifier):
         """Evaluate the model"""
         nlp = self.get_model()
 
-        test_examples = self._create_spacy_examples(nlp, datasets.get('test'), self.LABELS)
+        test_examples = self._create_spacy_examples(nlp, datasets.get('test'))
         results = nlp.evaluate(test_examples)
 
         return self._compile_evaluation_metrics(results)
 
-    def _create_spacy_examples(self, nlp, data, labels):
+    def _create_spacy_examples(self, nlp, data):
         """
-        Convert dataset from (text, label) tuples directly to spaCy Examples
+        Converts raw data into spaCy Example objects formatted for text classification.
+
+        Handles both binary and ternary classification scenarios:
+        - For binary classification: Creates examples with two mutually exclusive labels
+        - For ternary classification: Creates examples with three mutually exclusive labels
 
         Args:
-            nlp: The spaCy model
-            data: A list of (text, label) tuples
-            labels: List of all possible category labels
+            nlp (spacy.language.Language): spaCy Language object for tokenization
+            data (list): List of (text, label) tuples where label is a string matching one in self.LABELS
 
         Returns:
-            List of spaCy Example objects
+            list: List of spaCy Example objects ready for training or evaluation
+
+        Raises:
+            ValueError: If self.LABELS doesn't contain exactly 2 or 3 elements
         """
         examples = []
-
         for text, label in data:
-            cats = {cat: 1.0 if cat == label else 0.0 for cat in labels}
+            doc = nlp.make_doc(text)
 
-            doc = nlp(text)     # for non-transformer-based models
+            if len(self.LABELS) == 2:
+                # Binary classification with exclusive labels
+                cats = {}
+                for l in self.LABELS:
+                    cats[l] = 1.0 if l == label else 0.0
+                examples.append(Example.from_dict(doc, {"cats": cats}))
 
-            examples.append(Example.from_dict(doc, {"cats": cats}))
+            elif len(self.LABELS) == 3:
+                # Ternary classification with exclusive labels
+                cats = {l: 1.0 if l == label else 0.0 for l in self.LABELS}
+                examples.append(Example.from_dict(doc, {"cats": cats}))
+
+            else:
+                raise ValueError("Only 2 or 3 labels supported")
 
         return examples

@@ -1,4 +1,3 @@
-import time
 from abc import ABC, abstractmethod
 import sys
 import os
@@ -137,7 +136,7 @@ class BaseTextClassifier(ABC):
         }
 
     @abstractmethod
-    def preprocess_data(self, datasets: any, exclude_from_lemma: list[str] = None) -> dict[str, list[tuple[str, str]]]:
+    def preprocess_data(self, datasets: any, custom_lemmas: list[str] = None) -> dict[str, list[tuple[str, str]]]:
         """Apply preprocessing to datasets.
 
         Can be called using super() as preliminary step before additional preprocessing.

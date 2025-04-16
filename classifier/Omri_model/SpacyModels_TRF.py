@@ -24,7 +24,9 @@ class SpacyModels_TRF(BaseTextClassifier):
 
         special_tokens = self.get_text_preprocessor().get_special_tokens()
         self.add_tokens(special_tokens)  # Add special tokens to the tokenizer
-        self.add_lemmas(custom_lemmas)  # Add custom lemmas to the lemmatizer
+
+        if custom_lemmas:
+            self.add_lemmas(custom_lemmas)  # Add custom lemmas to the lemmatizer
 
         # Run text through the entire spacy NLP pipeline
         processed_datasets = {}
@@ -37,37 +39,6 @@ class SpacyModels_TRF(BaseTextClassifier):
             processed_datasets[dataset_name] = processed_data
 
         return processed_datasets
-
-    def add_lemmas(self, custom_lemmas: dict):
-        """
-        Add custom lemmatization rules to spaCy's lemmatizer
-
-        Args:
-            custom_lemmas: dict mapping words to their desired lemma forms
-        """
-
-        nlp = self.get_model()
-        # Get the lemmatizer if it exists
-        if not custom_lemmas or 'lemmatizer' not in nlp.pipe_names:
-            return
-
-        custom_lemmas = {word: word for word in custom_lemmas}
-
-        lemmatizer = nlp.get_pipe('lemmatizer')
-        lemma_exc = lemmatizer.lookups.get_table("lemma_exc")
-
-        # Add custom exceptions for each POS tag
-        for word, lemma in custom_lemmas.items():
-            for pos in ['NOUN', 'VERB', 'ADJ', 'ADV', 'PROPN']:
-                # Check if this POS tag exists in the exceptions
-                if pos not in lemma_exc:
-                    lemma_exc[pos] = {}
-
-                # Add our exception
-                lemma_exc[pos][word.lower()] = [lemma.lower()]
-
-        # Update the lookups table
-        lemmatizer.lookups.set_table("lemma_exc", lemma_exc)
 
     def add_tokens(self, special_tokens: set):
         """Register all special tokens with spaCy tokenizer"""
@@ -92,19 +63,13 @@ class SpacyModels_TRF(BaseTextClassifier):
         """
         nlp = self.get_model()
 
-        if len(self.LABELS) == 2:
-            textcat = nlp.add_pipe("textcat", last=True,
-                                   config={"exclusive_classes": True,
-                                           "positive_label": self.LABELS[0]})
-        else:
-            textcat = nlp.add_pipe("textcat", last=True)
-
+        textcat = nlp.add_pipe("textcat", last=True)
         for category in self.LABELS:
             textcat.add_label(category)
 
-        # Prepare for spacy format
-        train_examples = self._create_spacy_examples(nlp, processed_datasets['train'], self.LABELS)
-        validation_examples = self._create_spacy_examples(nlp, processed_datasets.get('validation'), self.LABELS)
+        # Prepare for spacy format, assign values to the expected labels
+        train_examples = self._create_spacy_examples(nlp, processed_datasets['train'])
+        validation_examples = self._create_spacy_examples(nlp, processed_datasets.get('validation'))
 
         pipe_exceptions = ["textcat"]
         other_pipes = [pipe for pipe in nlp.pipe_names if pipe not in pipe_exceptions]
@@ -144,7 +109,8 @@ class SpacyModels_TRF(BaseTextClassifier):
                 nlp.update(batch, drop=dropout, sgd=optimizer, losses=losses)
 
             # Evaluate on validation set
-            train_results = nlp.evaluate(train_examples)
+            train_results = nlp.evaluate(train_examples,
+                                         scorer_cfg={"textcat": ["accuracy", "f_score", "precision", "recall"]})
             eval_results = nlp.evaluate(validation_examples)
             epoch_time = time.time() - epoch_start
 
@@ -181,30 +147,46 @@ class SpacyModels_TRF(BaseTextClassifier):
         """Evaluate the model"""
         nlp = self.get_model()
 
-        test_examples = self._create_spacy_examples(nlp, datasets.get('test'), self.LABELS)
+        test_examples = self._create_spacy_examples(nlp, datasets.get('test'))
         results = nlp.evaluate(test_examples)
 
         return self._compile_evaluation_metrics(results)
 
-    def _create_spacy_examples(self, nlp, data, labels):
+    def _create_spacy_examples(self, nlp, data):
         """
-        Convert dataset from (text, label) tuples directly to spaCy Examples
+        Converts raw data into spaCy Example objects formatted for text classification.
+
+        Handles both binary and ternary classification scenarios:
+        - For binary classification: Creates examples with two mutually exclusive labels
+        - For ternary classification: Creates examples with three mutually exclusive labels
 
         Args:
-            nlp: The spaCy model
-            data: A list of (text, label) tuples
-            labels: List of all possible category labels
+            nlp (spacy.language.Language): spaCy Language object for tokenization
+            data (list): List of (text, label) tuples where label is a string matching one in self.LABELS
 
         Returns:
-            List of spaCy Example objects
+            list: List of spaCy Example objects ready for training or evaluation
+
+        Raises:
+            ValueError: If self.LABELS doesn't contain exactly 2 or 3 elements
         """
         examples = []
-
         for text, label in data:
-            cats = {cat: 1.0 if cat == label else 0.0 for cat in labels}
+            doc = nlp.make_doc(text)
 
-            doc = nlp.make_doc(text)    # for transformer-based models
+            if len(self.LABELS) == 2:
+                # Binary classification with exclusive labels
+                cats = {}
+                for l in self.LABELS:
+                    cats[l] = 1.0 if l == label else 0.0
+                examples.append(Example.from_dict(doc, {"cats": cats}))
 
-            examples.append(Example.from_dict(doc, {"cats": cats}))
+            elif len(self.LABELS) == 3:
+                # Ternary classification with exclusive labels
+                cats = {l: 1.0 if l == label else 0.0 for l in self.LABELS}
+                examples.append(Example.from_dict(doc, {"cats": cats}))
+
+            else:
+                raise ValueError("Only 2 or 3 labels supported")
 
         return examples

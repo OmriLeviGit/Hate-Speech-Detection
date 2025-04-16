@@ -9,14 +9,14 @@ from classifier.Omri_model.SpacyModels_TRF import SpacyModels_TRF
 from classifier.preprocessing.TextPreprocessor import TextPreprocessor
 from classifier.utils import print_model_header
 
-# { original word: change into }, for words that are not lemmatized correctly for some models
+# { original word: change into }, for words that are not lemmatized correctly for the small model
 custom_lemmas = {"hamas": "hamas"}
 
 """
 Example:
 
 {
-    "model_name": "3 classes spacy sm",    # name
+    "model_name": "3 classes lg",       # a description of the model
     "base_model": "en_core_web_lg",     # model type
     "emoji_processing": 'text',  # None: no processing, 'text': demojize, 'config': custom meaning in config.json()
     "distribution": {"negative": 700, "positive": 700, "irrelevant": 700},  # irrelevant can be None
@@ -29,53 +29,38 @@ Example:
 },
 """
 
-# configs = [
-#     {
-#         "model_name": "3 classes spacy",
-#         "base_model": "en_core_web_sm",
-#         "emoji_processing": 'text',
-#         "distribution": {"negative": 700, "positive": 700, "irrelevant": 700},
-#         "source": "csv_files",
-#         "combine_irrelevant": False,
-#         "hyper_parameters": {
-#             "learning_rate": 0.001,
-#             "l2_regularization": 0.001,
-#         }
-#     },
-#     {
-#         "model_name": "2 classes spacy",
-#         "base_model": "en_core_web_sm",
-#         "emoji_processing": 'text',
-#         "distribution": {"negative": 700, "positive": 700},
-#         "source": "csv_files",
-#         "combine_irrelevant": False,
-#         "hyper_parameters": {
-#             "learning_rate": 0.001,
-#             "l2_regularization": 0.001,
-#         }
-#     },
-#     {
-#         "model_name": "2 classes spacy with irrelevant as not antisemistic",
-#         "base_model": "en_core_web_sm",
-#         "emoji_processing": 'text',
-#         "distribution": {"negative": 700, "positive": 700, "irrelevant": 350},
-#         "source": "csv_files",
-#         "combine_irrelevant": True,
-#         "hyper_parameters": {
-#             "learning_rate": 0.001,
-#             "l2_regularization": 0.001,
-#         }
-#     },
-# ]
-
 configs = [
     {
-        "model_name": "3 classes spacy",
-        "base_model": "en_core_web_trf",
-        "emoji_processing": None,
+        "model_name": "3 classes small model",
+        "base_model": "en_core_web_sm",
+        "emoji_processing": 'text',
         "distribution": {"negative": 700, "positive": 700, "irrelevant": 700},
         "source": "csv_files",
         "combine_irrelevant": False,
+        "hyper_parameters": {
+            "learning_rate": 0.001,
+            "l2_regularization": 0.001,
+        }
+    },
+    {
+        "model_name": "2 classes bert",
+        "base_model": "en_core_web_trf",
+        "emoji_processing": 'text',
+        "distribution": {"negative": 700, "positive": 700},
+        "source": "debug",
+        "combine_irrelevant": False,
+        "hyper_parameters": {
+            "learning_rate": 0.001,
+            "l2_regularization": 0.001,
+        }
+    },
+    {
+        "model_name": "2 classes bert with 350 irrelevant, combined with positive",
+        "base_model": "en_core_web_trf",
+        "emoji_processing": 'text',
+        "distribution": {"negative": 700, "positive": 700, "irrelevant": 350},
+        "source": "csv_files",
+        "combine_irrelevant": True,
         "hyper_parameters": {
             "learning_rate": 0.001,
             "l2_regularization": 0.001,
