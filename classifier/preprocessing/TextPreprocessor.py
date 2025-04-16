@@ -104,15 +104,34 @@ class TextPreprocessor:
         """Expand slang abbreviations to their full forms"""
         return self._slang_map.get(word, word)
 
+    # def _emoji_to_text(self, word):
+    #     """Convert emojis to their hidden contextual meanings"""
+    #
+    #     for char in word:
+    #         if is_emoji(char):
+    #             emoji_text = demojize(char)
+    #             self._special_tokens.add(emoji_text)
+    #
+    #     return demojize(word)
     def _emoji_to_text(self, word):
-        """Convert emojis to their hidden contextual meanings"""
-
-        for char in word:
+        """Convert emojis to their hidden contextual meanings and add spaces between consecutive emojis"""
+        result = ""
+        i = 0
+        while i < len(word):
+            char = word[i]
             if is_emoji(char):
+                # Add this emoji's text
                 emoji_text = demojize(char)
                 self._special_tokens.add(emoji_text)
+                result += emoji_text
 
-        return demojize(word)
+                # Check if next character is also an emoji
+                if i + 1 < len(word) and is_emoji(word[i + 1]):
+                    result += " "  # Add space between consecutive emojis
+            else:
+                result += char
+            i += 1
+        return result
 
     def _emojis_by_config(self, word):
         """Convert emojis to their hidden contextual meanings"""

@@ -48,7 +48,7 @@ class Spacy3Classes(BaseTextClassifier):
 
         nlp = self.get_model()
         # Get the lemmatizer if it exists
-        if 'lemmatizer' not in nlp.pipe_names:
+        if not custom_lemmas or 'lemmatizer' not in nlp.pipe_names:
             return
 
         custom_lemmas = {word: word for word in custom_lemmas}
@@ -77,8 +77,8 @@ class Spacy3Classes(BaseTextClassifier):
             special_case = [{ORTH: token}]
             model.tokenizer.add_special_case(token, special_case)
 
-    def train(self, processed_datasets: dict[str, list[tuple[str, str]]], epochs: int, learning_rate: float,
-              l2_regularization: float, batch_size: int = 8, dropout: float = 0.2) -> None:
+    def train(self, processed_datasets: dict[str, list[tuple[str, str]]], learning_rate: float,
+              l2_regularization: float, epochs: int = 100, batch_size: int = 32, dropout: float = 0.2) -> None:
         """Train the model"""
         nlp = self.get_model()
 
@@ -102,6 +102,9 @@ class Spacy3Classes(BaseTextClassifier):
     def _start_training(self, nlp, train_examples, validation_examples,
                         optimizer, epochs, batch_size, dropout, patience=None):
         """Start training the model"""
+        print("Start training...")
+        spacy.util.fix_random_seed(self.seed)
+
         start_time = time.time()
         training_history = []
         best_model = None
@@ -183,11 +186,9 @@ class Spacy3Classes(BaseTextClassifier):
         # Create test examples directly using the new method
         test_examples = self._create_spacy_examples(nlp, datasets.get('test'), self.LABELS)
 
-        # Evaluate model
         results = nlp.evaluate(test_examples)
         eval_time = time.time() - start_time
 
-        # Extract and return metrics
         return self._compile_evaluation_metrics(results, eval_time)
 
     def _compile_evaluation_metrics(self, results, eval_time):

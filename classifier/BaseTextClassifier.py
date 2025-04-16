@@ -19,24 +19,24 @@ class BaseTextClassifier(ABC):
         self._model = model
         self._preprocessor = preprocessor
 
-        self.random_generator = random.Random(seed)  # use this instead of random.random() to keep results consistent
+        self.seed = seed
+        self.random_generator = random.Random(self.seed)  # use this instead of random.random() to keep results consistent
         self.LABELS = ["antisemistic", "not_antisemistic"]
 
     def load_data(self, class_0_count, class_1_count, class_2_count=None, source=None) -> dict[str, list]:
         """Load data from file or use sample data.
 
-        This function loads text data for classification either from a database (when debug=False)
-        or generates mock data (when debug=True). The data is organized by class labels.
+        This function loads text data for classification either from the database, csv files, or mock data.
+        The data is organized by class labels.
 
         Args:
             class_0_count: Number of samples to load for class 0 (antisemistic)
             class_1_count: Number of samples to load for class 1 (not_antisemistic)
             class_2_count: Number of samples to load for class 2 (irrelevant), optional
-            source: 'test' works with generated data, 'csv_files' with local data, else data from the database
+            source: 'debug' works with generated data, 'csv_files' with local data, else data from the database
 
         Returns:
             Dictionary mapping class labels to lists of text samples.
-            In debug mode, the lists contain placeholder values (zeros).
         """
         # Initialize data dictionary
         data = {}
@@ -52,7 +52,7 @@ class BaseTextClassifier(ABC):
                 data[self.LABELS[2]] = pd.read_csv('../irrelevant_results.csv', header=None, nrows=class_2_count)[
                     0].tolist()
 
-        elif source == 'test':
+        elif source == 'debug':
             if class_2_count is not None:
                 self.LABELS.append("irrelevant")
 
@@ -171,7 +171,8 @@ class BaseTextClassifier(ABC):
         pass
 
     @abstractmethod
-    def train(self, processed_datasets: dict[str, list[tuple[str, str]]], epochs: int, lr: float, l2: float, batch_size: int = 8, dropout: float = 0.2) -> None:
+    def train(self, processed_datasets: dict[str, list[tuple[str, str]]], learning_rate: float,
+              l2_regularization: float, epochs: int = 100, batch_size: int = 8, dropout: float = 0.2) -> None:
         """Train the model"""
         pass
 
