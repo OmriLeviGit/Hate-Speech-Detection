@@ -1,9 +1,9 @@
-from BaseTextClassifier import BaseTextClassifier
+from classifier.BaseTextClassifier import BaseTextClassifier
 
 
 class ExampleModel(BaseTextClassifier):
 
-    def preprocess_data(self, datasets: any) -> any:
+    def preprocess_data(self, datasets: any, custom_lemmas: list[str] = None) -> dict[str, list[tuple[str, str]]]:
         """Apply preprocessing to datasets"""
         datasets = super().preprocess_data(datasets)
 
@@ -11,7 +11,7 @@ class ExampleModel(BaseTextClassifier):
 
         return datasets
 
-    def _handle_special_tokens(self, special_tokens):
+    def add_tokens(self, special_tokens):
         pass
 
     def train(self, processed_datasets: any, **kwargs) -> None:

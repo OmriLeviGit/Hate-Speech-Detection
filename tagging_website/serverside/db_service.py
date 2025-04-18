@@ -8,9 +8,9 @@ from sqlalchemy.sql import expression
 from sqlalchemy.orm import Session, session
 from sqlalchemy.exc import IntegrityError
 
-from model import *
-from model import User, Tweet, AssignedTweet, TaggersDecision, TaggingResult
-from helper_functions.utils import fix_corrupted_text
+from .model import *
+from .model import User, Tweet, AssignedTweet, TaggersDecision, TaggingResult
+from .helper_functions.utils import fix_corrupted_text
 
 
 load_dotenv(os.path.join(Path(__file__).parent.absolute(), '.env.local'))

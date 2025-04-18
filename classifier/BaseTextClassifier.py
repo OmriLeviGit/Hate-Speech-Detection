@@ -3,6 +3,7 @@ import sys
 import os
 import random
 import copy
+import pandas as pd
 
 
 from classifier.preprocessing.TextPreprocessor import TextPreprocessor
@@ -14,49 +15,65 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 class BaseTextClassifier(ABC):
     """Abstract base class for text classifiers"""
 
-    def __init__(self, model: any = None, preprocessor: TextPreprocessor() = None, seed: int = 42):
+    def __init__(self, model: any, preprocessor: TextPreprocessor() = None, seed: int = 42):
         self._model = model
         self._preprocessor = preprocessor
-        self._random_generator = random.Random(seed)  # use this instead of random.random() to keep results consistent
 
-        self._CLASS_0 = "antisemistic"
-        self._CLASS_1 = "not_antisemistic"
-        self._CLASS_2 = "irrelevant"
+        self.seed = seed
+        self.random_generator = random.Random(self.seed)  # use this instead of random.random() to keep results consistent
+        self.LABELS = ["antisemistic", "not_antisemistic"]
 
-
-    def load_data(self, class_0_count, class_1_count, class_2_count=None, debug=False) -> dict[str, list]:
+    def load_data(self, class_0_count, class_1_count, class_2_count=None, source=None) -> dict[str, list]:
         """Load data from file or use sample data.
 
-        This function loads text data for classification either from a database (when debug=False)
-        or generates mock data (when debug=True). The data is organized by class labels.
+        This function loads text data for classification either from the database, csv files, or mock data.
+        The data is organized by class labels.
 
         Args:
             class_0_count: Number of samples to load for class 0 (antisemistic)
             class_1_count: Number of samples to load for class 1 (not_antisemistic)
             class_2_count: Number of samples to load for class 2 (irrelevant), optional
-            debug: True works with local data, False with data from the database
+            source: 'debug' works with generated data, 'csv_files' with local data, else data from the database
 
         Returns:
             Dictionary mapping class labels to lists of text samples.
-            In debug mode, the lists contain placeholder values (zeros).
         """
+        # Initialize data dictionary
+        data = {}
 
-        if debug:
-            return self._initialize_test_dataset(class_2_count)
+        if source == 'csv_files':
+            # Load data from CSV files
+            data[self.LABELS[0]] = pd.read_csv('../positive_results.csv', header=None, nrows=class_0_count)[0].tolist()
+            data[self.LABELS[1]] = pd.read_csv('../negative_results.csv', header=None, nrows=class_1_count)[0].tolist()
 
-        db = get_db_instance()
+            if class_2_count is not None:
+                self.LABELS.append("irrelevant")
 
-        data = {
-            self._CLASS_0: db.get_result_posts(label=self._CLASS_0, count=class_0_count),
-            self._CLASS_1: db.get_result_posts(label=self._CLASS_1, count=class_1_count)
-        }
+                data[self.LABELS[2]] = pd.read_csv('../irrelevant_results.csv', header=None, nrows=class_2_count)[
+                    0].tolist()
 
-        if class_2_count is not None:
-            data[self._CLASS_2] = db.get_result_posts(label=self._CLASS_2, count=class_2_count)
+        elif source == 'debug':
+            if class_2_count is not None:
+                self.LABELS.append("irrelevant")
+
+            data = self._initialize_test_dataset(class_2_count)
+
+
+        else:
+            # Get data from database
+            db = get_db_instance()
+
+            data[self.LABELS[0]] = db.get_result_posts(label=self.LABELS[0], count=class_0_count)
+            data[self.LABELS[1]] = db.get_result_posts(label=self.LABELS[1], count=class_1_count)
+
+            if class_2_count is not None:
+                self.LABELS.append("irrelevant")
+
+                data[self.LABELS[2]] = db.get_result_posts(label=self.LABELS[2], count=class_2_count)
 
         return data
 
-    def prepare_datasets(self, data: dict[str, list], test_size: float = 0.2, validation_size: float = 0.1, combine_irrelevant: bool = False) -> any:
+    def prepare_datasets(self, data: dict[str, list], test_size: float = 0.15, validation_size: float = 0.1, combine_irrelevant: bool = False) -> any:
         """Prepare train, validation and test datasets.
 
         This function splits the input data into training, validation, and test sets
@@ -77,9 +94,13 @@ class BaseTextClassifier(ABC):
             print("training, test, and validation sizes must sum up to 1")
             return
 
+        # Find the size of the smallest class to determine validation set size. Validation size should be consistent between classes regardless of their size.
+        min_class_size = min(len(posts) for posts in data.values())
+        validation_count_per_class = int(min_class_size * validation_size)
+
         # Handle combining irrelevant with not-antisemistic if specified
-        if combine_irrelevant and self._CLASS_1 in data and self._CLASS_2 in data:
-            data[self._CLASS_1] = data[self._CLASS_1] + data.pop(self._CLASS_2)
+        if combine_irrelevant and self.LABELS[1] in data and self.LABELS[2] in data:
+            data[self.LABELS[1]] = data[self.LABELS[1]] + data.pop(self.LABELS[2])
 
         train_data = {'posts': [], 'labels': []}
         validation_data = {'posts': [], 'labels': []}
@@ -87,14 +108,13 @@ class BaseTextClassifier(ABC):
 
         # Process each class separately to maintain class distribution
         for label, posts in data.items():
-            total_posts = len(posts)
-            test_count = int(total_posts * test_size)
-            validation_count = int(total_posts * validation_size)
-            train_count = total_posts - test_count - validation_count
+            validation_posts = posts[:validation_count_per_class]   # Take equal validation samples from each class
 
-            train_posts = posts[:train_count]
-            validation_posts = posts[train_count:train_count + validation_count]
-            test_posts = posts[train_count + validation_count:]
+            remaining_posts = posts[validation_count_per_class:]
+            test_count = int(len(remaining_posts) * test_size / (1 - validation_size))
+
+            test_posts = remaining_posts[:test_count]
+            train_posts = remaining_posts[test_count:]
 
             train_data['posts'].extend(train_posts)
             train_data['labels'].extend([label] * len(train_posts))
@@ -109,10 +129,6 @@ class BaseTextClassifier(ABC):
         validation_combined = list(zip(validation_data['posts'], validation_data['labels']))
         test_combined = list(zip(test_data['posts'], test_data['labels']))
 
-        self._random_generator.shuffle(train_combined)
-        self._random_generator.shuffle(validation_combined)
-        self._random_generator.shuffle(test_combined)
-
         return {
             'train': train_combined,
             'validation': validation_combined,
@@ -120,7 +136,7 @@ class BaseTextClassifier(ABC):
         }
 
     @abstractmethod
-    def preprocess_data(self, datasets: any) -> any:
+    def preprocess_data(self, datasets: any, custom_lemmas: list[str] = None) -> dict[str, list[tuple[str, str]]]:
         """Apply preprocessing to datasets.
 
         Can be called using super() as preliminary step before additional preprocessing.
@@ -139,13 +155,23 @@ class BaseTextClassifier(ABC):
 
         return datasets
 
+    def add_lemmas(self, custom_lemmas: dict):
+        """
+        Add custom lemmatization rules
+
+        Args:
+            custom_lemmas: dict mapping words to their desired lemma forms
+        """
+        pass
+
     @abstractmethod
-    def _handle_special_tokens(self, special_tokens):
+    def add_tokens(self, special_tokens):
         """Hook method for subclasses to handle special tokens"""
         pass
 
     @abstractmethod
-    def train(self, processed_datasets: any, **kwargs) -> None:
+    def train(self, processed_datasets: dict[str, list[tuple[str, str]]], learning_rate: float,
+              l2_regularization: float, epochs: int = 100, batch_size: int = 32, dropout: float = 0.2) -> None:
         """Train the model"""
         pass
 
@@ -154,17 +180,78 @@ class BaseTextClassifier(ABC):
         """Evaluate the model"""
         pass
 
-    @abstractmethod
+    def _record_metrics(self, epoch, losses, train_results, eval_results, epoch_time):
+        """Record metrics for an epoch"""
+        return {
+            "epoch": epoch,
+            "train_loss": losses["textcat"],
+            "train_accuracy": train_results["cats_score"],
+            "val_accuracy": eval_results["cats_score"],
+            "accuracy_gap": train_results["cats_score"] - eval_results["cats_score"],
+            "precision": eval_results["cats_micro_p"],
+            "recall": eval_results["cats_micro_r"],
+            "f1": eval_results["cats_micro_f"],
+            "time": epoch_time
+        }
+
+    def _log_progress(self, epoch, total_epochs, epoch_time, losses, train_results, eval_results):
+        """Log training progress"""
+        print(f"Epoch {epoch}/{total_epochs}, Time: {epoch_time:.2f}s, "
+              f"Train Loss: {losses['textcat']:.4f}, "
+              f"Train Accuracy: {train_results['cats_score']:.4f}, "
+              f"Val Accuracy: {eval_results['cats_score']:.4f}, "
+              f"F1 Score: {eval_results['cats_micro_f']:.4f}, "
+              f"Gap: {(train_results['cats_score'] - eval_results['cats_score']):.4f}")
+
+    def _compile_evaluation_metrics(self, results):
+        """Compile evaluation metrics into a dictionary"""
+        metrics = {
+            "accuracy": results["cats_score"],
+            "precision": results["cats_micro_p"],
+            "recall": results["cats_micro_r"],
+            "f1": results["cats_micro_f"],
+        }
+
+        # Add per-category scores
+        for label in self.LABELS:
+            if f"cats_{label}_p" in results:
+                metrics[f"{label}_precision"] = results[f"cats_{label}_p"]
+                metrics[f"{label}_recall"] = results[f"cats_{label}_r"]
+                metrics[f"{label}_f1"] = results[f"cats_{label}_f"]
+
+        # Add training history if available
+        if hasattr(self, 'training_history'):
+            metrics["training_history"] = self.training_history
+
+        if hasattr(self, 'training_time'):
+            metrics["total_training_time"] = self.training_time
+
+        # Add learning curves data for plotting
+        if hasattr(self, 'training_history'):
+            epochs = [entry["epoch"] for entry in self.training_history]
+            train_losses = [entry["train_loss"] for entry in self.training_history]
+            train_accuracies = [entry.get("train_accuracy", 0) for entry in self.training_history]
+            val_accuracies = [entry.get("val_accuracy", 0) for entry in self.training_history]
+            accuracy_gaps = [entry.get("accuracy_gap", 0) for entry in self.training_history]
+
+            metrics["learning_curves"] = {
+                "epochs": epochs,
+                "train_losses": train_losses,
+                "train_accuracies": train_accuracies,
+                "val_accuracies": val_accuracies,
+                "accuracy_gaps": accuracy_gaps
+            }
+
+        return metrics
+
     def predict(self, text: str) -> dict[str, float]:
         """Make prediction on a single text"""
         pass
 
-    @abstractmethod
     def save_model(self, path: str) -> None:
         """Save the model"""
         pass
 
-    @abstractmethod
     def load_model(self, path: str) -> None:
         """Load a saved model"""
         pass
@@ -178,8 +265,12 @@ class BaseTextClassifier(ABC):
         self._preprocessor = preprocessor
 
     def get_model(self):
-        """Set text preprocessor"""
+        """Get text preprocessor"""
         return self._model
+
+    def set_model(self, model):
+        """Set text preprocessor"""
+        self._model = model
 
     def _initialize_test_dataset(self, class_2_exists):
         class_0 = [
@@ -248,11 +339,11 @@ class BaseTextClassifier(ABC):
         ]
 
         data = {
-            self._CLASS_0: class_0,
-            self._CLASS_1: class_1
+            self.LABELS[0]: class_0,
+            self.LABELS[1]: class_1
         }
 
         if class_2_exists is not None:
-            data[self._CLASS_2] = class_2
+            data[self.LABELS[2]] = class_2
 
         return data
