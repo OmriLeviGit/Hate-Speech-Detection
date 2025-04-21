@@ -7,7 +7,7 @@ from emoji import demojize, is_emoji
 from .ObfuscationMapGenerator import ObfuscationMapGenerator
 
 
-class TextPreprocessor:
+class TextNormalizer:
     def __init__(self, config_path='config.json', emoji: str = None):
         self._config_path = os.path.join(os.path.dirname(__file__), config_path)
         self._load_config()
@@ -160,7 +160,7 @@ def test_run():
         "my friend @friend has a dog",
         "tell #hashtag"
     ]
-    processor = TextPreprocessor('config.json')
+    processor = TextNormalizer('config.json')
 
     print("Example")
     print("\n", "-" * 20 + " Before conversion " + "-" * 20)

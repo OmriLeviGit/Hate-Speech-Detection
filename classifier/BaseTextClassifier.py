@@ -6,7 +6,7 @@ import copy
 import pandas as pd
 
 
-from classifier.preprocessing.TextPreprocessor import TextPreprocessor
+from classifier.preprocessing.TextNormalizer import TextNormalizer
 from tagging_website.serverside.db_service import get_db_instance
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -15,7 +15,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 class BaseTextClassifier(ABC):
     """Abstract base class for text classifiers"""
 
-    def __init__(self, model: any, preprocessor: TextPreprocessor() = None, seed: int = 42):
+    def __init__(self, model: any, preprocessor: TextNormalizer() = None, seed: int = 42):
         self._model = model
         self._preprocessor = preprocessor
 
@@ -73,67 +73,117 @@ class BaseTextClassifier(ABC):
 
         return data
 
-    def prepare_datasets(self, data: dict[str, list], test_size: float = 0.15, validation_size: float = 0.1, combine_irrelevant: bool = False) -> any:
-        """Prepare train, validation and test datasets.
+    def prepare_datasets(self, data: dict[str, list], test_size: float = 0.15, combine_irrelevant: bool = False) -> any:
+        """Prepare train and test datasets.
 
-        This function splits the input data into training, validation, and test sets
+        This function splits the input data into training and test sets
         while maintaining the class distribution in each set. The data is shuffled to ensure randomness.
 
         Args:
             data: Dictionary mapping class labels to lists of posts
-            test_size: Proportion of data to use for testing (default: 0.2)
-            validation_size: Proportion of data to use for validation (default: 0.1)
+            test_size: Proportion of data to use for testing (default: 0.15)
             combine_irrelevant: If True, combines irrelevant class with not_antisemistic class (default: False)
 
         Returns:
-            Dictionary containing 'train', 'validation', and 'test' keys, each mapping to
+            Dictionary containing 'train' and 'test' keys, each mapping to
             a list of (post, label) tuples
         """
 
-        if test_size + validation_size > 1:
-            print("training, test, and validation sizes must sum up to 1")
+        if test_size > 1:
+            print("test size must be less than 1")
             return
 
-        # Find the size of the smallest class to determine validation set size. Validation size should be consistent between classes regardless of their size.
-        min_class_size = min(len(posts) for posts in data.values())
-        validation_count_per_class = int(min_class_size * validation_size)
-
         # Handle combining irrelevant with not-antisemistic if specified
-        if combine_irrelevant and self.LABELS[1] in data and self.LABELS[2] in data:
+        if combine_irrelevant and len(self.LABELS) > 2:
             data[self.LABELS[1]] = data[self.LABELS[1]] + data.pop(self.LABELS[2])
+            self.LABELS.pop(2)
 
         train_data = {'posts': [], 'labels': []}
-        validation_data = {'posts': [], 'labels': []}
         test_data = {'posts': [], 'labels': []}
 
         # Process each class separately to maintain class distribution
         for label, posts in data.items():
-            validation_posts = posts[:validation_count_per_class]   # Take equal validation samples from each class
+            test_count = int(len(posts) * test_size)
 
-            remaining_posts = posts[validation_count_per_class:]
-            test_count = int(len(remaining_posts) * test_size / (1 - validation_size))
-
-            test_posts = remaining_posts[:test_count]
-            train_posts = remaining_posts[test_count:]
+            test_posts = posts[:test_count]
+            train_posts = posts[test_count:]
 
             train_data['posts'].extend(train_posts)
             train_data['labels'].extend([label] * len(train_posts))
-
-            validation_data['posts'].extend(validation_posts)
-            validation_data['labels'].extend([label] * len(validation_posts))
 
             test_data['posts'].extend(test_posts)
             test_data['labels'].extend([label] * len(test_posts))
 
         train_combined = list(zip(train_data['posts'], train_data['labels']))
-        validation_combined = list(zip(validation_data['posts'], validation_data['labels']))
         test_combined = list(zip(test_data['posts'], test_data['labels']))
 
         return {
             'train': train_combined,
-            'validation': validation_combined,
             'test': test_combined
         }
+
+    # def prepare_datasets(self, data: dict[str, list], test_size: float = 0.15, validation_size: float = 0.1, combine_irrelevant: bool = False) -> any:
+    #     """Prepare train, validation and test datasets.
+    #
+    #     This function splits the input data into training, validation, and test sets
+    #     while maintaining the class distribution in each set. The data is shuffled to ensure randomness.
+    #
+    #     Args:
+    #         data: Dictionary mapping class labels to lists of posts
+    #         test_size: Proportion of data to use for testing (default: 0.2)
+    #         validation_size: Proportion of data to use for validation (default: 0.1)
+    #         combine_irrelevant: If True, combines irrelevant class with not_antisemistic class (default: False)
+    #
+    #     Returns:
+    #         Dictionary containing 'train', 'validation', and 'test' keys, each mapping to
+    #         a list of (post, label) tuples
+    #     """
+    #
+    #     if test_size + validation_size > 1:
+    #         print("training, test, and validation sizes must sum up to 1")
+    #         return
+    #
+    #     # Handle combining irrelevant with not-antisemistic if specified
+    #     if combine_irrelevant and len(self.LABELS) > 2:
+    #         data[self.LABELS[1]] = data[self.LABELS[1]] + data.pop(self.LABELS[2])
+    #         self.LABELS.pop(2)
+    #
+    #     # Find the size of the smallest class to determine validation set size. Validation size should be consistent between classes regardless of their size.
+    #     min_class_size = min(len(posts) for posts in data.values())
+    #     validation_count_per_class = int(min_class_size * validation_size)
+    #
+    #     train_data = {'posts': [], 'labels': []}
+    #     validation_data = {'posts': [], 'labels': []}
+    #     test_data = {'posts': [], 'labels': []}
+    #
+    #     # Process each class separately to maintain class distribution
+    #     for label, posts in data.items():
+    #         validation_posts = posts[:validation_count_per_class]   # Take equal validation samples from each class
+    #
+    #         remaining_posts = posts[validation_count_per_class:]
+    #         test_count = int(len(remaining_posts) * test_size / (1 - validation_size))
+    #
+    #         test_posts = remaining_posts[:test_count]
+    #         train_posts = remaining_posts[test_count:]
+    #
+    #         train_data['posts'].extend(train_posts)
+    #         train_data['labels'].extend([label] * len(train_posts))
+    #
+    #         validation_data['posts'].extend(validation_posts)
+    #         validation_data['labels'].extend([label] * len(validation_posts))
+    #
+    #         test_data['posts'].extend(test_posts)
+    #         test_data['labels'].extend([label] * len(test_posts))
+    #
+    #     train_combined = list(zip(train_data['posts'], train_data['labels']))
+    #     validation_combined = list(zip(validation_data['posts'], validation_data['labels']))
+    #     test_combined = list(zip(test_data['posts'], test_data['labels']))
+    #
+    #     return {
+    #         'train': train_combined,
+    #         'validation': validation_combined,
+    #         'test': test_combined
+    #     }
 
     @abstractmethod
     def preprocess_data(self, datasets: any, custom_lemmas: list[str] = None) -> dict[str, list[tuple[str, str]]]:
@@ -142,16 +192,16 @@ class BaseTextClassifier(ABC):
         Can be called using super() as preliminary step before additional preprocessing.
         """
         datasets = copy.copy(datasets)
-        preprocessor = self.get_text_preprocessor()
+        preprocessor = self.get_text_normalizer()
 
         if preprocessor:
-            for dataset_name, data in datasets.items():
+            for label, posts in datasets.items():
                 processed_data = []
-                for post, label in data:
+                for post in posts:
                     processed_post = preprocessor.process(post)
                     processed_data.append((processed_post, label))
 
-                datasets[dataset_name] = processed_data
+                datasets[label] = processed_data
 
         return datasets
 
@@ -170,8 +220,8 @@ class BaseTextClassifier(ABC):
         pass
 
     @abstractmethod
-    def train(self, processed_datasets: dict[str, list[tuple[str, str]]], learning_rate: float,
-              l2_regularization: float, epochs: int = 100, batch_size: int = 32, dropout: float = 0.2) -> None:
+    def train(self, processed_datasets: dict[str, list[tuple[str, str]]], learning_rate: float = 0.001,
+              l2_regularization: float = 0.001, epochs: int = 100, batch_size: int = 32, dropout: float = 0.2) -> None:
         """Train the model"""
         pass
 
@@ -256,11 +306,11 @@ class BaseTextClassifier(ABC):
         """Load a saved model"""
         pass
 
-    def get_text_preprocessor(self):
+    def get_text_normalizer(self):
         """Set text preprocessor"""
         return self._preprocessor
 
-    def set_text_preprocessor(self, preprocessor):
+    def set_text_normalizer(self, preprocessor):
         """Set text preprocessor"""
         self._preprocessor = preprocessor
 

@@ -1,3 +1,4 @@
+import random
 import time
 from copy import copy
 
@@ -6,11 +7,11 @@ from spacy.symbols import ORTH
 from spacy.training import Example
 
 from classifier.BaseTextClassifier import BaseTextClassifier
-from classifier.preprocessing.TextPreprocessor import TextPreprocessor
+from classifier.preprocessing.TextNormalizer import TextNormalizer
 
 
 class SpacyModels_SM_LG(BaseTextClassifier):
-    def __init__(self, model: any, preprocessor: TextPreprocessor() = None, seed: int = 42):
+    def __init__(self, model: any, preprocessor: TextNormalizer() = None, seed: int = 42):
         super().__init__(model, preprocessor, seed)
         self.training_time = None
         self.training_history = None
@@ -21,7 +22,7 @@ class SpacyModels_SM_LG(BaseTextClassifier):
 
         nlp = self.get_model()
 
-        special_tokens = self.get_text_preprocessor().get_special_tokens()
+        special_tokens = self.get_text_normalizer().get_special_tokens()
         self.add_tokens(special_tokens)  # Add special tokens to the tokenizer
         self.add_lemmas(custom_lemmas)  # Add custom lemmas to the lemmatizer
 
@@ -126,6 +127,7 @@ class SpacyModels_SM_LG(BaseTextClassifier):
         for epoch in range(epochs):
             epoch_start = time.time()
             self.random_generator.shuffle(train_examples)
+            random.shuffle(train_examples)
             losses = {}
 
             # Training batches
