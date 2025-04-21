@@ -34,8 +34,16 @@ class SpacyModels_TRF(BaseTextClassifier):
             processed_data = []
             for text, label in data:
                 doc = nlp(text)
-                lemmatized_text = " ".join([token.lemma_ for token in doc])
-                processed_data.append((lemmatized_text, label))
+
+                tokens = [
+                    token.lemma_ for token in doc
+                    if token.is_alpha and not token.is_stop and not token.is_punct
+                ]
+
+                lemmatized_text = ' '.join(tokens)
+
+                vector = nlp(lemmatized_text).post
+                processed_data.append((vector, label))
             processed_datasets[dataset_name] = processed_data
 
         return processed_datasets

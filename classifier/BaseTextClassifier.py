@@ -186,7 +186,7 @@ class BaseTextClassifier(ABC):
     #     }
 
     @abstractmethod
-    def preprocess_data(self, datasets: any, custom_lemmas: list[str] = None) -> dict[str, list[tuple[str, str]]]:
+    def preprocess_data(self, datasets: any, custom_lemmas: list[str] = None) -> any:
         """Apply preprocessing to datasets.
 
         Can be called using super() as preliminary step before additional preprocessing.
@@ -196,12 +196,12 @@ class BaseTextClassifier(ABC):
 
         if preprocessor:
             for label, posts in datasets.items():
-                processed_data = []
+                processed_posts = []
                 for post in posts:
                     processed_post = preprocessor.process(post)
-                    processed_data.append((processed_post, label))
+                    processed_posts.append(processed_post)
 
-                datasets[label] = processed_data
+                datasets[label] = processed_posts
 
         return datasets
 
