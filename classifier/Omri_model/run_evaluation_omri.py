@@ -1,12 +1,14 @@
+import random
 import time
 
+import numpy as np
 import spacy
 from spacy.util import is_package
 
 from classifier import utils
 from classifier.Omri_model.SpacyModels_SM_LG import SpacyModels_SM_LG
 from classifier.Omri_model.SpacyModels_TRF import SpacyModels_TRF
-from classifier.preprocessing.TextPreprocessor import TextPreprocessor
+from classifier.preprocessing.TextNormalizer import TextNormalizer
 from classifier.utils import print_model_header
 
 # { original word: change into }, for words that are not lemmatized correctly for the small model
@@ -29,36 +31,62 @@ Example:
 },
 """
 
+# configs = [
+#     {
+#         "model_name": "3 classes small model",
+#         "base_model": "en_core_web_sm",
+#         "emoji_processing": 'text',
+#         "distribution": {"negative": 700, "positive": 700, "irrelevant": 700},
+#         "source": "csv_files",
+#         "combine_irrelevant": False,
+#         "hyper_parameters": {
+#             "learning_rate": 0.001,
+#             "l2_regularization": 0.001,
+#         }
+#     },
+#     {
+#         "model_name": "2 classes bert",
+#         "base_model": "en_core_web_trf",
+#         "emoji_processing": 'text',
+#         "distribution": {"negative": 700, "positive": 700},
+#         "source": "csv_files",
+#         "combine_irrelevant": False,
+#         "hyper_parameters": {
+#             "learning_rate": 0.001,
+#             "l2_regularization": 0.001,
+#         }
+#     },
+#     {
+#         "model_name": "2 classes bert with 350 irrelevant, combined with positive",
+#         "base_model": "en_core_web_trf",
+#         "emoji_processing": 'text',
+#         "distribution": {"negative": 700, "positive": 700, "irrelevant": 350},
+#         "source": "csv_files",
+#         "combine_irrelevant": True,
+#         "hyper_parameters": {
+#             "learning_rate": 0.001,
+#             "l2_regularization": 0.001,
+#         }
+#     },
+# ]
+
 configs = [
     {
-        "model_name": "3 classes small model",
+        "model_name": "2 classes sm",
         "base_model": "en_core_web_sm",
         "emoji_processing": 'text',
-        "distribution": {"negative": 700, "positive": 700, "irrelevant": 700},
+        "distribution": {"positive": 700, "negative": 700},
         "source": "csv_files",
-        "combine_irrelevant": False,
+        "combine_irrelevant": True,
         "hyper_parameters": {
             "learning_rate": 0.001,
             "l2_regularization": 0.001,
         }
-    },
-    {
-        "model_name": "2 classes bert",
+    },    {
+        "model_name": "3 classes trf",
         "base_model": "en_core_web_trf",
         "emoji_processing": 'text',
-        "distribution": {"negative": 700, "positive": 700},
-        "source": "debug",
-        "combine_irrelevant": False,
-        "hyper_parameters": {
-            "learning_rate": 0.001,
-            "l2_regularization": 0.001,
-        }
-    },
-    {
-        "model_name": "2 classes bert with 350 irrelevant, combined with positive",
-        "base_model": "en_core_web_trf",
-        "emoji_processing": 'text',
-        "distribution": {"negative": 700, "positive": 700, "irrelevant": 350},
+        "distribution": {"positive": 700, "negative": 700},
         "source": "csv_files",
         "combine_irrelevant": True,
         "hyper_parameters": {
@@ -66,6 +94,7 @@ configs = [
             "l2_regularization": 0.001,
         }
     },
+
 ]
 
 
@@ -80,28 +109,34 @@ def load_model(model_name):
 
 
 def run_evaluation(models_config):
-    metrics_list = []
     total_start_time = time.time()
+    seed = 42
 
+    metrics_list = []
     accuracy_list = []
 
-    for i, config in enumerate(models_config):
+    # optimizer = nlp.begin_training(component_cfg={"seed": seed})
+
+    for config in models_config:
         print_model_header(config['model_name'])
+
+        random.seed(seed)
+        np.random.seed(seed)
 
         base_model = config["base_model"]
         nlp = load_model(base_model)
-        text_preprocessor = TextPreprocessor(emoji=config["emoji_processing"])
+        text_normalizer = TextNormalizer(emoji=config["emoji_processing"])
 
         if base_model.endswith('trf'):
-            classifier = SpacyModels_TRF(model=nlp, preprocessor=text_preprocessor)
+            classifier = SpacyModels_TRF(model=nlp, preprocessor=text_normalizer, seed=seed)
         else:
-            classifier = SpacyModels_SM_LG(model=nlp, preprocessor=text_preprocessor)
+            classifier = SpacyModels_SM_LG(model=nlp, preprocessor=text_normalizer, seed=seed)
 
         print("Loading and preprocessing data...")
         data = classifier.load_data(
-            config["distribution"].get("negative"),
             config["distribution"].get("positive"),
-            config["distribution"].get("irrelevant"),
+            config["distribution"].get("negative"),
+            config["distribution"].get("irrelevant", None),
             source=config['source']
         )
 

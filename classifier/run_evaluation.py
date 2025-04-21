@@ -2,7 +2,7 @@ import spacy
 from spacy.util import is_package
 
 from classifier.ExampleModel import ExampleModel
-from classifier.preprocessing.TextPreprocessor import TextPreprocessor
+from classifier.preprocessing.TextNormalizer import TextNormalizer
 
 custom_lemmas = ["hamas"]  # if you encounter words that don't get lemmatized correctly, add them here
 
@@ -19,9 +19,9 @@ def run_evaluation():
     model_name = "en_core_web_sm"
     nlp = load_model(model_name)
 
-    text_preprocessor = TextPreprocessor(emoji=None)  # 'text' to convert to text, 'config' to get description from 'config.json'
+    text_normalizer = TextNormalizer(emoji=None)  # 'text' to convert to text, 'config' to get description from 'config.json'
 
-    classifier = ExampleModel(nlp, text_preprocessor)
+    classifier = ExampleModel(nlp, text_normalizer)
 
     data = classifier.load_data(1000, 1000, 1000, debug=True)
 
