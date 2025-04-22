@@ -20,7 +20,7 @@ def load_model(model_name):
 
 
 nlp = load_model("en_core_web_lg")
-normalizer = TextNormalizer()
+normalizer = TextNormalizer(emoji='text')
 labels = ["antisemistic", "not_antisemistic"]
 
 classifier = SKLearnModels(nlp, normalizer, labels)
@@ -31,7 +31,7 @@ data = classifier.preprocess_data(data)
 
 X, y = classifier.prepare_dataset(data)
 
-# this is the rest
+# from here on its model specific
 vectorizer = TfidfVectorizer(max_features=5000)
 X_tfidf = vectorizer.fit_transform(X)
 model = RandomForestClassifier(n_estimators=100, random_state=classifier.seed)

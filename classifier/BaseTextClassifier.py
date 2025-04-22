@@ -97,7 +97,7 @@ class BaseTextClassifier(ABC):
             for label, posts in datasets.items():
                 processed_posts = []
                 for post in posts:
-                    processed_post = normalizer.process(post)
+                    processed_post = normalizer.normalize(post)
                     processed_posts.append(processed_post)
 
                 datasets[label] = processed_posts

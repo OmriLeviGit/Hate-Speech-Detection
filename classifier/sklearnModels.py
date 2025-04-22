@@ -20,21 +20,26 @@ class SKLearnModels(BaseTextClassifier):
 
         # Run text through the entire spacy NLP pipeline
         processed_datasets = {}
+        count = 0
         for label, posts in datasets.items():
             processed_data = []
             for post in posts:
                 doc = nlp(post)
 
-                tokens = [
-                    token.lemma_ for token in doc
-                    if not token.is_stop and not token.is_punct
-                ]
+                tokens = []
+
+                for token in doc:
+                    if not token.is_stop and not token.is_punct:
+                        tokens.append(token.lemma_)
+
+                        if not token.has_vector:
+                            count += 1
 
                 lemmatized_text = ' '.join(tokens)
                 processed_data.append(lemmatized_text)
 
             processed_datasets[label] = processed_data
-
+        print("Num of undetected tokens: ", count, "\n")
         return processed_datasets
 
     def add_tokens(self, special_tokens):

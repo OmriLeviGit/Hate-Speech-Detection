@@ -3,6 +3,7 @@ import re
 import os
 
 from emoji import demojize, is_emoji
+import wordninja
 
 from .ObfuscationMapGenerator import ObfuscationMapGenerator
 
@@ -42,7 +43,7 @@ class TextNormalizer:
             self._replace_mentions,
             self._remove_hashtags,
             self._deobfuscate,
-            self._expand_slang,
+            # self._expand_slang,   # performed after the 'ninja' step instead
         ]
 
         if emoji == "text":
@@ -51,7 +52,8 @@ class TextNormalizer:
         elif emoji == "config":
             self._processing_pipeline.append(self._emojis_by_config)
 
-    def process(self, text):
+
+    def normalize(self, text):
         """Process text by applying all functions to each word before moving to next word"""
         text = text.lower()
         words = text.split()
@@ -67,8 +69,15 @@ class TextNormalizer:
                     word = result
                     break
 
+            word = self._ninja(word)
+
             if word:
                 processed_words.append(word)
+
+        # join and split again to split into words after 'ninja'
+        processed_words = ' '.join(processed_words).split()
+
+        processed_words = [self._expand_slang(word) for word in processed_words]
 
         return ' '.join(processed_words)
 
@@ -82,9 +91,7 @@ class TextNormalizer:
         pattern = r"^@[\w]+$"
 
         if re.match(pattern, word):
-            user = "<USER>"
-            self._special_tokens.add(user)
-            return user
+            return "user"
 
         return word
 
@@ -104,15 +111,6 @@ class TextNormalizer:
         """Expand slang abbreviations to their full forms"""
         return self._slang_map.get(word, word)
 
-    # def _emoji_to_text(self, word):
-    #     """Convert emojis to their hidden contextual meanings"""
-    #
-    #     for char in word:
-    #         if is_emoji(char):
-    #             emoji_text = demojize(char)
-    #             self._special_tokens.add(emoji_text)
-    #
-    #     return demojize(word)
     def _emoji_to_text(self, word):
         """Convert emojis to their hidden contextual meanings and add spaces between consecutive emojis"""
         result = ""
@@ -144,10 +142,13 @@ class TextNormalizer:
 
         return result
 
+    def _ninja(self, word):
+        if word:
+            return ' '.join(wordninja.split(word))
+
     def get_special_tokens(self):
         """Return set of special tokens identified during processing"""
         return self._special_tokens
-
 
 def test_run():
     example_texts = [
@@ -169,7 +170,7 @@ def test_run():
 
     print("\n", "-" * 20 + " After conversion " + "-" * 20)
     for text in example_texts:
-        print(processor.process(text))
+        print(processor.normalize(text))
 
 
 if __name__ == "__main__":
