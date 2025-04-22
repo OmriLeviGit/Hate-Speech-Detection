@@ -1,227 +1,129 @@
 from abc import ABC, abstractmethod
-import sys
-import os
-import random
 import copy
+
+import numpy as np
 import pandas as pd
+from sklearn.utils import shuffle
 
+from classifier.normalization.TextNormalizer import TextNormalizer
 
-from classifier.preprocessing.TextNormalizer import TextNormalizer
-from tagging_website.serverside.db_service import get_db_instance
-
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
 class BaseTextClassifier(ABC):
     """Abstract base class for text classifiers"""
 
-    def __init__(self, model: any, preprocessor: TextNormalizer() = None, seed: int = 42):
-        self._model = model
-        self._preprocessor = preprocessor
-
+    def __init__(self, nlp_pipeline: any, text_normalizer: TextNormalizer(), labels: list, seed: int = 42):
+        self._nlp = nlp_pipeline
+        self._normalizer = text_normalizer
+        self.LABELS = labels
         self.seed = seed
-        self.random_generator = random.Random(self.seed)  # use this instead of random.random() to keep results consistent
-        self.LABELS = ["antisemistic", "not_antisemistic"]
 
-    def load_data(self, class_0_count, class_1_count, class_2_count=None, source=None) -> dict[str, list]:
+    def load_data(self, class_0_count=None, class_1_count=None, class_2_count=None, source=None,
+                  set_to_min=False) -> dict[str, list]:
         """Load data from file or use sample data.
 
-        This function loads text data for classification either from the database, csv files, or mock data.
+        This function loads text data for classification either from a csv file, or mock data.
         The data is organized by class labels.
 
         Args:
             class_0_count: Number of samples to load for class 0 (antisemistic)
             class_1_count: Number of samples to load for class 1 (not_antisemistic)
             class_2_count: Number of samples to load for class 2 (irrelevant), optional
-            source: 'debug' works with generated data, 'csv_files' with local data, else data from the database
+            source: 'debug' to work with generated data, else to import data from a csv file
+            set_to_min: If True, sets all class counts to the minimum available across classes for balanced dataset
 
         Returns:
             Dictionary mapping class labels to lists of text samples.
         """
-        # Initialize data dictionary
         data = {}
 
-        if source == 'csv_files':
-            # Load data from CSV files
-            data[self.LABELS[0]] = pd.read_csv('../positive_results.csv', header=None, nrows=class_0_count)[0].tolist()
-            data[self.LABELS[1]] = pd.read_csv('../negative_results.csv', header=None, nrows=class_1_count)[0].tolist()
+        if source == 'debug':
+            return self._initialize_test_dataset()
 
-            if class_2_count is not None:
-                self.LABELS.append("irrelevant")
+        df = pd.read_csv('results.csv')
 
-                data[self.LABELS[2]] = pd.read_csv('../irrelevant_results.csv', header=None, nrows=class_2_count)[
-                    0].tolist()
+        sentiment_mapping = {
+            'Positive': 'antisemistic',
+            'Negative': 'not_antisemistic',
+            'Irrelevant': 'irrelevant'
+        }
 
-        elif source == 'debug':
-            if class_2_count is not None:
-                self.LABELS.append("irrelevant")
+        class_0_data = df[df['sentiment'] == 'Positive']['content'].tolist() if sentiment_mapping[
+                                                                                    'Positive'] in self.LABELS else []
+        class_1_data = df[df['sentiment'] == 'Negative']['content'].tolist() if sentiment_mapping[
+                                                                                    'Negative'] in self.LABELS else []
+        class_2_data = df[df['sentiment'] == 'Irrelevant']['content'].tolist() if sentiment_mapping[
+                                                                                      'Irrelevant'] in self.LABELS else []
 
-            data = self._initialize_test_dataset(class_2_count)
+        if set_to_min:
+            available_counts = []
+            if class_0_data:
+                available_counts.append(len(class_0_data))
+            if class_1_data:
+                available_counts.append(len(class_1_data))
+            if class_2_data:
+                available_counts.append(len(class_2_data))
 
+            min_count = min(available_counts) if available_counts else 0
 
-        else:
-            # Get data from database
-            db = get_db_instance()
+            class_0_count = min_count if class_0_data else None
+            class_1_count = min_count if class_1_data else None
+            class_2_count = min_count if class_2_data else None
 
-            data[self.LABELS[0]] = db.get_result_posts(label=self.LABELS[0], count=class_0_count)
-            data[self.LABELS[1]] = db.get_result_posts(label=self.LABELS[1], count=class_1_count)
+        if sentiment_mapping['Positive'] in self.LABELS:
+            count = class_0_count if class_0_count is not None else len(class_0_data)
+            data[sentiment_mapping['Positive']] = class_0_data[:count]
 
-            if class_2_count is not None:
-                self.LABELS.append("irrelevant")
+        if sentiment_mapping['Negative'] in self.LABELS:
+            count = class_1_count if class_1_count is not None else len(class_1_data)
+            data[sentiment_mapping['Negative']] = class_1_data[:count]
 
-                data[self.LABELS[2]] = db.get_result_posts(label=self.LABELS[2], count=class_2_count)
+        if sentiment_mapping['Irrelevant'] in self.LABELS:
+            count = class_2_count if class_2_count is not None else len(class_2_data)
+            data[sentiment_mapping['Irrelevant']] = class_2_data[:count]
 
         return data
 
-    def prepare_datasets(self, data: dict[str, list], test_size: float = 0.15, combine_irrelevant: bool = False) -> any:
-        """Prepare train and test datasets.
-
-        This function splits the input data into training and test sets
-        while maintaining the class distribution in each set. The data is shuffled to ensure randomness.
-
-        Args:
-            data: Dictionary mapping class labels to lists of posts
-            test_size: Proportion of data to use for testing (default: 0.15)
-            combine_irrelevant: If True, combines irrelevant class with not_antisemistic class (default: False)
-
-        Returns:
-            Dictionary containing 'train' and 'test' keys, each mapping to
-            a list of (post, label) tuples
-        """
-
-        if test_size > 1:
-            print("test size must be less than 1")
-            return
-
-        # Handle combining irrelevant with not-antisemistic if specified
-        if combine_irrelevant and len(self.LABELS) > 2:
-            data[self.LABELS[1]] = data[self.LABELS[1]] + data.pop(self.LABELS[2])
-            self.LABELS.pop(2)
-
-        train_data = {'posts': [], 'labels': []}
-        test_data = {'posts': [], 'labels': []}
-
-        # Process each class separately to maintain class distribution
-        for label, posts in data.items():
-            test_count = int(len(posts) * test_size)
-
-            test_posts = posts[:test_count]
-            train_posts = posts[test_count:]
-
-            train_data['posts'].extend(train_posts)
-            train_data['labels'].extend([label] * len(train_posts))
-
-            test_data['posts'].extend(test_posts)
-            test_data['labels'].extend([label] * len(test_posts))
-
-        train_combined = list(zip(train_data['posts'], train_data['labels']))
-        test_combined = list(zip(test_data['posts'], test_data['labels']))
-
-        return {
-            'train': train_combined,
-            'test': test_combined
-        }
-
-    # def prepare_datasets(self, data: dict[str, list], test_size: float = 0.15, validation_size: float = 0.1, combine_irrelevant: bool = False) -> any:
-    #     """Prepare train, validation and test datasets.
-    #
-    #     This function splits the input data into training, validation, and test sets
-    #     while maintaining the class distribution in each set. The data is shuffled to ensure randomness.
-    #
-    #     Args:
-    #         data: Dictionary mapping class labels to lists of posts
-    #         test_size: Proportion of data to use for testing (default: 0.2)
-    #         validation_size: Proportion of data to use for validation (default: 0.1)
-    #         combine_irrelevant: If True, combines irrelevant class with not_antisemistic class (default: False)
-    #
-    #     Returns:
-    #         Dictionary containing 'train', 'validation', and 'test' keys, each mapping to
-    #         a list of (post, label) tuples
-    #     """
-    #
-    #     if test_size + validation_size > 1:
-    #         print("training, test, and validation sizes must sum up to 1")
-    #         return
-    #
-    #     # Handle combining irrelevant with not-antisemistic if specified
-    #     if combine_irrelevant and len(self.LABELS) > 2:
-    #         data[self.LABELS[1]] = data[self.LABELS[1]] + data.pop(self.LABELS[2])
-    #         self.LABELS.pop(2)
-    #
-    #     # Find the size of the smallest class to determine validation set size. Validation size should be consistent between classes regardless of their size.
-    #     min_class_size = min(len(posts) for posts in data.values())
-    #     validation_count_per_class = int(min_class_size * validation_size)
-    #
-    #     train_data = {'posts': [], 'labels': []}
-    #     validation_data = {'posts': [], 'labels': []}
-    #     test_data = {'posts': [], 'labels': []}
-    #
-    #     # Process each class separately to maintain class distribution
-    #     for label, posts in data.items():
-    #         validation_posts = posts[:validation_count_per_class]   # Take equal validation samples from each class
-    #
-    #         remaining_posts = posts[validation_count_per_class:]
-    #         test_count = int(len(remaining_posts) * test_size / (1 - validation_size))
-    #
-    #         test_posts = remaining_posts[:test_count]
-    #         train_posts = remaining_posts[test_count:]
-    #
-    #         train_data['posts'].extend(train_posts)
-    #         train_data['labels'].extend([label] * len(train_posts))
-    #
-    #         validation_data['posts'].extend(validation_posts)
-    #         validation_data['labels'].extend([label] * len(validation_posts))
-    #
-    #         test_data['posts'].extend(test_posts)
-    #         test_data['labels'].extend([label] * len(test_posts))
-    #
-    #     train_combined = list(zip(train_data['posts'], train_data['labels']))
-    #     validation_combined = list(zip(validation_data['posts'], validation_data['labels']))
-    #     test_combined = list(zip(test_data['posts'], test_data['labels']))
-    #
-    #     return {
-    #         'train': train_combined,
-    #         'validation': validation_combined,
-    #         'test': test_combined
-    #     }
-
     @abstractmethod
-    def preprocess_data(self, datasets: any, custom_lemmas: list[str] = None) -> any:
-        """Apply preprocessing to datasets.
+    def preprocess_data(self, datasets: any) -> any:
+        """Apply preprocessing to datasets."""
+        pass
 
-        Can be called using super() as preliminary step before additional preprocessing.
-        """
+    def _normalize(self, datasets: any):
         datasets = copy.copy(datasets)
-        preprocessor = self.get_text_normalizer()
+        normalizer = self.get_text_normalizer()
 
-        if preprocessor:
+        if normalizer:
             for label, posts in datasets.items():
                 processed_posts = []
                 for post in posts:
-                    processed_post = preprocessor.process(post)
+                    processed_post = normalizer.process(post)
                     processed_posts.append(processed_post)
 
                 datasets[label] = processed_posts
 
         return datasets
 
-    def add_lemmas(self, custom_lemmas: dict):
-        """
-        Add custom lemmatization rules
+    def prepare_dataset(self, datasets: dict[str, list[str, str]]) -> tuple[np.ndarray, np.ndarray]:
+        """Prepare and split into train and test sets"""
+        posts = []
+        labels = []
 
-        Args:
-            custom_lemmas: dict mapping words to their desired lemma forms
-        """
-        pass
+        label_list = list(datasets.keys())
+        for label_name, post_list in datasets.items():
+            label_index = label_list.index(label_name)
+
+            for post in post_list:
+                posts.append(post)
+                labels.append(f"{label_index}: {label_name}")
+
+        X = np.array(posts)
+        y = np.array(labels)
+
+        return shuffle(X, y, random_state=42)
 
     @abstractmethod
-    def add_tokens(self, special_tokens):
-        """Hook method for subclasses to handle special tokens"""
-        pass
-
-    @abstractmethod
-    def train(self, processed_datasets: dict[str, list[tuple[str, str]]], learning_rate: float = 0.001,
-              l2_regularization: float = 0.001, epochs: int = 100, batch_size: int = 32, dropout: float = 0.2) -> None:
+    def train(self, processed_datasets: dict[str, list[tuple[str, str]]]) -> None:
         """Train the model"""
         pass
 
@@ -230,70 +132,7 @@ class BaseTextClassifier(ABC):
         """Evaluate the model"""
         pass
 
-    def _record_metrics(self, epoch, losses, train_results, eval_results, epoch_time):
-        """Record metrics for an epoch"""
-        return {
-            "epoch": epoch,
-            "train_loss": losses["textcat"],
-            "train_accuracy": train_results["cats_score"],
-            "val_accuracy": eval_results["cats_score"],
-            "accuracy_gap": train_results["cats_score"] - eval_results["cats_score"],
-            "precision": eval_results["cats_micro_p"],
-            "recall": eval_results["cats_micro_r"],
-            "f1": eval_results["cats_micro_f"],
-            "time": epoch_time
-        }
-
-    def _log_progress(self, epoch, total_epochs, epoch_time, losses, train_results, eval_results):
-        """Log training progress"""
-        print(f"Epoch {epoch}/{total_epochs}, Time: {epoch_time:.2f}s, "
-              f"Train Loss: {losses['textcat']:.4f}, "
-              f"Train Accuracy: {train_results['cats_score']:.4f}, "
-              f"Val Accuracy: {eval_results['cats_score']:.4f}, "
-              f"F1 Score: {eval_results['cats_micro_f']:.4f}, "
-              f"Gap: {(train_results['cats_score'] - eval_results['cats_score']):.4f}")
-
-    def _compile_evaluation_metrics(self, results):
-        """Compile evaluation metrics into a dictionary"""
-        metrics = {
-            "accuracy": results["cats_score"],
-            "precision": results["cats_micro_p"],
-            "recall": results["cats_micro_r"],
-            "f1": results["cats_micro_f"],
-        }
-
-        # Add per-category scores
-        for label in self.LABELS:
-            if f"cats_{label}_p" in results:
-                metrics[f"{label}_precision"] = results[f"cats_{label}_p"]
-                metrics[f"{label}_recall"] = results[f"cats_{label}_r"]
-                metrics[f"{label}_f1"] = results[f"cats_{label}_f"]
-
-        # Add training history if available
-        if hasattr(self, 'training_history'):
-            metrics["training_history"] = self.training_history
-
-        if hasattr(self, 'training_time'):
-            metrics["total_training_time"] = self.training_time
-
-        # Add learning curves data for plotting
-        if hasattr(self, 'training_history'):
-            epochs = [entry["epoch"] for entry in self.training_history]
-            train_losses = [entry["train_loss"] for entry in self.training_history]
-            train_accuracies = [entry.get("train_accuracy", 0) for entry in self.training_history]
-            val_accuracies = [entry.get("val_accuracy", 0) for entry in self.training_history]
-            accuracy_gaps = [entry.get("accuracy_gap", 0) for entry in self.training_history]
-
-            metrics["learning_curves"] = {
-                "epochs": epochs,
-                "train_losses": train_losses,
-                "train_accuracies": train_accuracies,
-                "val_accuracies": val_accuracies,
-                "accuracy_gaps": accuracy_gaps
-            }
-
-        return metrics
-
+    @abstractmethod
     def predict(self, text: str) -> dict[str, float]:
         """Make prediction on a single text"""
         pass
@@ -308,21 +147,17 @@ class BaseTextClassifier(ABC):
 
     def get_text_normalizer(self):
         """Set text preprocessor"""
-        return self._preprocessor
+        return self._normalizer
 
     def set_text_normalizer(self, preprocessor):
         """Set text preprocessor"""
-        self._preprocessor = preprocessor
+        self._normalizer = preprocessor
 
-    def get_model(self):
+    def get_nlp(self):
         """Get text preprocessor"""
-        return self._model
+        return self._nlp
 
-    def set_model(self, model):
-        """Set text preprocessor"""
-        self._model = model
-
-    def _initialize_test_dataset(self, class_2_exists):
+    def _initialize_test_dataset(self):
         class_0 = [
             """Hitler is inevitable.""",
             """Before the world was blaming Hamas for the latest attempt of genocide, israel was not only executing 
@@ -371,7 +206,7 @@ class BaseTextClassifier(ABC):
             """Getting dwarfed by the Mussolini Obelisk""",
             """🎶🎵 Fuck off we're full, fuck off we're full. 🎵🎶🎶🎵 Fuck off we're full Australia for the White 
             man, fuck off we're full! 🎵🎶""",
-            ]
+        ]
 
         class_2 = [
             """'Sex work' is just the ultimate commodification of self. Truly a weird form of self exploitation.
@@ -390,10 +225,8 @@ class BaseTextClassifier(ABC):
 
         data = {
             self.LABELS[0]: class_0,
-            self.LABELS[1]: class_1
+            self.LABELS[1]: class_1,
+            self.LABELS[1]: class_2
         }
-
-        if class_2_exists is not None:
-            data[self.LABELS[2]] = class_2
 
         return data

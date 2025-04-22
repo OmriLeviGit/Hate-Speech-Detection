@@ -8,7 +8,7 @@ from spacy.util import is_package
 from classifier import utils
 from classifier.Omri_model.SpacyModels_SM_LG import SpacyModels_SM_LG
 from classifier.Omri_model.SpacyModels_TRF import SpacyModels_TRF
-from classifier.preprocessing.TextNormalizer import TextNormalizer
+from classifier.normalization.TextNormalizer import TextNormalizer
 from classifier.utils import print_model_header
 
 # { original word: change into }, for words that are not lemmatized correctly for the small model
@@ -128,9 +128,9 @@ def run_evaluation(models_config):
         text_normalizer = TextNormalizer(emoji=config["emoji_processing"])
 
         if base_model.endswith('trf'):
-            classifier = SpacyModels_TRF(model=nlp, preprocessor=text_normalizer, seed=seed)
+            classifier = SpacyModels_TRF(nlp_pipeline=nlp, text_normalizer=text_normalizer, seed=seed)
         else:
-            classifier = SpacyModels_SM_LG(model=nlp, preprocessor=text_normalizer, seed=seed)
+            classifier = SpacyModels_SM_LG(nlp_pipeline=nlp, text_normalizer=text_normalizer, seed=seed)
 
         print("Loading and preprocessing data...")
         data = classifier.load_data(

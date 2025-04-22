@@ -6,13 +6,13 @@ from spacy.util import minibatch, fix_random_seed
 from spacy.symbols import ORTH
 from spacy.training import Example
 
-from classifier.BaseTextClassifier import BaseTextClassifier
-from classifier.preprocessing.TextNormalizer import TextNormalizer
+from classifier.Omri_model.BaseTextClassifierOld import BaseTextClassifier
+from classifier.normalization.TextNormalizer import TextNormalizer
 
 
 class SpacyModels_SM_LG(BaseTextClassifier):
-    def __init__(self, model: any, preprocessor: TextNormalizer() = None, seed: int = 42):
-        super().__init__(model, preprocessor, seed)
+    def __init__(self, nlp_pipeline: any, text_normalizer: TextNormalizer() = None, seed: int = 42):
+        super().__init__(nlp_pipeline, text_normalizer, seed)
         self.training_time = None
         self.training_history = None
 
@@ -20,7 +20,7 @@ class SpacyModels_SM_LG(BaseTextClassifier):
         """Apply preprocessing to datasets"""
         datasets = super().preprocess_data(datasets)  # Custom preprocessing
 
-        nlp = self.get_model()
+        nlp = self.get_nlp()
 
         special_tokens = self.get_text_normalizer().get_special_tokens()
         self.add_tokens(special_tokens)  # Add special tokens to the tokenizer
@@ -54,7 +54,7 @@ class SpacyModels_SM_LG(BaseTextClassifier):
             custom_lemmas: dict mapping words to their desired lemma forms
         """
 
-        nlp = self.get_model()
+        nlp = self.get_nlp()
         # Get the lemmatizer if it exists
         if not custom_lemmas or 'lemmatizer' not in nlp.pipe_names:
             return
@@ -79,7 +79,7 @@ class SpacyModels_SM_LG(BaseTextClassifier):
 
     def add_tokens(self, special_tokens: set):
         """Register all special tokens with spaCy tokenizer"""
-        model = self.get_model()
+        model = self.get_nlp()
 
         for token in special_tokens:
             special_case = [{ORTH: token}]
@@ -98,7 +98,7 @@ class SpacyModels_SM_LG(BaseTextClassifier):
         For multiclass classification (3+ labels), we use the default configuration which will
         automatically use macro-averaged F1 (averaging F1 scores across all classes).
         """
-        nlp = self.get_model()
+        nlp = self.get_nlp()
 
         textcat = nlp.add_pipe("textcat", last=True)
         for category in self.LABELS:
@@ -179,7 +179,7 @@ class SpacyModels_SM_LG(BaseTextClassifier):
 
     def evaluate(self, datasets: dict[str, list[tuple[str, str]]]) -> dict[str, float]:
         """Evaluate the model"""
-        nlp = self.get_model()
+        nlp = self.get_nlp()
 
         test_examples = self._create_spacy_examples(nlp, datasets.get('test'))
         results = nlp.evaluate(test_examples)

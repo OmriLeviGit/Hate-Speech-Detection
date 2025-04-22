@@ -9,8 +9,8 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.svm import LinearSVC
 
 # 1. Load cleaned data
-df = pd.read_csv('cleaned_results.csv')
-df = df.dropna(subset=['cleaned_content'])
+df = pd.read_csv('results.csv')
+# df = df.dropna(subset=['cleaned_content'])
 
 # Keep only Positive and Negative
 df = df[df['sentiment'].isin(['Positive', 'Negative'])]
@@ -19,12 +19,14 @@ df = df[df['sentiment'].isin(['Positive', 'Negative'])]
 min_count = min(df['sentiment'].value_counts().values)
 positive = df[df['sentiment'] == 'Positive'].sample(n=min_count, random_state=42)
 negative = df[df['sentiment'] == 'Negative'].sample(n=min_count, random_state=42)
+
+print("len: ", len(positive), len(negative))
 df = pd.concat([positive, negative]).sample(frac=1, random_state=42).reset_index(drop=True)
 
 print("Class distribution:\n", df['sentiment'].value_counts())
 
 # 2. Extract features and labels
-X = df['cleaned_content']
+X = df['content']
 y = df['sentiment']
 
 # 3. TF-IDF Vectorization
