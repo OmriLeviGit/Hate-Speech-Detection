@@ -29,10 +29,11 @@ class SKLearnModels(BaseTextClassifier):
                 tokens = []
 
                 for token in doc:
-                    if not token.is_stop and not token.is_punct:
+                    if not token.is_alpha or (not token.is_stop and not token.is_punct):
                         tokens.append(token.lemma_)
 
                         if not token.has_vector:
+                            print(token)
                             count += 1
 
                 lemmatized_text = ' '.join(tokens)
