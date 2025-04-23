@@ -40,7 +40,7 @@
         "baseTerm": "jew",
         "staticReplacement": ["j$"],
         "substitutable": [],
-        "substitutablePlural": ["jew","joo"]
+        "substitutablePlural": ["jew","joo", "zjoo"]
       },
       {
         "baseTerm": "heil hitler",
@@ -62,12 +62,14 @@
       }
     ]
   },
-    "slang": {
+  "slang": {
     "rt": "retweet",
-    "oh": "overheard",
     "ff": "follow friday",
     "ht": "heard through",
     "h\\t": "heard through",
+    "h \\ t": "heard through",
+    "h / t": "heard through",
+    "h/t": "heard through",
     "mm": "music monday",
     "@": "at",
     "dm": "direct message",
@@ -79,7 +81,19 @@
     "mt": "modified tweet",
     "nts": "note to self",
     "np": "now playing",
-    "cc": "carbon copy"
+    "cc": "carbon copy",
+    "uncle h": "hitler",
+    "rafah": "gaza",
+    "icj": "international court of justice",
+    "transnistria": "disputed territory",
+    "gadigal": "indigenous australians",
+    "anzacs": "australian soldiers",
+    "holodomor": "genocide",
+    "golani": "israeli military",
+    "llah": "allah",
+    "usgov": "us government",
+    "erdo": "erdogan",
+    "journ": "journalist"
   },
     "emoji": {
 

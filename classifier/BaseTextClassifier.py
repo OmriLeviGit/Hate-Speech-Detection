@@ -1,178 +1,163 @@
 from abc import ABC, abstractmethod
-import sys
-import os
-import random
 import copy
 
-from classifier.preprocessing.TextPreprocessor import TextPreprocessor
-from tagging_website.serverside.db_service import get_db_instance
+import numpy as np
+import pandas as pd
+from sklearn.utils import shuffle
 
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from classifier.normalization.TextNormalizer import TextNormalizer
+
 
 
 class BaseTextClassifier(ABC):
-    """Abstract base class for text classifiers."""
+    """Abstract base class for text classifiers"""
 
-    def __init__(self, model: any = None, preprocessor: TextPreprocessor() = None, seed: int = 42):
-        self._model = model
-        self._preprocessor = preprocessor
-        self._random_generator = random.Random(seed)  # use this instead of random.random() to keep results consistent
+    def __init__(self, nlp_pipeline: any, text_normalizer: TextNormalizer(), labels: list, seed: int = 42):
+        self._nlp = nlp_pipeline
+        self._normalizer = text_normalizer
+        self.LABELS = labels
+        self.seed = seed
 
-        self._CLASS_0 = "antisemistic"
-        self._CLASS_1 = "not_antisemistic"
-        self._CLASS_2 = "irrelevant"
-
-
-    def load_data(self, class_0_count, class_1_count, class_2_count=None, debug=False) -> dict[str, list]:
+    def load_data(self, class_0_count=None, class_1_count=None, class_2_count=None, source=None,
+                  set_to_min=False) -> dict[str, list]:
         """Load data from file or use sample data.
 
-        This function loads text data for classification either from a database (when debug=False)
-        or generates mock data (when debug=True). The data is organized by class labels.
+        This function loads text data for classification either from a csv file, or mock data.
+        The data is organized by class labels.
 
         Args:
             class_0_count: Number of samples to load for class 0 (antisemistic)
             class_1_count: Number of samples to load for class 1 (not_antisemistic)
             class_2_count: Number of samples to load for class 2 (irrelevant), optional
-            debug: True works with local data, False with data from the database
+            source: 'debug' to work with generated data, else to import data from a csv file
+            set_to_min: If True, sets all class counts to the minimum available across classes for balanced dataset
 
         Returns:
             Dictionary mapping class labels to lists of text samples.
-            In debug mode, the lists contain placeholder values (zeros).
         """
+        data = {}
 
-        if debug:
-            return self._initialize_test_dataset(class_2_count)
+        if source == 'debug':
+            return self._initialize_test_dataset()
 
-        db = get_db_instance()
+        df = pd.read_csv('results.csv')
 
-        data = {
-            self._CLASS_0: db.get_result_posts(label=self._CLASS_0, count=class_0_count),
-            self._CLASS_1: db.get_result_posts(label=self._CLASS_1, count=class_1_count)
+        sentiment_mapping = {
+            'Positive': 'antisemistic',
+            'Negative': 'not_antisemistic',
+            'Irrelevant': 'irrelevant'
         }
 
-        if class_2_count is not None:
-            data[self._CLASS_2] = db.get_result_posts(label=self._CLASS_2, count=class_2_count)
+        class_0_data = df[df['sentiment'] == 'Positive']['content'].tolist() if sentiment_mapping[
+                                                                                    'Positive'] in self.LABELS else []
+        class_1_data = df[df['sentiment'] == 'Negative']['content'].tolist() if sentiment_mapping[
+                                                                                    'Negative'] in self.LABELS else []
+        class_2_data = df[df['sentiment'] == 'Irrelevant']['content'].tolist() if sentiment_mapping[
+                                                                                      'Irrelevant'] in self.LABELS else []
+
+        if set_to_min:
+            available_counts = []
+            if class_0_data:
+                available_counts.append(len(class_0_data))
+            if class_1_data:
+                available_counts.append(len(class_1_data))
+            if class_2_data:
+                available_counts.append(len(class_2_data))
+
+            min_count = min(available_counts) if available_counts else 0
+
+            class_0_count = min_count if class_0_data else None
+            class_1_count = min_count if class_1_data else None
+            class_2_count = min_count if class_2_data else None
+
+        if sentiment_mapping['Positive'] in self.LABELS:
+            count = class_0_count if class_0_count is not None else len(class_0_data)
+            data[sentiment_mapping['Positive']] = class_0_data[:count]
+
+        if sentiment_mapping['Negative'] in self.LABELS:
+            count = class_1_count if class_1_count is not None else len(class_1_data)
+            data[sentiment_mapping['Negative']] = class_1_data[:count]
+
+        if sentiment_mapping['Irrelevant'] in self.LABELS:
+            count = class_2_count if class_2_count is not None else len(class_2_data)
+            data[sentiment_mapping['Irrelevant']] = class_2_data[:count]
 
         return data
 
-    def prepare_datasets(self, data: dict[str, list], test_size: float = 0.2, validation_size: float = 0.1, combine_irrelevant: bool = False) -> any:
-        """Prepare train, validation and test datasets.
-
-        This function splits the input data into training, validation, and test sets
-        while maintaining the class distribution in each set. The data is shuffled to ensure randomness.
-
-        Args:
-            data: Dictionary mapping class labels to lists of posts
-            test_size: Proportion of data to use for testing (default: 0.2)
-            validation_size: Proportion of data to use for validation (default: 0.1)
-            combine_irrelevant: If True, combines irrelevant class with not_antisemistic class (default: False)
-
-        Returns:
-            Dictionary containing 'train', 'validation', and 'test' keys, each mapping to
-            a list of (post, label) tuples
-        """
-
-        if test_size + validation_size > 1:
-            print("training, test, and validation sizes must sum up to 1")
-            return
-
-        # Handle combining irrelevant with not-antisemistic if specified
-        if combine_irrelevant and self._CLASS_1 in data and self._CLASS_2 in data:
-            data[self._CLASS_1] = data[self._CLASS_1] + data.pop(self._CLASS_2)
-
-        train_data = {'posts': [], 'labels': []}
-        validation_data = {'posts': [], 'labels': []}
-        test_data = {'posts': [], 'labels': []}
-
-        # Process each class separately to maintain class distribution
-        for label, posts in data.items():
-            total_posts = len(posts)
-            test_count = int(total_posts * test_size)
-            validation_count = int(total_posts * validation_size)
-            train_count = total_posts - test_count - validation_count
-
-            train_posts = posts[:train_count]
-            validation_posts = posts[train_count:train_count + validation_count]
-            test_posts = posts[train_count + validation_count:]
-
-            train_data['posts'].extend(train_posts)
-            train_data['labels'].extend([label] * len(train_posts))
-
-            validation_data['posts'].extend(validation_posts)
-            validation_data['labels'].extend([label] * len(validation_posts))
-
-            test_data['posts'].extend(test_posts)
-            test_data['labels'].extend([label] * len(test_posts))
-
-        train_combined = list(zip(train_data['posts'], train_data['labels']))
-        validation_combined = list(zip(validation_data['posts'], validation_data['labels']))
-        test_combined = list(zip(test_data['posts'], test_data['labels']))
-
-        self._random_generator.shuffle(train_combined)
-        self._random_generator.shuffle(validation_combined)
-        self._random_generator.shuffle(test_combined)
-
-        return {
-            'train': train_combined,
-            'validation': validation_combined,
-            'test': test_combined
-        }
-
     @abstractmethod
     def preprocess_data(self, datasets: any) -> any:
-        """Apply preprocessing to datasets.
+        """Apply preprocessing to datasets."""
+        pass
 
-        Can be called using super() as preliminary step before additional preprocessing.
-        """
+    def _normalize(self, datasets: any):
         datasets = copy.copy(datasets)
-        preprocessor = self.get_text_preprocessor()
+        normalizer = self.get_text_normalizer()
 
-        if preprocessor:
-            for dataset_name, data in datasets.items():
-                processed_data = []
-                for post, label in data:
-                    processed_post = preprocessor.process(post)
-                    processed_data.append((processed_post, label))
+        if normalizer:
+            for label, posts in datasets.items():
+                processed_posts = []
+                for post in posts:
+                    processed_post = normalizer.normalize(post)
+                    processed_posts.append(processed_post)
 
-                datasets[dataset_name] = processed_data
+                datasets[label] = processed_posts
 
         return datasets
 
+    def prepare_dataset(self, datasets: dict[str, list[str, str]]) -> tuple[np.ndarray, np.ndarray]:
+        """Prepare and split into train and test sets"""
+        posts = []
+        labels = []
+
+        label_list = list(datasets.keys())
+        for label_name, post_list in datasets.items():
+            label_index = label_list.index(label_name)
+
+            for post in post_list:
+                posts.append(post)
+                labels.append(f"{label_index}: {label_name}")
+
+        X = np.array(posts)
+        y = np.array(labels)
+
+        return shuffle(X, y, random_state=42)
+
     @abstractmethod
-    def train(self, processed_datasets: any, **kwargs) -> None:
-        """Train the model."""
+    def train(self, processed_datasets: dict[str, list[tuple[str, str]]]) -> None:
+        """Train the model"""
         pass
 
     @abstractmethod
     def evaluate(self, test_dataset: any) -> dict[str, float]:
-        """Evaluate the model."""
+        """Evaluate the model"""
         pass
 
     @abstractmethod
     def predict(self, text: str) -> dict[str, float]:
-        """Make prediction on a single text."""
+        """Make prediction on a single text"""
         pass
 
-    @abstractmethod
     def save_model(self, path: str) -> None:
-        """Save the model."""
+        """Save the model"""
         pass
 
-    @abstractmethod
     def load_model(self, path: str) -> None:
-        """Load a saved model."""
+        """Load a saved model"""
         pass
 
-    def get_text_preprocessor(self):
-        """Set text preprocessor."""
-        return self._preprocessor
+    def get_text_normalizer(self):
+        """Set text preprocessor"""
+        return self._normalizer
 
-    def set_text_preprocessor(self, preprocessor):
-        """Set text preprocessor."""
-        self._preprocessor = preprocessor
+    def set_text_normalizer(self, preprocessor):
+        """Set text preprocessor"""
+        self._normalizer = preprocessor
 
+    def get_nlp(self):
+        """Get text preprocessor"""
+        return self._nlp
 
-    def _initialize_test_dataset(self, class_2_exists):
+    def _initialize_test_dataset(self):
         class_0 = [
             """Hitler is inevitable.""",
             """Before the world was blaming Hamas for the latest attempt of genocide, israel was not only executing 
@@ -186,46 +171,46 @@ class BaseTextClassifier(ABC):
             journalists, food & hospitality workers who have been vocal against Israel's genocide on Palestinians.""",
             """Are these all JEWS serving as "right wing influencers" and "gatekeepers"? \n\nH/T @observer4obs""",
             """Yes this actually happens. Israelis steal Palestinian homes.""",
-            """@DrLoupis Is this the beginning of the end for the absurd Israeli and Jewish dominance of the west and 
-            their aggression with the Middle East?\n\nIs it time to deny Israel endless allowances for their genocide 
+            """@DrLoupis Is this the beginning of the end for the absurd Israeli and Jewish dominance of the west and
+            their aggression with the Middle East?\n\nIs it time to deny Israel endless allowances for their genocide
             of the Palestinians?""",
-            """@jewsagainstfash Jews chestpuffing after the fact, yet I didn't see you down there?\n\nPrefer to have 
-            your pigs, brown sludge and communist golems do the heavy lifting so you can play twitter toughguy a day 
+            """@jewsagainstfash Jews chestpuffing after the fact, yet I didn't see you down there?\n\nPrefer to have
+            your pigs, brown sludge and communist golems do the heavy lifting so you can play twitter toughguy a day
             later, shlomo?""",
             """@Pohl_MdB Sieg heil.""",
-            """Where is the Australian government condemnation.  Where are the sanctions? 
+            """Where is the Australian government condemnation.  Where are the sanctions?
             #IsraelIsAnApartheidState\nIsrael's occupation of Palestinian territories is illegal, UN court rules -""",
         ]
         class_1 = [
-            """@KeithWoodsYT I agree that we shouldn't try and copy paste a movement. It's not even possible but what 
-            about those of us who identify with these things for their economic ideas? Or rather how their economic 
+            """@KeithWoodsYT I agree that we shouldn't try and copy paste a movement. It's not even possible but what
+            about those of us who identify with these things for their economic ideas? Or rather how their economic
             policies helped to supplement their race?""",
-            """We have the right to protest, despise, call for the end of an ideology and state that can only exist 
-            by pursuing our non-existence. We have the right to say we cannot co-exist with our genocidal oppressors. 
-            We have the right to demand an end to settler colonialism, apartheid and occupation without factoring in 
-            how our oppressors "feel". We have the right to imagine that another world is possible. We have the 
+            """We have the right to protest, despise, call for the end of an ideology and state that can only exist
+            by pursuing our non-existence. We have the right to say we cannot co-exist with our genocidal oppressors.
+            We have the right to demand an end to settler colonialism, apartheid and occupation without factoring in
+            how our oppressors "feel". We have the right to imagine that another world is possible. We have the
             right to refuse to be held hostage to confected feelings by people who support our annihilation. (4)""",
             """The Fascist stadium""",
-            """@SamParkerSenate @Lucas_Gage_ The 4 be 2's are gonna keep the war going till 2025 . A lot of people 
+            """@SamParkerSenate @Lucas_Gage_ The 4 be 2's are gonna keep the war going till 2025 . A lot of people
             are gonna start noticing .""",
-            """If a certain group were another color, would more people notice their concentration of power?H/T 
+            """If a certain group were another color, would more people notice their concentration of power?H/T
             @tonyrigatonee 👈 Give him a follow""",
-            """Friendly reminder this is not an argument and merely an assertion. Nowhere in Christianity does it 
-            imply that there aren't superior & inferior people on some level. Equality only exists insofar as souls 
+            """Friendly reminder this is not an argument and merely an assertion. Nowhere in Christianity does it
+            imply that there aren't superior & inferior people on some level. Equality only exists insofar as souls
             are of equal value in the eyes of God & are likewise loved and judged equally""",
-            """@PeterDutton_MP "Properly managed migration" lolSounds like certain someone who shall remain nameless 
-            but has Peter as a first name will still import record amounts of immigrants like his Liberal and Labor 
+            """@PeterDutton_MP "Properly managed migration" lolSounds like certain someone who shall remain nameless
+            but has Peter as a first name will still import record amounts of immigrants like his Liberal and Labor
             predecessors 🤨The people want calls for mass deportation, end of story""",
-            """When I say 'Pan-Europeanism' I don't mean the dissolution of specific European identities I mean to 
+            """When I say 'Pan-Europeanism' I don't mean the dissolution of specific European identities I mean to
             cooperation of all European ethnicities inside and outside Europe.""",
             """Getting dwarfed by the Mussolini Obelisk""",
             """🎶🎵 Fuck off we're full, fuck off we're full. 🎵🎶🎶🎵 Fuck off we're full Australia for the White 
             man, fuck off we're full! 🎵🎶""",
-            ]
+        ]
 
         class_2 = [
-            """'Sex work' is just the ultimate commodification of self. Truly a weird form of self exploitation. 
-            Nothing more disrespectful to yourself to offer yourself as nothing but a vessel for the pleasure of 
+            """'Sex work' is just the ultimate commodification of self. Truly a weird form of self exploitation.
+            Nothing more disrespectful to yourself to offer yourself as nothing but a vessel for the pleasure of
             others. Those who do this do not understand they're a human with a soul.""",
             """It's really fucking simple!""",
             """I AM MOVING ON THE KING'S HIGHWAY""",
@@ -239,11 +224,9 @@ class BaseTextClassifier(ABC):
         ]
 
         data = {
-            self._CLASS_0: class_0,
-            self._CLASS_1: class_1
+            self.LABELS[0]: class_0,
+            self.LABELS[1]: class_1,
+            self.LABELS[1]: class_2
         }
-
-        if class_2_exists is not None:
-            data[self._CLASS_2] = class_2
 
         return data

@@ -1,12 +1,14 @@
 import json
 import re
 import os
-from emoji import demojize
+
+from emoji import demojize, is_emoji
+import wordninja
 
 from .ObfuscationMapGenerator import ObfuscationMapGenerator
 
 
-class TextPreprocessor:
+class TextNormalizer:
     def __init__(self, config_path='config.json', emoji: str = None):
         self._config_path = os.path.join(os.path.dirname(__file__), config_path)
         self._load_config()
@@ -22,6 +24,7 @@ class TextPreprocessor:
 
         self._processing_pipeline = []
         self._setup_pipeline(emoji)
+        self._special_tokens = set()
 
     def _load_config(self):
         """Load configuration from file"""
@@ -40,7 +43,7 @@ class TextPreprocessor:
             self._replace_mentions,
             self._remove_hashtags,
             self._deobfuscate,
-            self._expand_slang,
+            # self._expand_slang,   # performed after the 'ninja' step instead
         ]
 
         if emoji == "text":
@@ -49,7 +52,8 @@ class TextPreprocessor:
         elif emoji == "config":
             self._processing_pipeline.append(self._emojis_by_config)
 
-    def process(self, text):
+
+    def normalize(self, text):
         """Process text by applying all functions to each word before moving to next word"""
         text = text.lower()
         words = text.split()
@@ -65,8 +69,15 @@ class TextPreprocessor:
                     word = result
                     break
 
+            word = self._ninja(word)
+
             if word:
                 processed_words.append(word)
+
+        # join and split again to split into words after 'ninja'
+        processed_words = ' '.join(processed_words).split()
+
+        processed_words = [self._expand_slang(word) for word in processed_words]
 
         return ' '.join(processed_words)
 
@@ -78,7 +89,11 @@ class TextPreprocessor:
     def _replace_mentions(self, word):
         """Replace @mentions with <USER> token"""
         pattern = r"^@[\w]+$"
-        return "<USER>" if re.match(pattern, word) else word
+
+        if re.match(pattern, word):
+            return "user"
+
+        return word
 
     def _remove_hashtags(self, word):
         """Remove the pound symbol from words. Words starting with more than one hashtag remain unchanged."""
@@ -97,11 +112,23 @@ class TextPreprocessor:
         return self._slang_map.get(word, word)
 
     def _emoji_to_text(self, word):
-        """Convert emojis to their hidden contextual meanings"""
-        result = word
-        for emoji in self._emoji_meaning_map:
-            if emoji in result:
-                result = result.replace(emoji, demojize(emoji))
+        """Convert emojis to their hidden contextual meanings and add spaces between consecutive emojis"""
+        result = ""
+        i = 0
+        while i < len(word):
+            char = word[i]
+            if is_emoji(char):
+                # Add this emoji's text
+                emoji_text = demojize(char)
+                self._special_tokens.add(emoji_text)
+                result += emoji_text
+
+                # Check if next character is also an emoji
+                if i + 1 < len(word) and is_emoji(word[i + 1]):
+                    result += " "  # Add space between consecutive emojis
+            else:
+                result += char
+            i += 1
         return result
 
     def _emojis_by_config(self, word):
@@ -109,13 +136,19 @@ class TextPreprocessor:
         result = word
         for emoji in self._emoji_meaning_map:
             if emoji in result:
-                result = result.replace(emoji, self._emoji_meaning_map[emoji])
+                meaning = ':' + self._emoji_meaning_map[emoji] + ':'
+                self._special_tokens.add(meaning)
+                result = result.replace(emoji, meaning)
+
         return result
 
-    def save_maps(self, file_path):
-        """Save all maps to a file for later use"""
-        pass
+    def _ninja(self, word):
+        if word:
+            return ' '.join(wordninja.split(word))
 
+    def get_special_tokens(self):
+        """Return set of special tokens identified during processing"""
+        return self._special_tokens
 
 def test_run():
     example_texts = [
@@ -128,7 +161,7 @@ def test_run():
         "my friend @friend has a dog",
         "tell #hashtag"
     ]
-    processor = TextPreprocessor('config.json')
+    processor = TextNormalizer('config.json')
 
     print("Example")
     print("\n", "-" * 20 + " Before conversion " + "-" * 20)
@@ -137,7 +170,7 @@ def test_run():
 
     print("\n", "-" * 20 + " After conversion " + "-" * 20)
     for text in example_texts:
-        print(processor.process(text))
+        print(processor.normalize(text))
 
 
 if __name__ == "__main__":
