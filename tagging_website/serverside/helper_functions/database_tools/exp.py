@@ -7,16 +7,15 @@ table_name = "tagging_results"
 query = f"""
 SELECT 
     tweets.content, 
-    tagging_results.tag_result AS sentiment
+    tagging_results.tag_result AS sentiment,
+    tagging_results.decision_source
 FROM 
     tweets
 JOIN 
     tagging_results ON tweets.tweet_id = tagging_results.tweet_id;
 """
 df = pd.read_sql(query, engine)
-df.to_csv("results_before_phase_3_09-04-25.csv", index=False)
-
-
+df.to_csv("results_after_3rd_tagging_round.csv", index=False)
 
 
 # Get admin panel details for a specific date range
@@ -70,9 +69,10 @@ df.to_csv("results_before_phase_3_09-04-25.csv", index=False)
 # The next query returns all the tagging results and the content of each tweet
 #
 # SELECT 
-#     tr.*, 
-#     t.content
+#     tweets.content, 
+#     tagging_results.tag_result AS sentiment,
+#     tagging_results.decision_source
 # FROM 
-#     tagging_results tr
+#     tweets
 # JOIN 
-#     tweets t ON tr.tweet_id = t.tweet_id
+#     tagging_results ON tweets.tweet_id = tagging_results.tweet_id;

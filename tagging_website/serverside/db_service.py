@@ -506,7 +506,8 @@ class get_db_instance(metaclass=Singleton):
 
     def get_result_posts(self, label, count=None):
         with Session(self.engine) as session:
-            query = session.query(TaggingResult). \
+            query = session.query(Tweet.content). \
+                select_from(TaggingResult).\
                 filter(TaggingResult.tag_result == label). \
                 join(Tweet, TaggingResult.tweet_id == Tweet.tweet_id). \
                 order_by(TaggingResult.id)
