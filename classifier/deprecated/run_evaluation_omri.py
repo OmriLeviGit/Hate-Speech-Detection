@@ -6,8 +6,8 @@ import spacy
 from spacy.util import is_package
 
 from classifier import utils
-from classifier.Omri_model.SpacyModels_SM_LG import SpacyModels_SM_LG
-from classifier.Omri_model.SpacyModels_TRF import SpacyModels_TRF
+from classifier.deprecated.SpacyModels_SM_LG import SpacyModels_SM_LG
+from classifier.deprecated.SpacyModels_TRF import SpacyModels_TRF
 from classifier.normalization.TextNormalizer import TextNormalizer
 from classifier.utils import print_model_header
 
@@ -94,7 +94,6 @@ configs = [
             "l2_regularization": 0.001,
         }
     },
-
 ]
 
 
@@ -111,7 +110,6 @@ def load_model(model_name):
 def run_evaluation(models_config):
     total_start_time = time.time()
     seed = 42
-
     metrics_list = []
     accuracy_list = []
 

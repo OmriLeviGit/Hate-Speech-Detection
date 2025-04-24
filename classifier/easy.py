@@ -6,8 +6,19 @@ from sklearn.model_selection import cross_val_predict
 from spacy.util import is_package
 
 from classifier.normalization.TextNormalizer import TextNormalizer
-from classifier.sklearnModels import SKLearnModels
+from classifier.SpacyClassifier import SpacyClassifier
 
+"""
+
+comparison between *models*, not optimizing
+
+from sklearn.linear_model import LogisticRegression
+from sklearn.naive_bayes import MultinomialNB
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.svm import LinearSVC
+
+"""
 
 def load_model(model_name):
     if not is_package(model_name):
@@ -21,9 +32,9 @@ def load_model(model_name):
 
 nlp = load_model("en_core_web_lg")
 normalizer = TextNormalizer(emoji='text')
-labels = ["antisemistic", "not_antisemistic"]
+labels = ["antisemistic", "not_antisemistic", "irrelevant"]
 
-classifier = SKLearnModels(nlp, normalizer, labels)
+classifier = SpacyClassifier(nlp, normalizer, labels)
 
 data = classifier.load_data(set_to_min=True)
 
@@ -39,3 +50,4 @@ y_pred = cross_val_predict(model, X_tfidf, y, cv=5)
 
 print("Classification Report:\n", classification_report(y, y_pred))
 print("Confusion Matrix:\n", confusion_matrix(y, y_pred))
+

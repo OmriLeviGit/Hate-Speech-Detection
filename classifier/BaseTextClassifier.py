@@ -8,7 +8,6 @@ from sklearn.utils import shuffle
 from classifier.normalization.TextNormalizer import TextNormalizer
 
 
-
 class BaseTextClassifier(ABC):
     """Abstract base class for text classifiers"""
 
@@ -89,7 +88,7 @@ class BaseTextClassifier(ABC):
         """Apply preprocessing to datasets."""
         pass
 
-    def _normalize(self, datasets: any):
+    def normalize(self, datasets: any):
         datasets = copy.copy(datasets)
         normalizer = self.get_text_normalizer()
 

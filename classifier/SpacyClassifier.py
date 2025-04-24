@@ -1,22 +1,14 @@
-from spacy.tokenizer import ORTH
-
 from classifier.BaseTextClassifier import BaseTextClassifier
 from classifier.normalization.TextNormalizer import TextNormalizer
 
 
-class SKLearnModels(BaseTextClassifier):
+class SpacyClassifier(BaseTextClassifier):
     def __init__(self, nlp_pipeline: any, text_normalizer: TextNormalizer(), labels: list, seed: int = 42):
         super().__init__(nlp_pipeline, text_normalizer, labels, seed)
 
     def preprocess_data(self, datasets: any) -> dict[str, list[str]]:
-        datasets = super()._normalize(datasets)
-
-        # Get spacy's NLP pipeline
+        datasets = super().normalize(datasets)
         nlp = self.get_nlp()
-
-        # Add special tokens to the tokenizer
-        special_tokens = self.get_text_normalizer().get_special_tokens()
-        self.add_tokens(special_tokens)
 
         # Run text through the entire spacy NLP pipeline
         processed_datasets = {}
@@ -33,23 +25,18 @@ class SKLearnModels(BaseTextClassifier):
                         tokens.append(token.lemma_)
 
                         if not token.has_vector:
-                            print(token)
+                            # print(token)
                             count += 1
 
                 lemmatized_text = ' '.join(tokens)
                 processed_data.append(lemmatized_text)
 
             processed_datasets[label] = processed_data
-        print("Num of undetected tokens: ", count, "\n")
+
+        if count > 0:
+            print("Num of undetected tokens: ", count, "\n")
+
         return processed_datasets
-
-    def add_tokens(self, special_tokens):
-        """Add special tokens detected in the normalization to the tokenizer"""
-        nlp = self.get_nlp()
-
-        for token in special_tokens:
-            special_case = [{ORTH: token}]
-            nlp.tokenizer.add_special_case(token, special_case)
 
     def train(self, processed_datasets: dict[str, list[tuple[str, str]]]) -> None:
         pass

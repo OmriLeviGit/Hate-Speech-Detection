@@ -2,8 +2,7 @@ import json
 import re
 import os
 
-import pycountry
-from emoji import demojize, is_emoji
+from emoji import demojize
 import wordninja
 
 from .ObfuscationMapGenerator import ObfuscationMapGenerator

@@ -1,4 +1,3 @@
-import random
 import time
 from copy import copy
 
@@ -6,11 +5,12 @@ from spacy.util import minibatch, fix_random_seed
 from spacy.symbols import ORTH
 from spacy.training import Example
 
-from classifier.Omri_model.BaseTextClassifierOld import BaseTextClassifier
+from classifier.deprecated.BaseTextClassifierOld import BaseTextClassifier
 from classifier.normalization.TextNormalizer import TextNormalizer
 
 
-class SpacyModels_SM_LG(BaseTextClassifier):
+class SpacyModels_TRF(BaseTextClassifier):
+
     def __init__(self, nlp_pipeline: any, text_normalizer: TextNormalizer() = None, seed: int = 42):
         super().__init__(nlp_pipeline, text_normalizer, seed)
         self.training_time = None
@@ -24,7 +24,9 @@ class SpacyModels_SM_LG(BaseTextClassifier):
 
         special_tokens = self.get_text_normalizer().get_special_tokens()
         self.add_tokens(special_tokens)  # Add special tokens to the tokenizer
-        self.add_lemmas(custom_lemmas)  # Add custom lemmas to the lemmatizer
+
+        if custom_lemmas:
+            self.add_lemmas(custom_lemmas)  # Add custom lemmas to the lemmatizer
 
         # Run text through the entire spacy NLP pipeline
         processed_datasets = {}
@@ -46,37 +48,6 @@ class SpacyModels_SM_LG(BaseTextClassifier):
 
         return processed_datasets
 
-    def add_lemmas(self, custom_lemmas: dict):
-        """
-        Add custom lemmatization rules to spaCy's lemmatizer
-
-        Args:
-            custom_lemmas: dict mapping words to their desired lemma forms
-        """
-
-        nlp = self.get_nlp()
-        # Get the lemmatizer if it exists
-        if not custom_lemmas or 'lemmatizer' not in nlp.pipe_names:
-            return
-
-        custom_lemmas = {word: word for word in custom_lemmas}
-
-        lemmatizer = nlp.get_pipe('lemmatizer')
-        lemma_exc = lemmatizer.lookups.get_table("lemma_exc")
-
-        # Add custom exceptions for each POS tag
-        for word, lemma in custom_lemmas.items():
-            for pos in ['NOUN', 'VERB', 'ADJ', 'ADV', 'PROPN']:
-                # Check if this POS tag exists in the exceptions
-                if pos not in lemma_exc:
-                    lemma_exc[pos] = {}
-
-                # Add our exception
-                lemma_exc[pos][word.lower()] = [lemma.lower()]
-
-        # Update the lookups table
-        lemmatizer.lookups.set_table("lemma_exc", lemma_exc)
-
     def add_tokens(self, special_tokens: set):
         """Register all special tokens with spaCy tokenizer"""
         model = self.get_nlp()
@@ -85,8 +56,8 @@ class SpacyModels_SM_LG(BaseTextClassifier):
             special_case = [{ORTH: token}]
             model.tokenizer.add_special_case(token, special_case)
 
-    def train(self, processed_datasets: dict[str, list[tuple[str, str]]], learning_rate: float,
-              l2_regularization: float, epochs: int = 100, batch_size: int = 32, dropout: float = 0.2) -> None:
+    def train(self, processed_datasets: dict[str, list[tuple[str, str]]], learning_rate: float = 0.001,
+              l2_regularization: float = 0.001, epochs: int = 100, batch_size: int = 32, dropout: float = 0.2) -> None:
         """
         Train the model
 
@@ -104,19 +75,22 @@ class SpacyModels_SM_LG(BaseTextClassifier):
         for category in self.LABELS:
             textcat.add_label(category)
 
-        # Configure optimizer
-        optimizer = nlp.begin_training()
-        optimizer.learn_rate = learning_rate
-        optimizer.L2 = l2_regularization
-
-        # Prepare for spacy format (for cnn based models, must come after 'nlp.begin_training()')
+        # Prepare for spacy format, assign values to the expected labels
         train_examples = self._create_spacy_examples(nlp, processed_datasets['train'])
         validation_examples = self._create_spacy_examples(nlp, processed_datasets.get('validation'))
 
         pipe_exceptions = ["textcat"]
         other_pipes = [pipe for pipe in nlp.pipe_names if pipe not in pipe_exceptions]
+        with nlp.disable_pipes(*other_pipes):  # Only train textcat
+            # Initialize with a sample batch to set dimensions properly
+            sample_batch = list(minibatch(train_examples, size=batch_size))[0]
+            nlp.initialize(lambda: sample_batch)
 
-        with nlp.disable_pipes(*other_pipes):
+            # Configure optimizer after initialization
+            optimizer = nlp.create_optimizer()
+            optimizer.learn_rate = learning_rate
+            optimizer.L2 = l2_regularization
+
             self._start_training(nlp, train_examples, validation_examples, optimizer, epochs, batch_size,
                                  dropout, patience=5)
 
@@ -135,7 +109,6 @@ class SpacyModels_SM_LG(BaseTextClassifier):
         for epoch in range(epochs):
             epoch_start = time.time()
             self.random_generator.shuffle(train_examples)
-            random.shuffle(train_examples)
             losses = {}
 
             # Training batches
@@ -144,7 +117,8 @@ class SpacyModels_SM_LG(BaseTextClassifier):
                 nlp.update(batch, drop=dropout, sgd=optimizer, losses=losses)
 
             # Evaluate on validation set
-            train_results = nlp.evaluate(train_examples)
+            train_results = nlp.evaluate(train_examples,
+                                         scorer_cfg={"textcat": ["accuracy", "f_score", "precision", "recall"]})
             eval_results = nlp.evaluate(validation_examples)
             epoch_time = time.time() - epoch_start
 
