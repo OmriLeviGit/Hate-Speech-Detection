@@ -1,10 +1,23 @@
+import spacy
+from spacy.util import is_package
+
 from classifier.BaseTextClassifier import BaseTextClassifier
 from classifier.normalization.TextNormalizer import TextNormalizer
 
 
 class SpacyClassifier(BaseTextClassifier):
-    def __init__(self, nlp_pipeline: any, text_normalizer: TextNormalizer(), labels: list, seed: int = 42):
+    def __init__(self, nlp_model_name: str, text_normalizer: TextNormalizer(), labels: list, seed: int = 42):
+        nlp_pipeline = self._load_nlp(nlp_model_name)
         super().__init__(nlp_pipeline, text_normalizer, labels, seed)
+
+    def _load_nlp(self, model_name: str):
+        if not is_package(model_name):
+            print(f"'{model_name}' is not installed. Installing...")
+            spacy.cli.download(model_name)
+
+        print(f"Loading: '{model_name}'...")
+
+        return spacy.load(model_name)
 
     def preprocess_data(self, datasets: any) -> dict[str, list[str]]:
         datasets = super().normalize(datasets)
@@ -34,7 +47,7 @@ class SpacyClassifier(BaseTextClassifier):
             processed_datasets[label] = processed_data
 
         if count > 0:
-            print("Num of undetected tokens: ", count, "\n")
+            print(f"Undetected tokens found: {count} ")
 
         return processed_datasets
 
@@ -46,3 +59,4 @@ class SpacyClassifier(BaseTextClassifier):
 
     def predict(self, text: str) -> dict[str, float]:
         pass
+

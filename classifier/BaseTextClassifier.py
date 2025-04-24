@@ -1,3 +1,4 @@
+import os
 from abc import ABC, abstractmethod
 import copy
 
@@ -40,12 +41,13 @@ class BaseTextClassifier(ABC):
             print("loading with debug information")
             return self._initialize_test_dataset()
 
-        df = pd.read_csv('results.csv')
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        df = pd.read_csv(os.path.join(script_dir, 'results.csv'))
 
         sentiment_mapping = {
-            'Positive': 'antisemistic',
-            'Negative': 'not_antisemistic',
-            'Irrelevant': 'irrelevant'
+            'Positive': 0,
+            'Negative': 1,
+            'Irrelevant': 2
         }
 
         class_0_data = df[df['sentiment'] == 'Positive']['content'].tolist() if sentiment_mapping[
@@ -109,19 +111,18 @@ class BaseTextClassifier(ABC):
         posts = []
         labels = []
 
-        label_list = list(datasets.keys())
+        # label_list = list(datasets.keys())
         for label_name, post_list in datasets.items():
-            label_index = label_list.index(label_name)
+            # label_index = label_list.index(label_name)
 
             for post in post_list:
                 posts.append(post)
-                labels.append(label_index)
-                # labels.append(f"{label_index}_{label_name}")
+                labels.append(label_name)
 
         X = np.array(posts)
         y = np.array(labels)
 
-        return shuffle(X, y, random_state=42)
+        return shuffle(X, y, random_state=self.seed)
 
     @abstractmethod
     def train(self, processed_datasets: dict[str, list[tuple[str, str]]]) -> None:
