@@ -37,6 +37,7 @@ class BaseTextClassifier(ABC):
         data = {}
 
         if source == 'debug':
+            print("loading with debug information")
             return self._initialize_test_dataset()
 
         df = pd.read_csv('results.csv')
@@ -114,7 +115,8 @@ class BaseTextClassifier(ABC):
 
             for post in post_list:
                 posts.append(post)
-                labels.append(f"{label_index}: {label_name}")
+                labels.append(label_index)
+                # labels.append(f"{label_index}_{label_name}")
 
         X = np.array(posts)
         y = np.array(labels)
