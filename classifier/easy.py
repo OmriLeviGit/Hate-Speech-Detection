@@ -38,7 +38,7 @@ classifier = SpacyClassifier(nlp, normalizer, labels)
 
 data = classifier.load_data(set_to_min=True)
 
-data = classifier.preprocess_data(data)
+data = classifier.preprocess_datasets(data)
 
 X, y = classifier.prepare_dataset(data)
 

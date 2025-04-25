@@ -12,11 +12,11 @@ def print_model_header(model_name, total_length=80):
     print("\n", "-" * side_length + f" {model_name} " + "-" * (side_length + extra_dash))
 
 
-def print_model_results(best_model, best_score, y, y_pred, model_duration, total_duration):
-    print("\nBest model:", best_model)
-    print("Best cross-validation score:", best_score)
-    print("\nClassification Report:\n", classification_report(y, y_pred))
-    print("Confusion Matrix:\n", confusion_matrix(y, y_pred))
+def print_model_results(best_model, classification, conf_mat, model_duration, total_duration):
+    print("\nBest params:", best_model.best_params_)
+    print("Best cross-validation score:", round(best_model.best_score_, 2))
+    print("\nClassification Report:\n", classification)
+    print("Confusion Matrix:\n", conf_mat)
     print(f"\nTraining time: {format_duration(model_duration)}")
     print(f"Total runtime: {format_duration(total_duration)}")
 

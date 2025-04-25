@@ -45,9 +45,9 @@ class BaseTextClassifier(ABC):
         df = pd.read_csv(os.path.join(script_dir, 'results.csv'))
 
         sentiment_mapping = {
-            'Positive': 0,
-            'Negative': 1,
-            'Irrelevant': 2
+            'Positive': "antisemitic",
+            'Negative': "not_antisemitic",
+            'Irrelevant': "irrelevant"
         }
 
         class_0_data = df[df['sentiment'] == 'Positive']['content'].tolist() if sentiment_mapping[
@@ -87,7 +87,7 @@ class BaseTextClassifier(ABC):
         return data
 
     @abstractmethod
-    def preprocess_data(self, datasets: any) -> any:
+    def preprocess_datasets(self, datasets: any) -> any:
         """Apply preprocessing to datasets."""
         pass
 
@@ -106,7 +106,7 @@ class BaseTextClassifier(ABC):
 
         return datasets
 
-    def prepare_dataset(self, datasets: dict[str, list[str, str]]) -> tuple[np.ndarray, np.ndarray]:
+    def prepare_dataset(self, datasets: dict[str, list[str]]) -> tuple[np.ndarray, np.ndarray]:
         """Prepare and split into train and test sets"""
         posts = []
         labels = []

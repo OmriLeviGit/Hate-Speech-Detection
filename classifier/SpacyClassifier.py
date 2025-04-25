@@ -19,37 +19,40 @@ class SpacyClassifier(BaseTextClassifier):
 
         return spacy.load(model_name)
 
-    def preprocess_data(self, datasets: any) -> dict[str, list[str]]:
+    def preprocess_datasets(self, datasets: any) -> dict[str, list[str]]:
         datasets = super().normalize(datasets)
-        nlp = self.get_nlp()
 
         # Run text through the entire spacy NLP pipeline
         processed_datasets = {}
-        count = 0
         for label, posts in datasets.items():
-            processed_data = []
-            for post in posts:
-                doc = nlp(post)
-
-                tokens = []
-
-                for token in doc:
-                    if not token.is_alpha or (not token.is_stop and not token.is_punct):
-                        tokens.append(token.lemma_)
-
-                        if not token.has_vector:
-                            # print(token)
-                            count += 1
-
-                lemmatized_text = ' '.join(tokens)
-                processed_data.append(lemmatized_text)
-
+            processed_data = self.preprocess_text_list(posts)
             processed_datasets[label] = processed_data
+
+        return processed_datasets
+
+    def preprocess_text_list(self, text_list: list[str]) -> list[str]:
+        nlp = self.get_nlp()
+
+        count = 0
+        processed_data = []
+        for post in text_list:
+            doc = nlp(post)
+            tokens = []
+
+            for token in doc:
+                if not token.is_stop and not token.is_punct:
+                    tokens.append(token.lemma_)
+
+                    if not token.has_vector:
+                        count += 1
+
+            lemmatized_text = ' '.join(tokens).strip()
+            processed_data.append(lemmatized_text)
 
         if count > 0:
             print(f"Undetected tokens found: {count} ")
 
-        return processed_datasets
+        return processed_data
 
     def train(self, processed_datasets: dict[str, list[tuple[str, str]]]) -> None:
         pass
