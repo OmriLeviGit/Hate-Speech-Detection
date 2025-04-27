@@ -6,7 +6,7 @@ from classifier.normalization.TextNormalizer import TextNormalizer
 
 
 class SpacyClassifier(BaseTextClassifier):
-    def __init__(self, nlp_model_name: str, text_normalizer: TextNormalizer(), labels: list, seed: int = 42):
+    def __init__(self, nlp_model_name: str, text_normalizer: TextNormalizer() or None, labels: list, seed: int = 42):
         nlp_pipeline = self._load_nlp(nlp_model_name)
         super().__init__(nlp_pipeline, text_normalizer, labels, seed)
 
@@ -19,19 +19,10 @@ class SpacyClassifier(BaseTextClassifier):
 
         return spacy.load(model_name)
 
-    def preprocess_datasets(self, datasets: any) -> dict[str, list[str]]:
-        datasets = super().normalize(datasets)
 
-        # Run text through the entire spacy NLP pipeline
-        processed_datasets = {}
-        for label, posts in datasets.items():
-            processed_data = self.preprocess_text_list(posts)
-            processed_datasets[label] = processed_data
-
-        return processed_datasets
-
-    def preprocess_text_list(self, text_list: list[str]) -> list[str]:
+    def preprocess(self, text_list: list[str]) -> list[str]:
         nlp = self.get_nlp()
+        text_list = self.normalize_lists(text_list)
 
         count = 0
         processed_data = []

@@ -12,7 +12,7 @@ from classifier.normalization.TextNormalizer import TextNormalizer
 class BaseTextClassifier(ABC):
     """Abstract base class for text classifiers"""
 
-    def __init__(self, nlp_pipeline: any, text_normalizer: TextNormalizer(), labels: list, seed: int = 42):
+    def __init__(self, nlp_pipeline: any, text_normalizer: TextNormalizer() or None, labels: list, seed: int = 42):
         self._nlp = nlp_pipeline
         self._normalizer = text_normalizer
         self.LABELS = labels
@@ -86,35 +86,12 @@ class BaseTextClassifier(ABC):
 
         return data
 
-    @abstractmethod
-    def preprocess_datasets(self, datasets: any) -> any:
-        """Apply preprocessing to datasets."""
-        pass
-
-    def normalize(self, datasets: any):
-        datasets = copy.copy(datasets)
-        normalizer = self.get_text_normalizer()
-
-        if normalizer:
-            for label, posts in datasets.items():
-                processed_posts = []
-                for post in posts:
-                    processed_post = normalizer.normalize(post)
-                    processed_posts.append(processed_post)
-
-                datasets[label] = processed_posts
-
-        return datasets
-
-    def prepare_dataset(self, datasets: dict[str, list[str]]) -> tuple[np.ndarray, np.ndarray]:
+    def prepare_dataset(self, datasets: dict[str, list[str]]) -> tuple[list[str], list[str]]:
         """Prepare and split into train and test sets"""
         posts = []
         labels = []
 
-        # label_list = list(datasets.keys())
         for label_name, post_list in datasets.items():
-            # label_index = label_list.index(label_name)
-
             for post in post_list:
                 posts.append(post)
                 labels.append(label_name)
@@ -122,7 +99,19 @@ class BaseTextClassifier(ABC):
         X = np.array(posts)
         y = np.array(labels)
 
-        return shuffle(X, y, random_state=self.seed)
+        X_shuffled, y_shuffled = shuffle(X, y, random_state=self.seed)
+
+        return X_shuffled.tolist(), y_shuffled.tolist()
+
+    @abstractmethod
+    def preprocess(self, datasets: any) -> any:
+        """Apply preprocessing to datasets."""
+        pass
+
+    def normalize_lists(self, texts):
+        normalizer = self.get_text_normalizer()
+        return normalizer.normalize_texts(texts)
+
 
     @abstractmethod
     def train(self, processed_datasets: dict[str, list[tuple[str, str]]]) -> None:

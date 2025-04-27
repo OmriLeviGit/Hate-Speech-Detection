@@ -39,19 +39,25 @@ class TextNormalizer:
     def _setup_pipeline(self, emoji):
         """Set up the processing pipeline with functions in the correct order"""
         self._processing_pipeline = [
-            self._remove_url,
+            self._replace_url,
             self._replace_mentions,
-            self._remove_hashtags,
+            self._replace_hashtags,
             self._deobfuscate,
-            # self._expand_slang,   # performed after the 'ninja' step instead
         ]
 
         if emoji == "text":
             self._processing_pipeline.append(self._emoji_to_text)
 
-        elif emoji == "config":
-            self._processing_pipeline.append(self._emojis_by_config)
-
+    def normalize_texts(self, *texts):
+        # Determine if we got a single list or multiple lists
+        if len(texts) == 1 and isinstance(texts[0], list) and all(isinstance(item, str) for item in texts[0]):
+            # Process the single list
+            return [self.normalize(text) for text in texts[0]]
+        elif all(isinstance(arg, list) and all(isinstance(item, str) for item in arg) for arg in texts):
+            # Process multiple lists and return as tuple for unpacking
+            return tuple([self.normalize(text) for text in arg] for arg in texts)
+        else:
+            raise TypeError("Arguments must be either a single list of strings or multiple lists of strings")
 
     def normalize(self, text):
         """Process text by applying all functions to each word before moving to next word"""
@@ -81,7 +87,7 @@ class TextNormalizer:
 
         return ' '.join(processed_words)
 
-    def _remove_url(self, word):
+    def _replace_url(self, word):
         """Remove URLs - returns None if word is a URL, otherwise returns the word"""
         url_pattern = r'^(https?://)?(www\.)?([a-zA-Z0-9-]+\.[a-zA-Z]{2,})(/.*)?$'
         return None if re.match(url_pattern, word) else word
@@ -95,7 +101,7 @@ class TextNormalizer:
 
         return word
 
-    def _remove_hashtags(self, word):
+    def _replace_hashtags(self, word):
         """Remove the pound symbol from words. Words starting with more than one hashtag remain unchanged."""
 
         if word == '#':
@@ -111,17 +117,6 @@ class TextNormalizer:
         """Convert emojis to their hidden contextual meanings"""
         return demojize(word)
 
-    def _emojis_by_config(self, word):
-        """Convert emojis to their hidden contextual meanings"""
-        result = word
-        for emoji in self._emoji_meaning_map:
-            if emoji in result:
-                meaning = ':' + self._emoji_meaning_map[emoji] + ':'
-                self._special_tokens.add(meaning)
-                result = result.replace(emoji, meaning)
-
-        return result
-
     def _expand_slang(self, word):
         """Expand slang abbreviations to their full forms"""
         return self._slang_map.get(word, word)
@@ -129,6 +124,7 @@ class TextNormalizer:
     def _ninja(self, word):
         if word:
             return ' '.join(wordninja.split(word))
+        return None
 
     def get_special_tokens(self):
         """Return set of special tokens identified during processing"""

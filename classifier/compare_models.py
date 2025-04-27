@@ -109,7 +109,6 @@ def run_model_search(X, y):
 
 def main():
     # parameters
-    label_encoder = LabelEncoder()
     nlp_model_name = "en_core_web_lg"
     normalizer = TextNormalizer(emoji='text')
     labels = ["antisemitic", "not_antisemitic"]
@@ -117,9 +116,10 @@ def main():
     # load, preprocess, prepare
     classifier = SpacyClassifier(nlp_model_name, normalizer, labels)
     data = classifier.load_data(set_to_min=True)
-    data = classifier.preprocess_datasets(data)
     X, y = classifier.prepare_dataset(data)
+    X = classifier.preprocess(X)
 
+    label_encoder = LabelEncoder()
     y_encoded = label_encoder.fit_transform(y)
 
     # train
@@ -129,7 +129,7 @@ def main():
     posts_to_predict = ["test", "te"]   # tweet to predict
 
     # predict
-    preprocessed_posts = classifier.preprocess_text_list(posts_to_predict)
+    preprocessed_posts = classifier.preprocess(posts_to_predict)
     vectorized_posts = vectorizer.transform(preprocessed_posts)
     predictions = trained_model.predict(vectorized_posts)
 
