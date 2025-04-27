@@ -1,22 +1,24 @@
 import os
 from abc import ABC, abstractmethod
-import copy
 
 import numpy as np
 import pandas as pd
+from sklearn.metrics import f1_score, accuracy_score
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelEncoder
 from sklearn.utils import shuffle
-
-from classifier.normalization.TextNormalizer import TextNormalizer
 
 
 class BaseTextClassifier(ABC):
     """Abstract base class for text classifiers"""
 
-    def __init__(self, nlp_pipeline: any, text_normalizer: TextNormalizer(), labels: list, seed: int = 42):
-        self._nlp = nlp_pipeline
-        self._normalizer = text_normalizer
+    def __init__(self, labels: list = None, seed = None):
         self.LABELS = labels
         self.seed = seed
+        self.label_encoder = LabelEncoder()
+
+        self.best_model = None
+        self.model_name = None
 
     def load_data(self, class_0_count=None, class_1_count=None, class_2_count=None, source=None,
                   set_to_min=False) -> dict[str, list]:
@@ -38,7 +40,7 @@ class BaseTextClassifier(ABC):
         data = {}
 
         if source == 'debug':
-            print("loading with debug information")
+            print("loading with 'debug' dataset")
             return self._initialize_test_dataset()
 
         script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -86,35 +88,12 @@ class BaseTextClassifier(ABC):
 
         return data
 
-    @abstractmethod
-    def preprocess_datasets(self, datasets: any) -> any:
-        """Apply preprocessing to datasets."""
-        pass
-
-    def normalize(self, datasets: any):
-        datasets = copy.copy(datasets)
-        normalizer = self.get_text_normalizer()
-
-        if normalizer:
-            for label, posts in datasets.items():
-                processed_posts = []
-                for post in posts:
-                    processed_post = normalizer.normalize(post)
-                    processed_posts.append(processed_post)
-
-                datasets[label] = processed_posts
-
-        return datasets
-
-    def prepare_dataset(self, datasets: dict[str, list[str]]) -> tuple[np.ndarray, np.ndarray]:
+    def prepare_dataset(self, datasets: dict[str, list[str]], test_size = 0.15) -> tuple[list[str], list[str], list[str], list[str]]:
         """Prepare and split into train and test sets"""
         posts = []
         labels = []
 
-        # label_list = list(datasets.keys())
         for label_name, post_list in datasets.items():
-            # label_index = label_list.index(label_name)
-
             for post in post_list:
                 posts.append(post)
                 labels.append(label_name)
@@ -122,20 +101,63 @@ class BaseTextClassifier(ABC):
         X = np.array(posts)
         y = np.array(labels)
 
-        return shuffle(X, y, random_state=self.seed)
+        # First shuffle the data
+        X_shuffled, y_shuffled = shuffle(X, y, random_state=self.seed)
+
+        # Then split into train and test sets
+        X_train, X_test, y_train, y_test = train_test_split(
+            X_shuffled, y_shuffled,
+            test_size=test_size,
+            random_state=self.seed,
+            stratify=y_shuffled
+        )
+
+        return X_train.tolist(), X_test.tolist(), y_train.tolist(), y_test.tolist()
 
     @abstractmethod
-    def train(self, processed_datasets: dict[str, list[tuple[str, str]]]) -> None:
+    def preprocess(self, datasets: list[str]) -> list[str]:
+        """Apply preprocessing to datasets."""
+        pass
+
+    @abstractmethod
+    def train(self, *args) -> None:
         """Train the model"""
         pass
 
-    @abstractmethod
-    def evaluate(self, test_dataset: any) -> dict[str, float]:
-        """Evaluate the model"""
-        pass
+
+    def evaluate(self, X_test: list[str], y_test: list[str]) -> tuple[float, float]:
+        """
+        Evaluate the trained model on test data.
+
+        Args:
+            X_test: List of texts
+            y_test: List of labels
+
+        Returns:
+            Dict with evaluation metrics
+        """
+        if not self.best_model:
+            raise ValueError("Model not trained yet")
+
+        # Preprocess test data
+        X_processed = self.preprocess(X_test)
+
+        # Encode labels if needed
+        if not np.issubdtype(np.array(y_test).dtype, np.number):
+            y_encoded = self.label_encoder.transform(y_test)
+        else:
+            y_encoded = y_test
+
+        y_pred = self.predict(X_processed)
+
+        # Calculate metrics
+        accuracy = accuracy_score(y_encoded, y_pred)
+        f1 = f1_score(y_encoded, y_pred, average='weighted')
+
+        return accuracy, f1
 
     @abstractmethod
-    def predict(self, text: str) -> dict[str, float]:
+    def predict(self, text):
         """Make prediction on a single text"""
         pass
 
@@ -146,18 +168,6 @@ class BaseTextClassifier(ABC):
     def load_model(self, path: str) -> None:
         """Load a saved model"""
         pass
-
-    def get_text_normalizer(self):
-        """Set text preprocessor"""
-        return self._normalizer
-
-    def set_text_normalizer(self, preprocessor):
-        """Set text preprocessor"""
-        self._normalizer = preprocessor
-
-    def get_nlp(self):
-        """Get text preprocessor"""
-        return self._nlp
 
     def _initialize_test_dataset(self):
         class_0 = [
