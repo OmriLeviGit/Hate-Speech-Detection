@@ -4,6 +4,7 @@ import copy
 
 import numpy as np
 import pandas as pd
+from sklearn.model_selection import train_test_split
 from sklearn.utils import shuffle
 
 from classifier.normalization.TextNormalizer import TextNormalizer
@@ -12,7 +13,7 @@ from classifier.normalization.TextNormalizer import TextNormalizer
 class BaseTextClassifier(ABC):
     """Abstract base class for text classifiers"""
 
-    def __init__(self, nlp_pipeline: any, text_normalizer: TextNormalizer() or None, labels: list, seed: int = 42):
+    def __init__(self, nlp_pipeline: any = None, text_normalizer: TextNormalizer() or None = None, labels: list = None, seed: int = 42):
         self._nlp = nlp_pipeline
         self._normalizer = text_normalizer
         self.LABELS = labels
@@ -86,7 +87,7 @@ class BaseTextClassifier(ABC):
 
         return data
 
-    def prepare_dataset(self, datasets: dict[str, list[str]]) -> tuple[list[str], list[str]]:
+    def prepare_dataset(self, datasets: dict[str, list[str]]) -> tuple[list[str], list[str], list[str], list[str]]:
         """Prepare and split into train and test sets"""
         posts = []
         labels = []
@@ -99,22 +100,26 @@ class BaseTextClassifier(ABC):
         X = np.array(posts)
         y = np.array(labels)
 
+        # First shuffle the data
         X_shuffled, y_shuffled = shuffle(X, y, random_state=self.seed)
 
-        return X_shuffled.tolist(), y_shuffled.tolist()
+        # Then split into train and test sets
+        X_train, X_test, y_train, y_test = train_test_split(
+            X_shuffled, y_shuffled,
+            test_size=0.2,
+            random_state=self.seed,
+            stratify=y_shuffled
+        )
+
+        return X_train.tolist(), X_test.tolist(), y_train.tolist(), y_test.tolist()
 
     @abstractmethod
-    def preprocess(self, datasets: any) -> any:
+    def preprocess(self, datasets: list[str]) -> list[str]:
         """Apply preprocessing to datasets."""
         pass
 
-    def normalize_lists(self, texts):
-        normalizer = self.get_text_normalizer()
-        return normalizer.normalize_texts(texts)
-
-
     @abstractmethod
-    def train(self, processed_datasets: dict[str, list[tuple[str, str]]]) -> None:
+    def train(self, *args) -> None:
         """Train the model"""
         pass
 
@@ -137,15 +142,15 @@ class BaseTextClassifier(ABC):
         pass
 
     def get_text_normalizer(self):
-        """Set text preprocessor"""
+        """Set text normalizer"""
         return self._normalizer
 
-    def set_text_normalizer(self, preprocessor):
-        """Set text preprocessor"""
-        self._normalizer = preprocessor
+    def set_text_normalizer(self, normalizer):
+        """Set text normalizer"""
+        self._normalizer = normalizer
 
     def get_nlp(self):
-        """Get text preprocessor"""
+        """Get spacy's nlp object"""
         return self._nlp
 
     def _initialize_test_dataset(self):

@@ -22,7 +22,9 @@ class SpacyClassifier(BaseTextClassifier):
 
     def preprocess(self, text_list: list[str]) -> list[str]:
         nlp = self.get_nlp()
-        text_list = self.normalize_lists(text_list)
+
+        normalizer = self.get_text_normalizer()
+        text_list = normalizer.normalize_texts(text_list)
 
         count = 0
         processed_data = []

@@ -107,34 +107,57 @@ def run_model_search(X, y):
     return best_model, vectorizer
 
 
+def evaluate_model(classifier, model, vectorizer, X_test, y_test):
+    """Evaluate the trained model on test data"""
+    X_processed_test = classifier.preprocess(X_test)
+    X_test_vectorized = vectorizer.transform(X_processed_test)
+    y_pred = model.best_estimator_.predict(X_test_vectorized)
+
+    print("\n=== Final Test Set Evaluation ===")
+    print(classification_report(y_test, y_pred))
+    print("Confusion Matrix:")
+    print(confusion_matrix(y_test, y_pred))
+
+    return y_pred
+
+
+def predict_text(classifier, model, vectorizer, texts):
+    preprocessed_texts = classifier.preprocess(texts)
+    vectorized_texts = vectorizer.transform(preprocessed_texts)
+    predictions = model.best_estimator_.predict(vectorized_texts)
+
+    return predictions
+
+
 def main():
     # parameters
     nlp_model_name = "en_core_web_lg"
     normalizer = TextNormalizer(emoji='text')
     labels = ["antisemitic", "not_antisemitic"]
 
-    # load, preprocess, prepare
+    # load
     classifier = SpacyClassifier(nlp_model_name, normalizer, labels)
     data = classifier.load_data(set_to_min=True)
-    X, y = classifier.prepare_dataset(data)
-    X = classifier.preprocess(X)
 
+    # prepare and preprocess
+    X_train, X_test, y_train, y_test = classifier.prepare_dataset(data)
+    X_train = classifier.preprocess(X_train)
+
+    # encode labels
     label_encoder = LabelEncoder()
-    y_encoded = label_encoder.fit_transform(y)
+    y_train_encoded = label_encoder.fit_transform(y_train)
+    y_test_encoded = label_encoder.transform(y_test)
 
     # train
-    trained_model, vectorizer = run_model_search(X, y_encoded)
+    trained_model, vectorizer = run_model_search(X_train, y_train_encoded)
 
-    # EXAMPLE:
-    posts_to_predict = ["test", "te"]   # tweet to predict
+    # evaluate
+    evaluate_model(classifier, trained_model, vectorizer, X_test, y_test_encoded)
 
-    # predict
-    preprocessed_posts = classifier.preprocess(posts_to_predict)
-    vectorized_posts = vectorizer.transform(preprocessed_posts)
-    predictions = trained_model.predict(vectorized_posts)
-
-    decoded_predictions = label_encoder.inverse_transform(predictions)
-    # print(decoded_predictions)
+    # prediction example with X_test as an input
+    predictions = predict_text(classifier, trained_model, vectorizer, X_test)
+    test_predictions = label_encoder.inverse_transform(predictions)
+    print(test_predictions)
 
 
 if __name__ == "__main__":
