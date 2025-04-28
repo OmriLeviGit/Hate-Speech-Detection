@@ -1,13 +1,6 @@
-import json
 import re
-import os
-
-from emoji import demojize
-import wordninja
 from typing_extensions import override
-
 from classifier.normalization.TextNormalizer import TextNormalizer
-from .ObfuscationMapGenerator import ObfuscationMapGenerator
 
 
 class TextNormalizerRoBERTa(TextNormalizer):

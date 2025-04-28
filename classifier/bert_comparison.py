@@ -1,8 +1,13 @@
+import numpy as np
+import torch
+from sklearn.metrics import classification_report, confusion_matrix
 from sklearn.preprocessing import LabelEncoder
+
 from classifier.SpacyClassifier import SpacyClassifier
 from classifier.normalization.TextNormalizer import TextNormalizer
 
-from transformers import AutoTokenizer, AutoModelForSequenceClassification, Trainer, TrainingArguments, DataCollatorWithPadding
+from transformers import AutoTokenizer, AutoModelForSequenceClassification, Trainer, TrainingArguments, \
+    DataCollatorWithPadding, TextDataset
 from datasets import Dataset
 from sklearn.model_selection import train_test_split
 
@@ -14,7 +19,7 @@ def train_standard_bert(X, y, label_encoder, configs=None):
     if configs is None:
         configs = [
             {"model_name": "distilbert-base-uncased", "learning_rate": 2e-5, "batch_size": 32, "epochs": 5},
-            {"model_name": "distilbert-base-uncased", "learning_rate": 5e-5, "batch_size": 32, "epochs": 5},
+            # {"model_name": "distilbert-base-uncased", "learning_rate": 5e-5, "batch_size": 32, "epochs": 5},
         ]
 
     # Initialize normalizer
@@ -41,7 +46,7 @@ def train_bertweet(X, y, label_encoder, configs=None):
     """Train BERTweet models using RoBERTa-specific text normalization."""
     if configs is None:
         configs = [
-            {"model_name": "vinai/bertweet-base", "learning_rate": 2e-5, "batch_size": 32, "epochs": 5},
+            # {"model_name": "vinai/bertweet-base", "learning_rate": 2e-5, "batch_size": 32, "epochs": 5},
             {"model_name": "vinai/bertweet-base", "learning_rate": 5e-5, "batch_size": 32, "epochs": 5},
         ]
 
@@ -63,6 +68,13 @@ def train_bertweet(X, y, label_encoder, configs=None):
 
     # Run models with shared training function
     return run_models(X_normalized, y, configs, tokenizers, models)
+
+
+def compute_metrics(eval_pred):
+    logits, labels = eval_pred
+    preds = logits.argmax(axis=-1)
+    acc = (preds == labels).mean()
+    return {"accuracy": acc}
 
 
 def run_models(X, y, configs, tokenizers, models):
@@ -153,32 +165,101 @@ def compare_models(X, y, label_encoder):
     print(f"Best standard model: {standard_config['model_name']} - Accuracy: {standard_score:.4f}")
     print(f"Best BERTweet model: {bertweet_config['model_name']} - Accuracy: {bertweet_score:.4f}")
 
-    return {
-        'standard': standard_results,
-        'bertweet': bertweet_results
-    }
+    best_config = standard_config if standard_score > bertweet_score else bertweet_config
+    best_overall = standard_results if standard_score > bertweet_score else bertweet_results
+
+    print(f"\nThe best model is {best_config['model_name']}")
+
+    return best_overall, best_config
 
 
-def compute_metrics(eval_pred):
-    logits, labels = eval_pred
-    preds = logits.argmax(axis=-1)
-    acc = (preds == labels).mean()
-    return {"accuracy": acc}
+def normalize_temporary(config, texts):
+    if config["model_name"] == "vinai/bertweet-base":
+        normalizer = TextNormalizerRoBERTa()
+    else:
+        normalizer = TextNormalizer(emoji='text')
 
+    return normalizer.normalize_texts(texts)
+
+
+def predict_with_bert(model, tokenizer, texts, batch_size=16):
+    """Helper function to predict with BERT models"""
+    model.eval()  # Set model to evaluation mode
+    all_predictions = []
+
+    for i in range(0, len(texts), batch_size):
+        batch_texts = texts[i:i + batch_size]
+
+        # Tokenize batch
+        encoded_batch = tokenizer(
+            batch_texts,
+            padding='max_length',
+            truncation=True,
+            max_length=128,
+            return_tensors='pt'
+        )
+
+        with torch.no_grad():
+            outputs = model(
+                encoded_batch['input_ids'],
+                attention_mask=encoded_batch['attention_mask']
+            )
+            logits = outputs.logits
+            preds = torch.argmax(logits, dim=1).cpu().numpy()
+            all_predictions.extend(preds)
+
+    return np.array(all_predictions)
+
+
+def evaluate_bert_model(model_results, config, X_test, y_test):
+    """Evaluate a BERT model on test data"""
+    model, tokenizer, _, _ = model_results
+
+    X_test = normalize_temporary(config, X_test)
+    y_pred = predict_with_bert(model, tokenizer, X_test)
+
+    print("\n=== Final Test Set Evaluation ===")
+    print(f"Model: {config['model_name']}")
+    print(classification_report(y_test, y_pred))
+    print("Confusion Matrix:")
+    print(confusion_matrix(y_test, y_pred))
+
+    return y_pred
+
+
+def predict_bert_text(model_results, config, texts):
+    """Predict class for new texts using BERT model"""
+    model, tokenizer, _, _ = model_results
+    texts = normalize_temporary(config, texts)
+    return predict_with_bert(model, tokenizer, texts)
 
 def main():
     nlp_model_name = "en_core_web_lg"
     labels = ["antisemitic", "not_antisemitic"]
 
-    # load, preprocess, prepare
+    # load, prepare
     classifier = SpacyClassifier(nlp_model_name, None, labels)
-    data = classifier.load_data(set_to_min=True)
-    X, y = classifier.prepare_dataset(data)
+    data = classifier.load_data(set_to_min=True, source='debug')
+    X_train, X_test, y_train, y_test = classifier.prepare_dataset(data)
 
+    # encode labels
     label_encoder = LabelEncoder()
-    y_encoded = label_encoder.fit_transform(y)
+    y_train_encoded = label_encoder.fit_transform(y_train)
+    y_test_encoded = label_encoder.transform(y_test)
 
-    results = compare_models(X, y_encoded, label_encoder)
+    # train and compare
+    best_model_results, best_config = compare_models(X_train, y_train_encoded, label_encoder)
+
+    # evaluate
+    evaluate_bert_model(best_model_results, best_config, X_test, y_test_encoded)
+
+    # prediction example with X_test as an input
+    predictions = predict_bert_text(best_model_results, best_config, X_test)
+    test_predictions = label_encoder.inverse_transform(predictions)
+
+    for pred in zip(X_test, test_predictions):
+        print(pred)
+
 
 if __name__ == "__main__":
     main()

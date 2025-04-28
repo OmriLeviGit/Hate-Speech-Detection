@@ -39,7 +39,7 @@ class BaseTextClassifier(ABC):
         data = {}
 
         if source == 'debug':
-            print("loading with debug information")
+            print("loading with 'debug' dataset")
             return self._initialize_test_dataset()
 
         script_dir = os.path.dirname(os.path.abspath(__file__))

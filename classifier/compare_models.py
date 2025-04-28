@@ -121,12 +121,13 @@ def evaluate_model(classifier, model, vectorizer, X_test, y_test):
     return y_pred
 
 
-def predict_text(classifier, model, vectorizer, texts):
+def predict_text(classifier, model, vectorizer, label_encoder, texts):
     preprocessed_texts = classifier.preprocess(texts)
     vectorized_texts = vectorizer.transform(preprocessed_texts)
     predictions = model.best_estimator_.predict(vectorized_texts)
+    decoded_predictions = label_encoder.inverse_transform(predictions).tolist()
 
-    return predictions
+    return decoded_predictions
 
 
 def main():
@@ -139,8 +140,10 @@ def main():
     classifier = SpacyClassifier(nlp_model_name, normalizer, labels)
     data = classifier.load_data(set_to_min=True)
 
-    # prepare and preprocess
+    # prepare
     X_train, X_test, y_train, y_test = classifier.prepare_dataset(data)
+
+    # preprocess
     X_train = classifier.preprocess(X_train)
 
     # encode labels
@@ -155,9 +158,10 @@ def main():
     evaluate_model(classifier, trained_model, vectorizer, X_test, y_test_encoded)
 
     # prediction example with X_test as an input
-    predictions = predict_text(classifier, trained_model, vectorizer, X_test)
-    test_predictions = label_encoder.inverse_transform(predictions)
-    print(test_predictions)
+    predictions = predict_text(classifier, trained_model, vectorizer, label_encoder, X_test)
+
+    for pred in zip(predictions, X_test):
+        print(pred)
 
 
 if __name__ == "__main__":
