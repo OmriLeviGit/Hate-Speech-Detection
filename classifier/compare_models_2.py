@@ -6,7 +6,7 @@ from sklearn.linear_model import LogisticRegression, SGDClassifier
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.svm import LinearSVC
 
-from classifier.SKlearn import SKlearnClassifier
+from classifier.SKlearnClassifier import SKlearnClassifier
 from classifier.normalization.TextNormalizer import TextNormalizer
 
 

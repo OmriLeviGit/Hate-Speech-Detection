@@ -1,5 +1,7 @@
+import time
 from abc import ABC
 import numpy as np
+import optuna
 import torch
 from datasets import Dataset
 from sklearn.model_selection import train_test_split
@@ -12,11 +14,11 @@ from transformers import (
     TrainingArguments,
 )
 
-from classifier.New_Base import New_Base
+from classifier.BaseTextClassifier import BaseTextClassifier
 from classifier.normalization.TextNormalizer import TextNormalizer
 
 
-class BaseTransformerClassifier(New_Base, ABC):
+class BaseTransformerClassifier(BaseTextClassifier, ABC):
     def __init__(self, normalizer, labels: list, config: dict, seed: int = 42):
         super().__init__(labels, seed)
 
@@ -42,6 +44,138 @@ class BaseTransformerClassifier(New_Base, ABC):
         return AutoModelForSequenceClassification.from_pretrained(
             self.model_name, num_labels=num_labels
         )
+
+    def optimize_hyperparameters(self, X: list[str], y: list[str], n_trials=20) -> dict:
+        """Optimize hyperparameters with Optuna"""
+        start_time = time.time()
+
+        # Preprocess the texts
+        X_normalized = self.preprocess(X)
+
+        # Encode labels
+        y_encoded = self.label_encoder.fit_transform(y)
+
+        # Create and run Optuna study
+        study = optuna.create_study(direction="maximize")
+        study.optimize(
+            lambda trial: self._objective_function(trial, X_normalized, y_encoded),
+            n_trials=n_trials
+        )
+
+        # Get best trial
+        best_trial = study.best_trial
+
+        # Update config with best parameters
+        self.config.update(best_trial.params)
+
+        # Train model with best parameters
+        result = self.train(X, y)
+
+        training_duration = time.time() - start_time
+
+        # Return results
+        return {
+            "model": self.model,
+            "tokenizer": self.tokenizer,
+            "score": result["score"],
+            "params": best_trial.params
+        }
+
+    def _objective_function(self, trial, X_normalized, y_encoded):
+        """Optuna objective function for a single trial"""
+        # Set up trial parameters
+        trial_config = {
+            "learning_rate": trial.suggest_float("learning_rate", 1e-5, 5e-5, log=True),
+            "batch_size": trial.suggest_categorical("batch_size", [16, 32, 64]),
+            "epochs": trial.suggest_int("epochs", 2, 5),
+            "weight_decay": trial.suggest_float("weight_decay", 0.01, 0.1),
+        }
+
+        # Store original config
+        original_config = self.config.copy()
+
+        # Update config with trial parameters
+        self.config.update(trial_config)
+
+        self.tokenizer = self._create_tokenizer()
+        self.model = self._create_model(num_labels=len(self.LABELS))
+
+        # Get train/val split
+        X_train, X_val, y_train, y_val = train_test_split(
+            X_normalized, y_encoded, test_size=0.2, stratify=y_encoded, random_state=self.seed
+        )
+
+        # Train and evaluate model for this trial
+        val_score = self._train_and_evaluate_trial(X_train, X_val, y_train, y_val, trial.number)
+
+        # Restore original config
+        self.config = original_config
+
+        return val_score
+
+    def _train_and_evaluate_trial(self, X_train, X_val, y_train, y_val, trial_number):
+        """Train and evaluate model for a single Optuna trial"""
+        # Tokenize inputs
+        train_encodings = self.tokenizer(list(X_train), truncation=True, padding="max_length", max_length=128)
+        val_encodings = self.tokenizer(list(X_val), truncation=True, padding="max_length", max_length=128)
+
+        # Create datasets
+        train_dataset = Dataset.from_dict({
+            'input_ids': train_encodings['input_ids'],
+            'attention_mask': train_encodings['attention_mask'],
+            'labels': list(y_train)
+        })
+
+        val_dataset = Dataset.from_dict({
+            'input_ids': val_encodings['input_ids'],
+            'attention_mask': val_encodings['attention_mask'],
+            'labels': list(y_val)
+        })
+
+        # Initialize model for this trial
+        trial_model = self._create_model(num_labels=len(self.LABELS))
+
+        # Training arguments
+        training_args = TrainingArguments(
+            output_dir=f"./results/trial_{trial_number}",
+            learning_rate=self.config["learning_rate"],
+            per_device_train_batch_size=self.config["batch_size"],
+            per_device_eval_batch_size=self.config["batch_size"],
+            num_train_epochs=self.config["epochs"],
+            weight_decay=self.config["weight_decay"],
+            evaluation_strategy="epoch",
+            save_strategy="epoch",
+            load_best_model_at_end=True,
+            save_total_limit=1,
+            metric_for_best_model="accuracy",
+        )
+
+        # Create and run trainer
+        trainer = Trainer(
+            model=trial_model,
+            args=training_args,
+            train_dataset=train_dataset,
+            eval_dataset=val_dataset,
+            data_collator=DataCollatorWithPadding(tokenizer=self.tokenizer),
+            tokenizer=self.tokenizer,
+            compute_metrics=self._compute_metrics,
+            callbacks=[EarlyStoppingCallback(early_stopping_patience=3)]
+        )
+
+        # Train the model
+        trainer.train()
+
+        # Get validation score
+        val_score = trainer.evaluate()["eval_accuracy"]
+
+        return val_score
+
+    def _compute_metrics(self, eval_pred):
+        """Compute metrics for evaluation"""
+        logits, labels = eval_pred
+        preds = logits.argmax(axis=-1)
+        acc = np.mean(preds == labels)
+        return {"accuracy": acc}
 
     def train(self, X: list[str], y: list[str]) -> None:
         """Train the transformer model with the specified configuration"""

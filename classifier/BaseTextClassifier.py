@@ -1,23 +1,26 @@
 import os
 from abc import ABC, abstractmethod
-import copy
 
 import numpy as np
 import pandas as pd
+from sklearn.metrics import f1_score, classification_report, confusion_matrix, accuracy_score
 from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelEncoder
 from sklearn.utils import shuffle
 
-from classifier.normalization.TextNormalizer import TextNormalizer
+from classifier.utils import format_duration
 
 
 class BaseTextClassifier(ABC):
     """Abstract base class for text classifiers"""
 
-    def __init__(self, nlp_pipeline: any = None, text_normalizer: TextNormalizer() or None = None, labels: list = None, seed: int = 42):
-        self._nlp = nlp_pipeline
-        self._normalizer = text_normalizer
+    def __init__(self, labels: list = None, seed = None):
         self.LABELS = labels
         self.seed = seed
+        self.label_encoder = LabelEncoder()
+
+        self.best_model = None
+        self.model_name = None
 
     def load_data(self, class_0_count=None, class_1_count=None, class_2_count=None, source=None,
                   set_to_min=False) -> dict[str, list]:
@@ -87,7 +90,7 @@ class BaseTextClassifier(ABC):
 
         return data
 
-    def prepare_dataset(self, datasets: dict[str, list[str]], test_size = 0.15) -> tuple[list[str], list[str], list[str], list[str]]:
+    def prepare_dataset(self, datasets: dict[str, list[str]], test_size = 0.2) -> tuple[list[str], list[str], list[str], list[str]]:
         """Prepare and split into train and test sets"""
         posts = []
         labels = []
@@ -123,15 +126,58 @@ class BaseTextClassifier(ABC):
         """Train the model"""
         pass
 
-    @abstractmethod
-    def evaluate(self, test_dataset: any) -> dict[str, float]:
-        """Evaluate the model"""
-        pass
+
+    def evaluate(self, X_test: list[str], y_test: list[str]) -> tuple[float, float]:
+        """
+        Evaluate the trained model on test data.
+
+        Args:
+            X_test: List of texts
+            y_test: List of labels
+
+        Returns:
+            Dict with evaluation metrics
+        """
+        if not self.best_model:
+            raise ValueError("Model not trained yet")
+
+        # Preprocess test data
+        X_processed = self.preprocess(X_test)
+
+        # Encode labels if needed
+        if not np.issubdtype(np.array(y_test).dtype, np.number):
+            y_encoded = self.label_encoder.transform(y_test)
+        else:
+            y_encoded = y_test
+
+        y_pred = self.predict(X_processed)
+
+        # Calculate metrics
+        accuracy = accuracy_score(y_encoded, y_pred)
+        f1 = f1_score(y_encoded, y_pred, average='weighted')
+
+        self.print_evaluation(y_encoded, y_pred, accuracy, f1)
+
+        return accuracy, f1
 
     @abstractmethod
-    def predict(self, text: str) -> dict[str, float]:
+    def predict(self, text):
         """Make prediction on a single text"""
         pass
+
+    def print_model_results(self, grid_search_result, y, y_pred, training_duration=None):
+        print(f"\n=== Training result - Model: {self.model_name} ===")
+        print("\nBest params:", grid_search_result.best_params_)
+        print("Best cross-validation score:", round(grid_search_result.best_score_, 2))
+        print("\nClassification Report:\n", classification_report(y, y_pred))
+        print("Confusion Matrix:\n", confusion_matrix(y, y_pred))
+        print(f"\nTraining time: {format_duration(training_duration)}")
+
+    def print_evaluation(self, y, y_pred, accuracy, f1):
+        print(f"\n=== Model evaluation - {self.model_name} ===")
+        print(f"Accuracy score: {round(accuracy, 2)} | f1 score: {round(f1, 2)}", )
+        print("\nClassification Report:\n", classification_report(y, y_pred))
+        print("Confusion Matrix:\n", confusion_matrix(y, y_pred))
 
     def save_model(self, path: str) -> None:
         """Save the model"""
@@ -140,18 +186,6 @@ class BaseTextClassifier(ABC):
     def load_model(self, path: str) -> None:
         """Load a saved model"""
         pass
-
-    def get_text_normalizer(self):
-        """Set text normalizer"""
-        return self._normalizer
-
-    def set_text_normalizer(self, normalizer):
-        """Set text normalizer"""
-        self._normalizer = normalizer
-
-    def get_nlp(self):
-        """Get spacy's nlp object"""
-        return self._nlp
 
     def _initialize_test_dataset(self):
         class_0 = [

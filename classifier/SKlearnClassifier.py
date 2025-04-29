@@ -4,11 +4,11 @@ import spacy
 from sklearn.model_selection import GridSearchCV
 from spacy.util import is_package
 
-from classifier.New_Base import New_Base
+from classifier.BaseTextClassifier import BaseTextClassifier
 from classifier.normalization.TextNormalizer import TextNormalizer
 
 
-class SKlearnClassifier(New_Base):
+class SKlearnClassifier(BaseTextClassifier):
     def __init__(self, labels: list, normalizer: TextNormalizer(), config: dict, seed: int = 42):
         super().__init__(labels, seed)
 
