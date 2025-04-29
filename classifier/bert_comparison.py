@@ -15,6 +15,7 @@ from transformers import (
    TrainingArguments,
 )
 
+from classifier.Bert import BERTweetClassifier
 from classifier.SpacyClassifier import SpacyClassifier
 from classifier.normalization.TextNormalizer import TextNormalizer
 from classifier.normalization.TextNormalizerRoBERTa import TextNormalizerRoBERTa
@@ -57,8 +58,7 @@ def train_bertweet(X, y, label_encoder, configs=None):
         ]
 
     # Initialize RoBERTa normalizer
-    # normalizer = TextNormalizerRoBERTa()
-    normalizer = TextNormalizer(emoji='text')
+    normalizer = TextNormalizerRoBERTa()
 
     # Normalize texts with RoBERTa normalizer
     X_normalized = normalizer.normalize_texts(X)
@@ -190,8 +190,7 @@ def compare_models(X, y, label_encoder):
 
 def normalize_temporary(config, texts):
     if config["model_name"] == "vinai/bertweet-base":
-        # normalizer = TextNormalizerRoBERTa()
-        normalizer = TextNormalizer(emoji='text')
+        normalizer = TextNormalizerRoBERTa()
     else:
         normalizer = TextNormalizer(emoji='text')
 
