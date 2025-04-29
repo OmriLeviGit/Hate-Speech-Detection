@@ -87,7 +87,7 @@ class BaseTextClassifier(ABC):
 
         return data
 
-    def prepare_dataset(self, datasets: dict[str, list[str]]) -> tuple[list[str], list[str], list[str], list[str]]:
+    def prepare_dataset(self, datasets: dict[str, list[str]], test_size = 0.15) -> tuple[list[str], list[str], list[str], list[str]]:
         """Prepare and split into train and test sets"""
         posts = []
         labels = []
@@ -106,7 +106,7 @@ class BaseTextClassifier(ABC):
         # Then split into train and test sets
         X_train, X_test, y_train, y_test = train_test_split(
             X_shuffled, y_shuffled,
-            test_size=0.2,
+            test_size=test_size,
             random_state=self.seed,
             stratify=y_shuffled
         )

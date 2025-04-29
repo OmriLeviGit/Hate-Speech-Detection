@@ -1,16 +1,22 @@
+import time
+
 import numpy as np
 import torch
+from datasets import Dataset
 from sklearn.metrics import classification_report, confusion_matrix
+from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
+from transformers import (
+   AutoModelForSequenceClassification,
+   AutoTokenizer,
+   DataCollatorWithPadding,
+   EarlyStoppingCallback,
+   Trainer,
+   TrainingArguments,
+)
 
 from classifier.SpacyClassifier import SpacyClassifier
 from classifier.normalization.TextNormalizer import TextNormalizer
-
-from transformers import AutoTokenizer, AutoModelForSequenceClassification, Trainer, TrainingArguments, \
-    DataCollatorWithPadding, TextDataset
-from datasets import Dataset
-from sklearn.model_selection import train_test_split
-
 from classifier.normalization.TextNormalizerRoBERTa import TextNormalizerRoBERTa
 
 
@@ -18,8 +24,8 @@ def train_standard_bert(X, y, label_encoder, configs=None):
     """Train standard BERT models using regular text normalization."""
     if configs is None:
         configs = [
-            {"model_name": "distilbert-base-uncased", "learning_rate": 2e-5, "batch_size": 32, "epochs": 5},
-            # {"model_name": "distilbert-base-uncased", "learning_rate": 5e-5, "batch_size": 32, "epochs": 5},
+            {"model_name": "distilbert-base-uncased", "learning_rate": 2e-5, "batch_size": 32, "epochs": 5, "weight_decay": 0.01},
+            # {"model_name": "distilbert-base-uncased", "learning_rate": 5e-5, "batch_size": 32, "epochs": 5, "weight_decay": 0.01},
         ]
 
     # Initialize normalizer
@@ -46,12 +52,13 @@ def train_bertweet(X, y, label_encoder, configs=None):
     """Train BERTweet models using RoBERTa-specific text normalization."""
     if configs is None:
         configs = [
-            # {"model_name": "vinai/bertweet-base", "learning_rate": 2e-5, "batch_size": 32, "epochs": 5},
-            {"model_name": "vinai/bertweet-base", "learning_rate": 5e-5, "batch_size": 32, "epochs": 5},
+            # {"model_name": "vinai/bertweet-base", "learning_rate": 2e-5, "batch_size": 32, "epochs": 5, "weight_decay": 0.01},
+            {"model_name": "vinai/bertweet-base", "learning_rate": 5e-5, "batch_size": 32, "epochs": 5, "weight_decay": 0.01},
         ]
 
     # Initialize RoBERTa normalizer
-    normalizer = TextNormalizerRoBERTa()
+    # normalizer = TextNormalizerRoBERTa()
+    normalizer = TextNormalizer(emoji='text')
 
     # Normalize texts with RoBERTa normalizer
     X_normalized = normalizer.normalize_texts(X)
@@ -70,21 +77,22 @@ def train_bertweet(X, y, label_encoder, configs=None):
     return run_models(X_normalized, y, configs, tokenizers, models)
 
 
-def compute_metrics(eval_pred):
-    logits, labels = eval_pred
-    preds = logits.argmax(axis=-1)
-    acc = (preds == labels).mean()
-    return {"accuracy": acc}
-
-
-def run_models(X, y, configs, tokenizers, models):
+def run_models(X, y, configs, tokenizers, models_dict):
     """Shared function to run model training and evaluation with pre-initialized components."""
     X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.2, stratify=y, random_state=42)
+
+    def compute_metrics(eval_pred):
+        logits, labels = eval_pred
+        preds = logits.argmax(axis=-1)
+        acc = np.mean(preds == labels)
+        return {"accuracy": acc}
 
     best_score = 0
     best_model = None
     best_tokenizer = None
     best_config = None
+
+    torch.set_num_threads(1)
 
     for config in configs:
         print(f"\n=== Training with config: {config} ===")
@@ -92,7 +100,7 @@ def run_models(X, y, configs, tokenizers, models):
 
         # Use pre-initialized tokenizer and model
         tokenizer = tokenizers[model_name]
-        model = models[model_name]
+        model = models_dict[model_name]
 
         # Tokenize inputs
         train_encodings = tokenizer(list(X_train), truncation=True, padding="max_length", max_length=128)
@@ -118,13 +126,12 @@ def run_models(X, y, configs, tokenizers, models):
             per_device_train_batch_size=config["batch_size"],
             per_device_eval_batch_size=config["batch_size"],
             num_train_epochs=config["epochs"],
-            weight_decay=0.01,
+            weight_decay=config["weight_decay"],
             evaluation_strategy="epoch",
             save_strategy="epoch",
-            dataloader_num_workers=0,
             load_best_model_at_end=True,
-            logging_steps=50,
             save_total_limit=1,
+            metric_for_best_model="accuracy",
         )
 
         # Train model
@@ -136,6 +143,7 @@ def run_models(X, y, configs, tokenizers, models):
             data_collator=DataCollatorWithPadding(tokenizer=tokenizer),
             tokenizer=tokenizer,
             compute_metrics=compute_metrics,
+            callbacks=[EarlyStoppingCallback(early_stopping_patience=3)]
         )
 
         trainer.train()
@@ -152,13 +160,19 @@ def run_models(X, y, configs, tokenizers, models):
 
 def compare_models(X, y, label_encoder):
     """Run and compare both model types."""
+    start_time = time.time()
+
     # Train standard BERT models
     standard_results = train_standard_bert(X, y, label_encoder)
     standard_model, standard_tokenizer, standard_config, standard_score = standard_results
 
+    standard_end = time.time()
+
     # Train BERTweet models
     bertweet_results = train_bertweet(X, y, label_encoder)
     bertweet_model, bertweet_tokenizer, bertweet_config, bertweet_score = bertweet_results
+
+    roberta_end = time.time()
 
     # Compare results
     print("\n=== Model Comparison ===")
@@ -169,13 +183,15 @@ def compare_models(X, y, label_encoder):
     best_overall = standard_results if standard_score > bertweet_score else bertweet_results
 
     print(f"\nThe best model is {best_config['model_name']}")
+    print(f"Total runtime = {int(roberta_end - start_time)} | standard time = {int(standard_end - start_time)} | roberta = {int(roberta_end - standard_end)}")
 
     return best_overall, best_config
 
 
 def normalize_temporary(config, texts):
     if config["model_name"] == "vinai/bertweet-base":
-        normalizer = TextNormalizerRoBERTa()
+        # normalizer = TextNormalizerRoBERTa()
+        normalizer = TextNormalizer(emoji='text')
     else:
         normalizer = TextNormalizer(emoji='text')
 
@@ -233,13 +249,14 @@ def predict_bert_text(model_results, config, texts):
     texts = normalize_temporary(config, texts)
     return predict_with_bert(model, tokenizer, texts)
 
+
 def main():
     nlp_model_name = "en_core_web_lg"
     labels = ["antisemitic", "not_antisemitic"]
 
     # load, prepare
     classifier = SpacyClassifier(nlp_model_name, None, labels)
-    data = classifier.load_data(set_to_min=True, source='debug')
+    data = classifier.load_data(set_to_min=True)
     X_train, X_test, y_train, y_test = classifier.prepare_dataset(data)
 
     # encode labels
