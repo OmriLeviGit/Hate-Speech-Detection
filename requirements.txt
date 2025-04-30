@@ -22,6 +22,7 @@ transformers~=4.49.0
 wordninja~=2.0.0
 pycountry~=24.6.1
 
-typing_extensions~=4.13.1
 datasets~=3.5.0
 optuna~=4.3.0
+typing_extensions~=4.13.1
+joblib~=1.4.2

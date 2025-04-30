@@ -1,5 +1,5 @@
 
-from classifier.BERTClassifier import StandardBERTClassifier, BERTweetClassifier
+from classifier.BERTClassifier import BERTClassifier
 from classifier.normalization.TextNormalizer import TextNormalizer
 
 """
@@ -41,7 +41,7 @@ def main():
         }
     }
 
-    classifier = StandardBERTClassifier(labels, normalizer, debug_config)
+    classifier = BERTClassifier(labels, normalizer, debug_config)
 
     data = classifier.load_data(set_to_min=True, source='debug')
 

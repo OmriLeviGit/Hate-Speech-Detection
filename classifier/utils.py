@@ -3,22 +3,13 @@ import copy
 from sklearn.metrics import classification_report, confusion_matrix
 
 
-def print_model_header(model_name, total_length=80):
+def print_header(model_name, total_length=80):
     name_length = len(model_name)
     side_length = (total_length - name_length - 2) // 2
 
     extra_dash = 1 if (total_length - name_length - 2) % 2 != 0 else 0
 
     print("\n", "-" * side_length + f" {model_name} " + "-" * (side_length + extra_dash))
-
-
-def print_model_results(best_model, classification, conf_mat, model_duration, total_duration):
-    print("\nBest params:", best_model.best_params_)
-    print("Best cross-validation score:", round(best_model.best_score_, 2))
-    print("\nClassification Report:\n", classification)
-    print("Confusion Matrix:\n", conf_mat)
-    print(f"\nTraining time: {format_duration(model_duration)}")
-    print(f"Total runtime: {format_duration(total_duration)}")
 
 
 def format_duration(seconds):

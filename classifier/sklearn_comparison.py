@@ -54,40 +54,44 @@ configs = [
     {
         "model_name": "LogisticRegression",
         "model_class": LogisticRegression(),
-        "vectorizer": TfidfVectorizer(),
         "param_grid": lr_param_grid,
     },
     {
         "model_name": "LinearSVC",
         "model_class": LinearSVC(),
-        "vectorizer": TfidfVectorizer(),
         "param_grid": svc_param_grid,
     },
     {
         "model_name": "KNeighborsClassifier",
         "model_class": KNeighborsClassifier(),
-        "vectorizer": TfidfVectorizer(),
         "param_grid": knn_param_grid,
     },
     {
         "model_name": "RandomForestClassifier",
         "model_class": RandomForestClassifier(),
-        "vectorizer": TfidfVectorizer(),
         "param_grid": rf_param_grid,
     },
     {
         "model_name": "SGDClassifier",
         "model_class": SGDClassifier(),
-        "vectorizer": TfidfVectorizer(),
         "param_grid": sgd_param_grid,
     }
 ]
+
+def ini_sklearn_models(labels):
+    models = []
+    for config in configs:
+        normalizer = TextNormalizer(emoji='text')
+        classifier = SKlearnClassifier(labels, normalizer, TfidfVectorizer(), config)
+        models.append(classifier)
+
+    return models
 
 def main():
     labels = ["antisemitic", "not_antisemitic"]
     normalizer = TextNormalizer(emoji='text')
 
-    classifier = SKlearnClassifier(labels, normalizer, configs[0])
+    classifier = SKlearnClassifier(labels, normalizer, TfidfVectorizer(), configs[0])
 
     data = classifier.load_data(set_to_min=True, source='debug')
 

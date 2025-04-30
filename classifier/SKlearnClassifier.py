@@ -1,15 +1,15 @@
-import time
+import time, os, pickle, joblib, copy
 
-import spacy
+
 from sklearn.model_selection import GridSearchCV
-from spacy.util import is_package
 
 from classifier.BaseTextClassifier import BaseTextClassifier
+from classifier.SpacySingleton import SpacyModel
 from classifier.normalization.TextNormalizer import TextNormalizer
 
 
 class SKlearnClassifier(BaseTextClassifier):
-    def __init__(self, labels: list, normalizer: TextNormalizer(), config: dict, seed: int = 42):
+    def __init__(self, labels: list, normalizer: TextNormalizer(), vectorizer, config: dict, seed: int = 42):
         super().__init__(labels, seed)
 
         self.config = config
@@ -17,25 +17,14 @@ class SKlearnClassifier(BaseTextClassifier):
 
         self.model_name = config.get("model_name")
         self.model_class = config.get("model_class")
-        self.vectorizer = config.get("vectorizer")
-        self.hp_config = config.get("hp_config")
+        self.param_grid = config.get("param_grid")
 
-        self.nlp = self._load_spacy()  # Load Spacy model
+        self.vectorizer = vectorizer
+        self.nlp = SpacyModel.get_instance()
 
         self.best_model = None
         self.best_score = None
         self.best_params = None
-
-    def _load_spacy(self):
-        nlp_model_name = "en_core_web_lg"
-
-        if not is_package(nlp_model_name):
-            print(f"'{nlp_model_name}' is not installed. Installing...")
-            spacy.cli.download(nlp_model_name)
-
-        print(f"Loading: '{nlp_model_name}'...")
-
-        return spacy.load(nlp_model_name)
 
     def preprocess(self, text_list: list[str]) -> list[str]:
         normalizer = self.normalizer
@@ -62,21 +51,11 @@ class SKlearnClassifier(BaseTextClassifier):
 
         return processed_text_list
 
-    def train(self, X: list[str], y: list[str], hp_config=None):
+    def train(self, X: list[str], y: list[str], param_grid=None):
         """Optimize hyperparameters with GridSearchCV"""
         # Validate hyperparameter config
-        if hp_config:
-            self.hp_config = hp_config
-
-        if self.hp_config is None:
-            raise ValueError("hp_config with model_name, model_class, vectorizer and param_grid is required")
-
-        required_keys = ['model_name', 'model_class', 'vectorizer']
-        missing_keys = [key for key in required_keys if key not in self.config or self.config[key] is None]
-
-        if missing_keys:
-            missing_keys_str = ", ".join(missing_keys)
-            raise ValueError(f"Config is missing required keys: {missing_keys_str}")
+        if param_grid:
+            self.param_grid = param_grid
 
         # Vectorize and encode
         X_vectorized = self.vectorizer.fit_transform(X)
@@ -87,11 +66,11 @@ class SKlearnClassifier(BaseTextClassifier):
         # Run grid search
         grid_search = GridSearchCV(
             estimator=self.model_class,
-            param_grid=self.hp_config,
+            param_grid=self.param_grid,
             scoring='f1_weighted',
             cv=5,
             verbose=1,
-            n_jobs=-1,
+            n_jobs=2,
         )
 
         grid_search.fit(X_vectorized, y_encoded)
@@ -103,7 +82,7 @@ class SKlearnClassifier(BaseTextClassifier):
         self.best_params = grid_search.best_params_
         y_pred = self.best_model.predict(X_vectorized)
 
-        self.print_model_results(self.best_score, self.best_params, y_encoded, y_pred, training_duration)
+        self.print_best_model_results(self.best_score, self.best_params, y_encoded, y_pred, training_duration)
 
     def predict(self, text, output=False):
         # Handle both single text and list of texts
@@ -126,3 +105,23 @@ class SKlearnClassifier(BaseTextClassifier):
 
         # Return single item or full list based on input type
         return y_pred[0] if single_input else y_pred
+
+    def save_model(self, path: str):
+        os.makedirs(path, exist_ok=True)
+
+        tmp = copy.deepcopy(self)
+        tmp.best_model = None
+
+        with open(os.path.join(path, "classifier_class.pkl"), "wb") as f:
+            pickle.dump(tmp, f)
+
+        joblib.dump(self.best_model, os.path.join(path, "sk_model.pkl"))
+
+    @classmethod
+    def load_model(cls, path: str):
+        with open(os.path.join(path, "classifier_class.pkl"), "rb") as f:
+            obj = pickle.load(f)
+
+        obj.best_model = joblib.load(os.path.join(path, "sk_model.pkl"))
+
+        return obj

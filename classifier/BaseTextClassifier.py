@@ -103,10 +103,8 @@ class BaseTextClassifier(ABC):
         X = np.array(posts)
         y = np.array(labels)
 
-        # First shuffle the data
         X_shuffled, y_shuffled = shuffle(X, y, random_state=self.seed)
 
-        # Then split into train and test sets
         X_train, X_test, y_train, y_test = train_test_split(
             X_shuffled, y_shuffled,
             test_size=test_size,
@@ -153,7 +151,7 @@ class BaseTextClassifier(ABC):
 
         # Calculate metrics
         accuracy = accuracy_score(y_encoded, y_pred)
-        f1 = f1_score(y_encoded, y_pred, average='weighted')
+        f1 = f1_score(y_encoded, y_pred, average='weighted', zero_division=0)
 
         self.print_evaluation(y_encoded, y_pred, accuracy, f1)
 
@@ -164,25 +162,27 @@ class BaseTextClassifier(ABC):
         """Make prediction on a single text"""
         pass
 
-    def print_model_results(self, best_score, best_param, y, y_pred, training_duration=None):
+    def print_best_model_results(self, best_score, best_param, y_true, y_pred, training_duration=None):
         print(f"\n=== Training result - Model: {self.model_name} ===")
         print("Best Score:", round(best_score, 2))
-        print("\nBest Params:", best_param)
-        print("\nClassification Report Sample:\n", classification_report(y, y_pred))
-        print("Confusion Matrix Sample:\n", confusion_matrix(y, y_pred))
+        print("Best Params:", best_param)
+        # print("\nClassification Report Sample:\n", classification_report(y_true, y_pred, zero_division=0))
+        # print("\nConfusion Matrix Sample:\n", confusion_matrix(y_true, y_pred))
         print(f"\nTraining time: {format_duration(training_duration)}")
 
-    def print_evaluation(self, y, y_pred, accuracy, f1):
+    def print_evaluation(self, y_true, y_pred, accuracy, f1):
         print(f"\n=== Model evaluation - {self.model_name} ===")
         print(f"Accuracy score: {round(accuracy, 2)} | f1 score: {round(f1, 2)}", )
-        print("\nClassification Report:\n", classification_report(y, y_pred))
-        print("Confusion Matrix:\n", confusion_matrix(y, y_pred))
+        print("\nClassification Report:\n", classification_report(y_true, y_pred, zero_division=0))
+        print("Confusion Matrix:\n", confusion_matrix(y_true, y_pred))
 
-    def save_model(self, path: str) -> None:
+    @abstractmethod
+    def save_model(self, path: str):
         """Save the model"""
         pass
 
-    def load_model(self, path: str) -> None:
+    @abstractmethod
+    def load_model(self, path: str):
         """Load a saved model"""
         pass
 

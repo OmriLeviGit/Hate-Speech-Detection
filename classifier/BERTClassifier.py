@@ -1,4 +1,4 @@
-import time
+import time, os, pickle
 import numpy as np
 import optuna
 import torch
@@ -17,16 +17,17 @@ from classifier.BaseTextClassifier import BaseTextClassifier
 from classifier.normalization.TextNormalizer import TextNormalizer
 
 
-class StandardBERTClassifier(BaseTextClassifier):
-    def __init__(self, labels: list, normalizer: TextNormalizer(), config, seed: int = 42):
+class BERTClassifier(BaseTextClassifier):
+    def __init__(self, labels: list, normalizer: TextNormalizer(), tokenizer, config, seed: int = 42):
         super().__init__(labels, seed)
 
         self.config = config
         self.normalizer = normalizer
 
         self.model_name = config.get("model_name")
-        self.tokenizer = AutoTokenizer.from_pretrained(self.model_name)
-        self.hp_config = config.get("hyper_parameters")
+        self.model_type = config.get("model_type")
+        self.tokenizer = tokenizer
+        self.hp_ranges = config.get("hyper_parameters")
 
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -41,17 +42,20 @@ class StandardBERTClassifier(BaseTextClassifier):
     def _create_model(self, num_labels):
         """Create model appropriate for this model type"""
         return AutoModelForSequenceClassification.from_pretrained(
-            self.model_name, num_labels=num_labels
+            self.model_type, num_labels=num_labels
         )
 
-    def train(self, X: list[str], y: list[str], hp_config=None, n_trials=20):
+    def train(self, X: list[str], y: list[str], hp_ranges=None, n_trials=10):
         """Optimize hyperparameters with Optuna"""
         # Validate hyperparameter config
-        if hp_config:
-            self.hp_config = hp_config
+        if hp_ranges:
+            self.hp_ranges = hp_ranges
 
         # Encode labels
         y_encoded = self.label_encoder.fit_transform(y)
+
+        torch.set_num_threads(1)
+        torch.set_num_interop_threads(1)
 
         # Create and run Optuna study
         start_time = time.time()
@@ -82,17 +86,17 @@ class StandardBERTClassifier(BaseTextClassifier):
         predictions = self.best_model_trainer.predict(prediction_dataset)
         y_pred = np.argmax(predictions.predictions, axis=1)
 
-        self.print_model_results(self.best_score, self.best_params, y_encoded, y_pred, training_duration)
+        self.print_best_model_results(self.best_score, self.best_params, y_encoded, y_pred, training_duration)
 
     def _objective_function(self, trial, X, y_encoded):
         """Optuna objective function for a single trial"""
         # Set up trial parameters
         trial_config = {
-            "learning_rate": trial.suggest_float("learning_rate", *self.hp_config["learning_rate_range"],
-                                                 log=self.hp_config["learning_rate_log"]),
-            "batch_size": trial.suggest_categorical("batch_size", self.hp_config["batch_sizes"]),
-            "epochs": trial.suggest_int("epochs", *self.hp_config["epochs_range"]),
-            "weight_decay": trial.suggest_float("weight_decay",*self.hp_config["weight_decay_range"]),
+            "learning_rate": trial.suggest_float("learning_rate", *self.hp_ranges["learning_rate_range"],
+                                                 log=self.hp_ranges["learning_rate_log"]),
+            "batch_size": trial.suggest_categorical("batch_size", self.hp_ranges["batch_sizes"]),
+            "epochs": trial.suggest_int("epochs", *self.hp_ranges["epochs_range"]),
+            "weight_decay": trial.suggest_float("weight_decay", *self.hp_ranges["weight_decay_range"]),
         }
 
         # Get train/val split
@@ -147,6 +151,7 @@ class StandardBERTClassifier(BaseTextClassifier):
         )
 
         # Create and run trainer
+        print(f"Start training: {self.model_name}")
         trainer = Trainer(
             model=trial_model,
             args=training_args,
@@ -197,9 +202,31 @@ class StandardBERTClassifier(BaseTextClassifier):
 
         return y_pred[0] if single_input else y_pred
 
+    def save_model(self, path: str):
+        os.makedirs(path, exist_ok=True)
 
-class BERTweetClassifier(StandardBERTClassifier):
-    def __init__(self, labels: list, normalizer: TextNormalizer(), config: dict, seed: int = 42):
-        super().__init__(normalizer, labels, config, seed)
-        self.model_name = "vinai/bertweet-base"
-        self.tokenizer = AutoTokenizer.from_pretrained(self.model_name, normalization=True)
+        self.best_model.save_pretrained(os.path.join(path, "model"))
+        self.tokenizer.save_pretrained(os.path.join(path, "model"))
+
+        save_dict = {}
+        for key, value in self.__dict__.items():
+            if key not in ['best_model', 'tokenizer']:
+                try:
+                    pickle.dumps(value)
+                    save_dict[key] = value
+                except:
+                    pass
+
+        # Save the pickable attributes
+        with open(os.path.join(path, "classifier_class.pkl"), "wb") as f:
+            pickle.dump(save_dict, f)
+
+    @classmethod
+    def load_model(cls, path: str):
+        with open(os.path.join(path, "classifier_class.pkl"), "rb") as f:
+            obj = pickle.load(f)
+
+        obj.best_model = AutoModelForSequenceClassification.from_pretrained(os.path.join(path, "model"))
+        obj.tokenizer = AutoTokenizer.from_pretrained(os.path.join(path, "model"))
+
+        return obj
