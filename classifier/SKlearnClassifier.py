@@ -12,19 +12,19 @@ class SKlearnClassifier(BaseTextClassifier):
     def __init__(self, labels: list, normalizer: TextNormalizer(), config: dict, seed: int = 42):
         super().__init__(labels, seed)
 
-        # Sklearn-specific attributes
         self.config = config
         self.normalizer = normalizer
+
         self.model_name = config.get("model_name")
         self.model_class = config.get("model_class")
         self.vectorizer = config.get("vectorizer")
-        self.param_grid = config.get("param_grid")
+        self.hp_config = config.get("hp_config")
+
+        self.nlp = self._load_spacy()  # Load Spacy model
 
         self.best_model = None
         self.best_score = None
         self.best_params = None
-
-        self.nlp = self._load_spacy()  # Load Spacy model
 
     def _load_spacy(self):
         nlp_model_name = "en_core_web_lg"
@@ -62,12 +62,16 @@ class SKlearnClassifier(BaseTextClassifier):
 
         return processed_text_list
 
-    def train(self, X, y):
-        # Validate config
-        # if config is None:
-        #     raise ValueError("Config with model_name, model_class, vectorizer and param_grid is required")
+    def train(self, X: list[str], y: list[str], hp_config=None):
+        """Optimize hyperparameters with GridSearchCV"""
+        # Validate hyperparameter config
+        if hp_config:
+            self.hp_config = hp_config
 
-        required_keys = ['model_name', 'model_class', 'vectorizer', 'param_grid']
+        if self.hp_config is None:
+            raise ValueError("hp_config with model_name, model_class, vectorizer and param_grid is required")
+
+        required_keys = ['model_name', 'model_class', 'vectorizer']
         missing_keys = [key for key in required_keys if key not in self.config or self.config[key] is None]
 
         if missing_keys:
@@ -83,7 +87,7 @@ class SKlearnClassifier(BaseTextClassifier):
         # Run grid search
         grid_search = GridSearchCV(
             estimator=self.model_class,
-            param_grid=self.param_grid,
+            param_grid=self.hp_config,
             scoring='f1_weighted',
             cv=5,
             verbose=1,
@@ -95,16 +99,11 @@ class SKlearnClassifier(BaseTextClassifier):
         training_duration = time.time() - start_time
 
         self.best_model = grid_search.best_estimator_
-        self.best_score = round(grid_search.best_score_, 2)
+        self.best_score = grid_search.best_score_
+        self.best_params = grid_search.best_params_
         y_pred = self.best_model.predict(X_vectorized)
 
-        self.print_model_results(grid_search, y_encoded, y_pred, training_duration)
-
-        return {
-            "model": self.best_model,
-            "score": self.best_score,
-            "params": grid_search.best_params_
-        }
+        self.print_model_results(self.best_score, self.best_params, y_encoded, y_pred, training_duration)
 
     def predict(self, text, output=False):
         # Handle both single text and list of texts

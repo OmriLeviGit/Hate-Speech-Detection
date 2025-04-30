@@ -126,7 +126,6 @@ class BaseTextClassifier(ABC):
         """Train the model"""
         pass
 
-
     def evaluate(self, X_test: list[str], y_test: list[str]) -> tuple[float, float]:
         """
         Evaluate the trained model on test data.
@@ -165,12 +164,12 @@ class BaseTextClassifier(ABC):
         """Make prediction on a single text"""
         pass
 
-    def print_model_results(self, grid_search_result, y, y_pred, training_duration=None):
+    def print_model_results(self, best_score, best_param, y, y_pred, training_duration=None):
         print(f"\n=== Training result - Model: {self.model_name} ===")
-        print("\nBest params:", grid_search_result.best_params_)
-        print("Best cross-validation score:", round(grid_search_result.best_score_, 2))
-        print("\nClassification Report:\n", classification_report(y, y_pred))
-        print("Confusion Matrix:\n", confusion_matrix(y, y_pred))
+        print("Best Score:", round(best_score, 2))
+        print("\nBest Params:", best_param)
+        print("\nClassification Report Sample:\n", classification_report(y, y_pred))
+        print("Confusion Matrix Sample:\n", confusion_matrix(y, y_pred))
         print(f"\nTraining time: {format_duration(training_duration)}")
 
     def print_evaluation(self, y, y_pred, accuracy, f1):
