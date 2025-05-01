@@ -6,7 +6,7 @@ from sklearn.svm import LinearSVC
 from transformers import AutoTokenizer
 
 from classifier.BERTClassifier import BERTClassifier
-from classifier.SKlearnClassifier import SKlearnClassifier
+from classifier.SKLearnClassifier import SKLearnClassifier
 from classifier.normalization.TextNormalizer import TextNormalizer
 from classifier.normalization.TextNormalizerRoBERTa import TextNormalizerRoBERTa
 
@@ -71,7 +71,23 @@ bert_hyperparameter_ranges = {
     "weight_decay_range": (0.001, 0.1),
 }
 
+debug_bert_config = {
+    {
+        "model_name": "DEBUG BERT",
+        "model_type": "distilbert-base-uncased",
+        "hyper_parameters":  {
+            "learning_rate_range": (5e-6, 5e-6),
+            "learning_rate_log": True,
+            "batch_sizes": [8],
+            "epochs_range": (1, 1),
+            "weight_decay_range": (0.1, 0.1),
+        },
+        "n_trials": 1,
+    },
+}
+
 bert_configs = [
+    debug_bert_config,
     {
         "model_name": "distilbert uncased",
         "model_type": "distilbert-base-uncased",
@@ -108,7 +124,7 @@ def ini_sklearn_models(configs):
         variants = base_config.pop("variants", [])
 
         # Create the standard model
-        classifier = SKlearnClassifier(
+        classifier = SKLearnClassifier(
             default_labels,
             default_normalizer,
             default_vectorizer,
@@ -126,7 +142,7 @@ def ini_sklearn_models(configs):
 
             model_config["model_name"] = f"{base_config['model_name']}_{variant.get('variant_name')}"
 
-            classifier = SKlearnClassifier(labels, normalizer, vectorizer, model_config)
+            classifier = SKLearnClassifier(labels, normalizer, vectorizer, model_config)
             sklearn_models.append(classifier)
 
     return sklearn_models

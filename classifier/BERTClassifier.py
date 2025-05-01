@@ -28,6 +28,7 @@ class BERTClassifier(BaseTextClassifier):
         self.model_type = config.get("model_type")
         self.tokenizer = tokenizer
         self.hp_ranges = config.get("hyper_parameters")
+        self.n_trials = config.get("n_trials", 10)
 
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -45,7 +46,7 @@ class BERTClassifier(BaseTextClassifier):
             self.model_type, num_labels=num_labels
         )
 
-    def train(self, X: list[str], y: list[str], hp_ranges=None, n_trials=10):
+    def train(self, X: list[str], y: list[str], hp_ranges=None):
         """Optimize hyperparameters with Optuna"""
         # Validate hyperparameter config
         if hp_ranges:
@@ -63,7 +64,7 @@ class BERTClassifier(BaseTextClassifier):
         study = optuna.create_study(direction="maximize")
         study.optimize(
             lambda trial: self._objective_function(trial, X, y_encoded),
-            n_trials=n_trials
+            n_trials=self.n_trials
         )
 
         training_duration = time.time() - start_time
@@ -183,15 +184,26 @@ class BERTClassifier(BaseTextClassifier):
         text_list = [text] if single_input else text
 
         texts_processed = self.preprocess(text_list)
-        X_tokenized = self.tokenizer(texts_processed, truncation=True, padding="max_length", max_length=128, return_tensors="pt")
+        inputs = self.tokenizer(texts_processed, truncation=True, padding="max_length", max_length=128, return_tensors="pt")
 
-        prediction_dataset = Dataset.from_dict({
-            'input_ids': X_tokenized['input_ids'],
-            'attention_mask': X_tokenized['attention_mask']
-        })
+        # Get device and move inputs
+        device = next(self.best_model.parameters()).device
+        inputs = {k: v.to(device) for k, v in inputs.items()}
 
-        predictions = self.best_model_trainer.predict(prediction_dataset)
-        y_pred = np.argmax(predictions.predictions, axis=1)
+        # Get predictions directly from model
+        with torch.no_grad():
+            outputs = self.best_model(**inputs)
+
+        # Get predicted class indices
+        y_pred = torch.argmax(outputs.logits, dim=1).cpu().numpy()
+
+        # prediction_dataset = Dataset.from_dict({
+        #     'input_ids': inputs['input_ids'],
+        #     'attention_mask': inputs['attention_mask']
+        # })
+        #
+        # predictions = self.best_model_trainer.predict(prediction_dataset)
+        # y_pred = np.argmax(predictions.predictions, axis=1)
 
         if output:
             y_pred_decoded = self.label_encoder.inverse_transform(y_pred).tolist()
@@ -202,31 +214,96 @@ class BERTClassifier(BaseTextClassifier):
 
         return y_pred[0] if single_input else y_pred
 
+
+    # def save_model(self, path: str):
+    #     # Create the BERT directory
+    #     bert_path = os.path.join(path, "BERT")
+    #     os.makedirs(bert_path, exist_ok=True)
+    #
+    #     # Save temporary references and clear models before pickling
+    #     temp_best_model = self.best_model
+    #     temp_tokenizer = self.tokenizer
+    #     self.best_model = None
+    #     self.tokenizer = None
+    #
+    #     # Save model and tokenizer in the BERT directory
+    #     temp_best_model.save_pretrained(os.path.join(bert_path, "model"))
+    #     temp_tokenizer.save_pretrained(os.path.join(bert_path, "model"))
+    #
+    #     with open(os.path.join(bert_path, "classifier_class.pkl"), "wb") as f:
+    #         pickle.dump(self, f)
+    #
+    #     # Restore models
+    #     self.best_model = temp_best_model
+    #     self.tokenizer = temp_tokenizer
+
     def save_model(self, path: str):
-        os.makedirs(path, exist_ok=True)
+        # Create the BERT directory
+        bert_path = os.path.join(path, "BERT")
+        os.makedirs(bert_path, exist_ok=True)
 
-        self.best_model.save_pretrained(os.path.join(path, "model"))
-        self.tokenizer.save_pretrained(os.path.join(path, "model"))
+        # Save model and tokenizer in the BERT directory
+        self.best_model.save_pretrained(os.path.join(bert_path, "model"))
+        self.tokenizer.save_pretrained(os.path.join(bert_path, "model"))
 
-        save_dict = {}
+        # Save temporary references
+        temp_best_model = self.best_model
+        temp_tokenizer = self.tokenizer
+
+        # Clear potentially problematic attributes
+        self.best_model = None
+        self.tokenizer = None
+
+        # Try to find problematic attributes
+        problematic_keys = []
         for key, value in self.__dict__.items():
-            if key not in ['best_model', 'tokenizer']:
-                try:
-                    pickle.dumps(value)
-                    save_dict[key] = value
-                except:
-                    pass
+            try:
+                pickle.dumps(value)
+            except Exception as e:
+                problematic_keys.append(key)
+                setattr(self, key, None)
+                print(f"Setting {key} to None due to: {str(e)}")
 
-        # Save the pickable attributes
-        with open(os.path.join(path, "classifier_class.pkl"), "wb") as f:
-            pickle.dump(save_dict, f)
+        # Try to pickle the object
+        try:
+            with open(os.path.join(bert_path, "classifier_class.pkl"), "wb") as f:
+                pickle.dump(self, f)
+        except Exception as e:
+            print(f"Still can't pickle: {str(e)}")
+            # Fall back to dict-based saving
+            raise e
 
-    @classmethod
-    def load_model(cls, path: str):
-        with open(os.path.join(path, "classifier_class.pkl"), "rb") as f:
+        # Restore models and other cleared attributes
+        self.best_model = temp_best_model
+        self.tokenizer = temp_tokenizer
+
+        # If we identified problematic keys, warn the user
+        if problematic_keys:
+            print(f"Warning: The following attributes were set to None before saving: {problematic_keys}")
+
+
+    # def save_model(self, path: str):
+    #     # Create the BERT directory
+    #     bert_path = os.path.join(path, "BERT")
+    #     os.makedirs(bert_path, exist_ok=True)
+    #
+    #     # Save model and tokenizer in the BERT directory
+    #     self.best_model.save_pretrained(os.path.join(bert_path, "model"))
+    #     self.tokenizer.save_pretrained(os.path.join(bert_path, "model"))
+    #
+    #     self.best_model = None
+    #     self.tokenizer = None
+    #
+    #     with open(os.path.join(bert_path, "classifier_class.pkl"), "wb") as f:
+    #         pickle.dump(self, f)
+
+    @staticmethod
+    def load_model(path: str):
+        bert_path = os.path.join(path, "BERT")
+        with open(os.path.join(bert_path, "classifier_class.pkl"), "rb") as f:
             obj = pickle.load(f)
 
-        obj.best_model = AutoModelForSequenceClassification.from_pretrained(os.path.join(path, "model"))
-        obj.tokenizer = AutoTokenizer.from_pretrained(os.path.join(path, "model"))
+        obj.best_model = AutoModelForSequenceClassification.from_pretrained(os.path.join(bert_path, "model"))
+        obj.tokenizer = AutoTokenizer.from_pretrained(os.path.join(bert_path, "model"))
 
         return obj

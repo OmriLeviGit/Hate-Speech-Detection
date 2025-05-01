@@ -8,7 +8,7 @@ from classifier.SpacySingleton import SpacyModel
 from classifier.normalization.TextNormalizer import TextNormalizer
 
 
-class SKlearnClassifier(BaseTextClassifier):
+class SKLearnClassifier(BaseTextClassifier):
     def __init__(self, labels: list, normalizer: TextNormalizer(), vectorizer, config: dict, seed: int = 42):
         super().__init__(labels, seed)
 
@@ -117,11 +117,14 @@ class SKlearnClassifier(BaseTextClassifier):
 
         joblib.dump(self.best_model, os.path.join(path, "sk_model.pkl"))
 
-    @classmethod
-    def load_model(cls, path: str):
-        with open(os.path.join(path, "classifier_class.pkl"), "rb") as f:
+    @staticmethod
+    def load_model(path: str):
+        sklearn_path = os.path.join(path, "SKlearn")
+        with open(os.path.join(sklearn_path, "classifier_class.pkl"), "rb") as f:
             obj = pickle.load(f)
+            obj.best_model = None
+            obj.tokenizer = None
 
-        obj.best_model = joblib.load(os.path.join(path, "sk_model.pkl"))
+        obj.best_model = joblib.load(os.path.join(sklearn_path, "sk_model.pkl"))
 
         return obj

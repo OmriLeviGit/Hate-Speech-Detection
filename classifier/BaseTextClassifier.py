@@ -1,4 +1,5 @@
 import os
+import pickle
 from abc import ABC, abstractmethod
 
 import numpy as np
@@ -181,10 +182,42 @@ class BaseTextClassifier(ABC):
         """Save the model"""
         pass
 
+    @staticmethod
     @abstractmethod
-    def load_model(self, path: str):
+    def load_model(path: str):
         """Load a saved model"""
-        pass
+
+    @staticmethod
+    def load_best_model(path: str):
+        """Load a saved model"""
+        try:
+            bert_path = os.path.join(path, "BERT")
+            with open(os.path.join(bert_path, "classifier_class.pkl"), "rb") as f:
+                bert_class = pickle.load(f)
+
+            sklearn_path = os.path.join(path, "SKlearn")
+            with open(os.path.join(sklearn_path, "classifier_class.pkl"), "rb") as f:
+                sklearn_class = pickle.load(f)
+
+            if bert_class.best_score > sklearn_class.best_score:
+                from .BERTClassifier import BERTClassifier
+                return BERTClassifier.load_model(path)
+
+            from .SKLearnClassifier import SKLearnClassifier
+            return SKLearnClassifier.load_model(path)
+
+        except FileNotFoundError:
+            # If only one model exists, try each type
+            try:
+                from .BERTClassifier import BERTClassifier
+                return BERTClassifier.load_model(path)
+            except FileNotFoundError:
+                try:
+                    from .SKLearnClassifier import SKLearnClassifier
+                    return SKLearnClassifier.load_model(path)
+                except FileNotFoundError:
+                    raise ValueError(f"No valid classifier model found at path: {path}")
+
 
     def _initialize_test_dataset(self):
         class_0 = [

@@ -2,7 +2,9 @@ import os
 import time
 
 from classifier import utils
-from classifier.SKlearnClassifier import SKlearnClassifier
+from classifier.BERTClassifier import BERTClassifier
+from classifier.BaseTextClassifier import BaseTextClassifier
+from classifier.SKLearnClassifier import SKLearnClassifier
 from classifier.model_generation import generate_models
 
 
@@ -34,23 +36,26 @@ def compare_models(models, dataset):
 
     best_model.evaluate(X_test, y_test)
 
-    path = ""
-    best_model.save_model(os.path.join(path, "model"))
+    best_model.save_model("model")
 
     return best_model
 
 
 def main():
-    # increase trials before training. add to hp
     models = generate_models()
+    models = [models[5]]
 
-    data = models[0].load_data(set_to_min=True)
+
+    data = models[0].load_data(set_to_min=True, source='debug')
     dataset = models[0].prepare_dataset(data)
 
     compare_models(models, dataset)
 
-    # loaded_classifier = SKlearnClassifier.load_model("model")   # make it part of the base
+    # loaded_classifier = BERTClassifier.load_model("model")
+    # loaded_classifier = BaseTextClassifier.load_best_model("model")
     # print(loaded_classifier)
+
+
 
 
 if __name__ == "__main__":

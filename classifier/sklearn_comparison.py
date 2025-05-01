@@ -6,7 +6,7 @@ from sklearn.linear_model import LogisticRegression, SGDClassifier
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.svm import LinearSVC
 
-from classifier.SKlearnClassifier import SKlearnClassifier
+from classifier.SKLearnClassifier import SKLearnClassifier
 from classifier.normalization.TextNormalizer import TextNormalizer
 
 
@@ -82,7 +82,7 @@ def ini_sklearn_models(labels):
     models = []
     for config in configs:
         normalizer = TextNormalizer(emoji='text')
-        classifier = SKlearnClassifier(labels, normalizer, TfidfVectorizer(), config)
+        classifier = SKLearnClassifier(labels, normalizer, TfidfVectorizer(), config)
         models.append(classifier)
 
     return models
@@ -91,7 +91,7 @@ def main():
     labels = ["antisemitic", "not_antisemitic"]
     normalizer = TextNormalizer(emoji='text')
 
-    classifier = SKlearnClassifier(labels, normalizer, TfidfVectorizer(), configs[0])
+    classifier = SKLearnClassifier(labels, normalizer, TfidfVectorizer(), configs[0])
 
     data = classifier.load_data(set_to_min=True, source='debug')
 
