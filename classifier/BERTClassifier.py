@@ -208,32 +208,9 @@ class BERTClassifier(BaseTextClassifier):
 
         return y_pred[0] if single_input else y_pred
 
-
-    # def save_model(self, path: str):
-    #     # Create the BERT directory
-    #     bert_path = os.path.join(path, "BERT")
-    #     os.makedirs(bert_path, exist_ok=True)
-    #
-    #     # Save temporary references and clear models before pickling
-    #     temp_best_model = self.best_model
-    #     temp_tokenizer = self.tokenizer
-    #     self.best_model = None
-    #     self.tokenizer = None
-    #
-    #     # Save model and tokenizer in the BERT directory
-    #     temp_best_model.save_pretrained(os.path.join(bert_path, "model"))
-    #     temp_tokenizer.save_pretrained(os.path.join(bert_path, "model"))
-    #
-    #     with open(os.path.join(bert_path, "classifier_class.pkl"), "wb") as f:
-    #         pickle.dump(self, f)
-    #
-    #     # Restore models
-    #     self.best_model = temp_best_model
-    #     self.tokenizer = temp_tokenizer
-
     def save_model(self, path: str):
         # Create the BERT directory
-        bert_path = os.path.join(path, "BERT")
+        bert_path = os.path.join(path, "bert")
         os.makedirs(bert_path, exist_ok=True)
 
         # Save model and tokenizer in the BERT directory
@@ -248,48 +225,12 @@ class BERTClassifier(BaseTextClassifier):
         self.best_model = None
         self.tokenizer = None
 
-        # Try to find problematic attributes
-        problematic_keys = []
-        for key, value in self.__dict__.items():
-            try:
-                pickle.dumps(value)
-            except Exception as e:
-                problematic_keys.append(key)
-                setattr(self, key, None)
-                print(f"Setting {key} to None due to: {str(e)}")
-
-        # Try to pickle the object
-        try:
-            with open(os.path.join(bert_path, "classifier_class.pkl"), "wb") as f:
-                pickle.dump(self, f)
-        except Exception as e:
-            print(f"Still can't pickle: {str(e)}")
-            # Fall back to dict-based saving
-            raise e
+        with open(os.path.join(bert_path, "classifier_class.pkl"), "wb") as f:
+            pickle.dump(self, f)
 
         # Restore models and other cleared attributes
         self.best_model = temp_best_model
         self.tokenizer = temp_tokenizer
-
-        # If we identified problematic keys, warn the user
-        if problematic_keys:
-            print(f"Warning: The following attributes were set to None before saving: {problematic_keys}")
-
-
-    # def save_model(self, path: str):
-    #     # Create the BERT directory
-    #     bert_path = os.path.join(path, "BERT")
-    #     os.makedirs(bert_path, exist_ok=True)
-    #
-    #     # Save model and tokenizer in the BERT directory
-    #     self.best_model.save_pretrained(os.path.join(bert_path, "model"))
-    #     self.tokenizer.save_pretrained(os.path.join(bert_path, "model"))
-    #
-    #     self.best_model = None
-    #     self.tokenizer = None
-    #
-    #     with open(os.path.join(bert_path, "classifier_class.pkl"), "wb") as f:
-    #         pickle.dump(self, f)
 
     @staticmethod
     def load_model(path: str):

@@ -6,7 +6,7 @@ initiate_job.sh
 .env.local
 
 test.py
-classifier/model
+classifier/saved_models
 
 results
 

@@ -19,6 +19,6 @@ class SpacyModel:
             print(f"'{nlp_model_name}' is not installed. Installing...")
             spacy.cli.download(nlp_model_name)
 
-        print(f"Loading: '{nlp_model_name}'...")
+        print(f"Loading spacy: '{nlp_model_name}'...")
 
         return spacy.load(nlp_model_name)

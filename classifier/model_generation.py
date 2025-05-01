@@ -63,39 +63,28 @@ sklearn_configs = [
     }
 ]
 
-bert_hyperparameter_ranges = {
-    "learning_rate_range": (5e-6, 1e-4),
-    "learning_rate_log": True,
-    "batch_sizes": [16, 32],
-    "epochs_range": (2, 5),
-    "weight_decay_range": (0.001, 0.1),
-}
-
-debug_bert_config = {
-        "model_name": "DEBUG BERT",
-        "model_type": "distilbert-base-uncased",
-        "hyper_parameters":  {
-            "learning_rate_range": (5e-6, 5e-6),
-            "learning_rate_log": True,
-            "batch_sizes": [8],
-            "epochs_range": (1, 1),
-            "weight_decay_range": (0.1, 0.1),
-        },
-        "n_trials": 1,
-    }
-
-
 bert_configs = [
-    debug_bert_config,
     {
         "model_name": "distilbert uncased",
         "model_type": "distilbert-base-uncased",
-        "hyper_parameters": bert_hyperparameter_ranges,
+        "hyper_parameters": {
+            "learning_rate_range": (5e-6, 1e-4),
+            "learning_rate_log": True,
+            "batch_sizes": [16, 32],
+            "epochs_range": (2, 5),
+            "weight_decay_range": (0.001, 0.1),
+        }
     },
     {
         "model_name": "vinai bertweet",
         "model_type": "vinai/bertweet-base",
-        "hyper_parameters": bert_hyperparameter_ranges,
+        "hyper_parameters": {
+            "learning_rate_range": (5e-6, 1e-4),
+            "learning_rate_log": True,
+            "batch_sizes": [16, 32],
+            "epochs_range": (2, 5),
+            "weight_decay_range": (0.001, 0.1),
+        },
         "variants": [
             {
                 "variant_name": "RoBERTa normalizer, tokenizer_normalization=True",
@@ -188,17 +177,51 @@ def ini_bert_models(configs):
 
     return bert_models
 
-def generate_models():
-    models = []
+def generate_debug_models():
+    debug_bert_configs = [
+        {
+            "model_name": "DEBUG BERT",
+            "model_type": "distilbert-base-uncased",
+            "hyper_parameters": {
+                "learning_rate_range": (5e-6, 5e-6),
+                "learning_rate_log": True,
+                "batch_sizes": [8],
+                "epochs_range": (1, 1),
+                "weight_decay_range": (0.01, 0.01),
+            },
+            "n_trials": 1,
+        }
+    ]
+    debug_sklearn_configs = [
+        {
+            "model_name": "DEBUG SKLEARN",
+            "model_class": LogisticRegression(),
+            "param_grid": {
+                'C': [1],
+                'penalty': ['l2'],
+                'solver': ['liblinear'],
+                'max_iter': [100]
+            },
+        },
+    ]
 
-    models.extend(ini_sklearn_models(sklearn_configs))
-    models.extend(ini_bert_models(bert_configs))
+    return ini_sklearn_models(debug_sklearn_configs), ini_bert_models(debug_bert_configs)
 
+
+def generate_models(debug=False):
+    if debug:
+        print("DEBUG MODELS")
+        return generate_debug_models()
+
+    sklearn_models = ini_sklearn_models(sklearn_configs)
+    bert_models = ini_bert_models(bert_configs)
+
+    models = sklearn_models + bert_models
     model_names = [model.model_name for model in models]
 
     print(f"Generated {len(models)} model objects: \n{model_names}")
 
-    return models
+    return sklearn_models, bert_models
 
 """
 example of variant usage:

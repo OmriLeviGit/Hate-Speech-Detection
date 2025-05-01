@@ -23,8 +23,8 @@ class BaseTextClassifier(ABC):
         self.best_model = None
         self.model_name = None
 
-    def load_data(self, class_0_count=None, class_1_count=None, class_2_count=None, source=None,
-                  set_to_min=False) -> dict[str, list]:
+    def load_data(self, class_0_count=None, class_1_count=None, class_2_count=None,set_to_min=False,
+                  debug=False) -> dict[str, list]:
         """Load data from file or use sample data.
 
         This function loads text data for classification either from a csv file, or mock data.
@@ -34,7 +34,7 @@ class BaseTextClassifier(ABC):
             class_0_count: Number of samples to load for class 0 (antisemistic)
             class_1_count: Number of samples to load for class 1 (not_antisemistic)
             class_2_count: Number of samples to load for class 2 (irrelevant), optional
-            source: 'debug' to work with generated data, else to import data from a csv file
+            debug: True to work with debug data, False (default) to import data from a csv file
             set_to_min: If True, sets all class counts to the minimum available across classes for balanced dataset
 
         Returns:
@@ -42,7 +42,7 @@ class BaseTextClassifier(ABC):
         """
         data = {}
 
-        if source == 'debug':
+        if debug:
             print("loading with 'debug' dataset")
             return self._initialize_test_dataset()
 

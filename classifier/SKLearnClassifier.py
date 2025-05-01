@@ -78,7 +78,7 @@ class SKLearnClassifier(BaseTextClassifier):
         training_duration = time.time() - start_time
 
         self.best_model = grid_search.best_estimator_
-        self.best_score = grid_search.best_score_
+        self.best_score = round(float(grid_search.best_score_), 2)
         self.best_params = grid_search.best_params_
         y_pred = self.best_model.predict(X_vectorized)
 
@@ -107,19 +107,20 @@ class SKLearnClassifier(BaseTextClassifier):
         return y_pred[0] if single_input else y_pred
 
     def save_model(self, path: str):
-        os.makedirs(path, exist_ok=True)
+        sklearn_path = os.path.join(path, "sklearn")
+        os.makedirs(sklearn_path, exist_ok=True)
 
         tmp = copy.deepcopy(self)
         tmp.best_model = None
 
-        with open(os.path.join(path, "classifier_class.pkl"), "wb") as f:
+        with open(os.path.join(sklearn_path, "classifier_class.pkl"), "wb") as f:
             pickle.dump(tmp, f)
 
-        joblib.dump(self.best_model, os.path.join(path, "sk_model.pkl"))
+        joblib.dump(self.best_model, os.path.join(sklearn_path, "sk_model.pkl"))
 
     @staticmethod
     def load_model(path: str):
-        sklearn_path = os.path.join(path, "SKlearn")
+        sklearn_path = os.path.join(path, "sklearn")
         with open(os.path.join(sklearn_path, "classifier_class.pkl"), "rb") as f:
             obj = pickle.load(f)
             obj.best_model = None
