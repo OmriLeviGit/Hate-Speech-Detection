@@ -72,7 +72,6 @@ bert_hyperparameter_ranges = {
 }
 
 debug_bert_config = {
-    {
         "model_name": "DEBUG BERT",
         "model_type": "distilbert-base-uncased",
         "hyper_parameters":  {
@@ -83,8 +82,8 @@ debug_bert_config = {
             "weight_decay_range": (0.1, 0.1),
         },
         "n_trials": 1,
-    },
-}
+    }
+
 
 bert_configs = [
     debug_bert_config,

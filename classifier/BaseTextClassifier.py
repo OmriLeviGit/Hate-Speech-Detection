@@ -109,8 +109,8 @@ class BaseTextClassifier(ABC):
         X_train, X_test, y_train, y_test = train_test_split(
             X_shuffled, y_shuffled,
             test_size=test_size,
-            random_state=self.seed,
-            stratify=y_shuffled
+            stratify=y_shuffled,
+            random_state=self.seed
         )
 
         return X_train.tolist(), X_test.tolist(), y_train.tolist(), y_test.tolist()
