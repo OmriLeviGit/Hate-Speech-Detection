@@ -5,8 +5,6 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from asyncio.locks import Lock
 
-from pyexpat import features
-
 from helper_functions.load_params import get_params
 
 import controller

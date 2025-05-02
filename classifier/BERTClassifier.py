@@ -172,7 +172,7 @@ class BERTClassifier(BaseTextClassifier):
         f1 = f1_score(labels, preds, average='weighted')
         return {"accuracy": acc, "f1": f1}
 
-    def predict(self, text, output=False):
+    def predict(self, text, return_decoded=False, output=False):
         """Predict class for a single text"""
         single_input = isinstance(text, str)
         text_list = [text] if single_input else text

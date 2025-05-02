@@ -126,16 +126,6 @@ class BaseTextClassifier(ABC):
         pass
 
     def evaluate(self, X_test: list[str], y_test: list[str]) -> tuple[float, float]:
-        """
-        Evaluate the trained model on test data.
-
-        Args:
-            X_test: List of texts
-            y_test: List of labels
-
-        Returns:
-            Dict with evaluation metrics
-        """
         if not self.best_model:
             raise ValueError("Model not trained yet")
 
