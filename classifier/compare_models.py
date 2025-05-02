@@ -6,7 +6,7 @@ from sklearn.linear_model import LogisticRegression, SGDClassifier
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.svm import LinearSVC
 
-from classifier.SpacyClassifier import SKlearnClassifier
+from classifier.SpacyClassifier import SpacyClassifier
 from classifier.normalization.TextNormalizer import TextNormalizer
 
 
@@ -87,7 +87,7 @@ def main():
     labels = ["antisemitic", "not_antisemitic"]
     normalizer = TextNormalizer(emoji='text')
 
-    classifier = SKlearnClassifier(labels, normalizer, configs[0])
+    classifier = SpacyClassifier(labels, normalizer, configs[0])
 
     data = classifier.load_data(set_to_min=True, source='debug')
 
@@ -100,6 +100,7 @@ def main():
     classifier.evaluate(X_test, y_test)
 
     predictions = classifier.predict(X_test)
+    print(predictions)
 
 
 if __name__ == "__main__":

@@ -8,7 +8,7 @@ from classifier.BaseTextClassifier import BaseTextClassifier
 from classifier.normalization.TextNormalizer import TextNormalizer
 
 
-class SKlearnClassifier(BaseTextClassifier):
+class SpacyClassifier(BaseTextClassifier):
     def __init__(self, labels: list, normalizer: TextNormalizer(), config: dict, seed: int = 42):
         super().__init__(labels, seed)
 
@@ -97,8 +97,6 @@ class SKlearnClassifier(BaseTextClassifier):
         self.best_model = grid_search.best_estimator_
         self.best_score = round(grid_search.best_score_, 2)
         y_pred = self.best_model.predict(X_vectorized)
-
-        self.print_model_results(grid_search, y_encoded, y_pred, training_duration)
 
         return {
             "model": self.best_model,
