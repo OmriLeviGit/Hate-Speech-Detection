@@ -20,8 +20,8 @@ class BaseTextClassifier(ABC):
         self.best_model = None
         self.model_name = None
 
-    def load_data(self, class_0_count=None, class_1_count=None, class_2_count=None, source=None,
-                  set_to_min=False) -> dict[str, list]:
+    def load_data(self, class_0_count=None, class_1_count=None, class_2_count=None,set_to_min=False,
+                  debug=False) -> dict[str, list]:
         """Load data from file or use sample data.
 
         This function loads text data for classification either from a csv file, or mock data.
@@ -31,7 +31,7 @@ class BaseTextClassifier(ABC):
             class_0_count: Number of samples to load for class 0 (antisemistic)
             class_1_count: Number of samples to load for class 1 (not_antisemistic)
             class_2_count: Number of samples to load for class 2 (irrelevant), optional
-            source: 'debug' to work with generated data, else to import data from a csv file
+            debug: True to work with debug data, False (default) to import data from a csv file
             set_to_min: If True, sets all class counts to the minimum available across classes for balanced dataset
 
         Returns:
@@ -39,7 +39,7 @@ class BaseTextClassifier(ABC):
         """
         data = {}
 
-        if source == 'debug':
+        if debug:
             print("loading with 'debug' dataset")
             return self._initialize_test_dataset()
 
@@ -88,7 +88,8 @@ class BaseTextClassifier(ABC):
 
         return data
 
-    def prepare_dataset(self, datasets: dict[str, list[str]], test_size = 0.15) -> tuple[list[str], list[str], list[str], list[str]]:
+
+    def prepare_dataset(self, datasets: dict[str, list[str]], test_size = 0.2) -> tuple[list[str], list[str], list[str], list[str]]:
         """Prepare and split into train and test sets"""
         posts = []
         labels = []
@@ -101,15 +102,13 @@ class BaseTextClassifier(ABC):
         X = np.array(posts)
         y = np.array(labels)
 
-        # First shuffle the data
         X_shuffled, y_shuffled = shuffle(X, y, random_state=self.seed)
 
-        # Then split into train and test sets
         X_train, X_test, y_train, y_test = train_test_split(
             X_shuffled, y_shuffled,
             test_size=test_size,
-            random_state=self.seed,
-            stratify=y_shuffled
+            stratify=y_shuffled,
+            random_state=self.seed
         )
 
         return X_train.tolist(), X_test.tolist(), y_train.tolist(), y_test.tolist()
@@ -126,16 +125,6 @@ class BaseTextClassifier(ABC):
 
 
     def evaluate(self, X_test: list[str], y_test: list[str]) -> tuple[float, float]:
-        """
-        Evaluate the trained model on test data.
-
-        Args:
-            X_test: List of texts
-            y_test: List of labels
-
-        Returns:
-            Dict with evaluation metrics
-        """
         if not self.best_model:
             raise ValueError("Model not trained yet")
 

@@ -6,7 +6,7 @@ from sklearn.linear_model import LogisticRegression, SGDClassifier
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.svm import LinearSVC
 
-from classifier.SpacyClassifier import SpacyClassifier
+from classifier.SKLearnClassifier import SKLearnClassifier
 from classifier.normalization.TextNormalizer import TextNormalizer
 
 
@@ -54,42 +54,46 @@ configs = [
     {
         "model_name": "LogisticRegression",
         "model_class": LogisticRegression(),
-        "vectorizer": TfidfVectorizer(),
         "param_grid": lr_param_grid,
     },
     {
         "model_name": "LinearSVC",
         "model_class": LinearSVC(),
-        "vectorizer": TfidfVectorizer(),
         "param_grid": svc_param_grid,
     },
     {
         "model_name": "KNeighborsClassifier",
         "model_class": KNeighborsClassifier(),
-        "vectorizer": TfidfVectorizer(),
         "param_grid": knn_param_grid,
     },
     {
         "model_name": "RandomForestClassifier",
         "model_class": RandomForestClassifier(),
-        "vectorizer": TfidfVectorizer(),
         "param_grid": rf_param_grid,
     },
     {
         "model_name": "SGDClassifier",
         "model_class": SGDClassifier(),
-        "vectorizer": TfidfVectorizer(),
         "param_grid": sgd_param_grid,
     }
 ]
+
+def ini_sklearn_models(labels):
+    models = []
+    for config in configs:
+        normalizer = TextNormalizer(emoji='text')
+        classifier = SKLearnClassifier(labels, normalizer, TfidfVectorizer(), config)
+        models.append(classifier)
+
+    return models
 
 def main():
     labels = ["antisemitic", "not_antisemitic"]
     normalizer = TextNormalizer(emoji='text')
 
-    classifier = SpacyClassifier(labels, normalizer, configs[0])
+    classifier = SKLearnClassifier(labels, normalizer, TfidfVectorizer(), configs[0])
 
-    data = classifier.load_data(set_to_min=True, source='debug')
+    data = classifier.load_data(set_to_min=True, debug='debug')
 
     X_train, X_test, y_train, y_test = classifier.prepare_dataset(data)
 
