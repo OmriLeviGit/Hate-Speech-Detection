@@ -41,7 +41,7 @@ def compare_models(models, dataset):
 
 
 def main():
-    debug = True
+    debug = False
 
     sklearn_models, bert_models = generate_models(debug)
 
