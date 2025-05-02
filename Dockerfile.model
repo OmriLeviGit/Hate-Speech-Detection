@@ -1,14 +1,23 @@
-FROM python:3.10-slim
+FROM python:3.9.16-slim AS builder
 
 WORKDIR /app
 
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
 COPY requirements-model.txt .
-RUN pip install --no-cache-dir -r requirements-model.txt
 
-# Copy only necessary files
-COPY setup.py .
-COPY __init__.py .
+RUN pip install --no-cache-dir --prefer-binary -r requirements-model.txt
+
 COPY classifier/ ./classifier/
+COPY setup.py .
 
-# Set entry point to your classifier
-CMD ["python", "-m", "classifier.bert_comparison_2"]
+FROM python:3.9.16-slim
+
+WORKDIR /app
+
+COPY --from=builder /usr/local /usr/local
+COPY --from=builder /app /app
+
+CMD ["python3", "-m", "classifier.final_comparison"]

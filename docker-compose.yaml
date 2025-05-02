@@ -1,0 +1,18 @@
+services:
+  classifier:
+    build:
+      context: .
+      dockerfile: Dockerfile.model
+    image: model
+    volumes:
+      - ./models:/app/classifier/saved_models    # For saving/loading trained models
+      - spacy_models:/root/.cache/spacy           # For spaCy models
+      - huggingface_models:/root/.cache/huggingface  # For Hugging Face models
+    command: python3 -m classifier.final_comparison
+    environment:
+      - PYTHONUNBUFFERED=1
+
+volumes:
+  models:
+  spacy_models:
+  huggingface_models:

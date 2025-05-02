@@ -1,5 +1,4 @@
 import spacy
-from spacy.util import is_package
 
 
 class SpacyModel:
@@ -15,10 +14,12 @@ class SpacyModel:
     def _load_spacy():
         nlp_model_name = "en_core_web_lg"
 
-        if not is_package(nlp_model_name):
+        try:
+            print(f"Attempting to load spacy: '{nlp_model_name}'...")
+            return spacy.load(nlp_model_name)
+        except OSError:
+            # If loading fails, then we need to download
             print(f"'{nlp_model_name}' is not installed. Installing...")
             spacy.cli.download(nlp_model_name)
-
-        print(f"Loading spacy: '{nlp_model_name}'...")
-
-        return spacy.load(nlp_model_name)
+            print(f"Loading spacy: '{nlp_model_name}'...")
+            return spacy.load(nlp_model_name)

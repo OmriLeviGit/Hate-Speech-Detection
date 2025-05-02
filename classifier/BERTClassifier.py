@@ -1,9 +1,9 @@
 import tempfile
 import time, os, pickle
-import numpy as np
+
 import optuna
 import torch
-from datasets import Dataset
+from torch.utils.data import Dataset
 from sklearn.metrics import accuracy_score, f1_score
 from sklearn.model_selection import train_test_split
 from transformers import (
@@ -116,8 +116,8 @@ class BERTClassifier(BaseTextClassifier):
     def _train_model(self, X_train, X_val, y_train, y_val, params):
         """Train a model with given parameters and data"""
         # Create datasets
-        train_dataset = self._create_datasets(X_train, y_train)
-        val_dataset = self._create_datasets(X_val, y_val)
+        train_dataset = CustomTextDataset(X_train, list(y_train))
+        val_dataset = CustomTextDataset(X_val, list(y_val))
 
         # Initialize model
         model = self._create_model(num_labels=len(self.LABELS))
@@ -162,14 +162,6 @@ class BERTClassifier(BaseTextClassifier):
 
         # Return the best model and its score
         return best_model, val_score
-
-    def _create_datasets(self, X_tokenized, y):
-        """Create datasets from tokenized inputs and labels"""
-        return Dataset.from_dict({
-            'input_ids': X_tokenized['input_ids'],
-            'attention_mask': X_tokenized['attention_mask'],
-            'labels': list(y)
-        })
 
     def _compute_metrics(self, eval_pred):
         """Compute metrics for evaluation"""
@@ -242,3 +234,24 @@ class BERTClassifier(BaseTextClassifier):
         obj.tokenizer = AutoTokenizer.from_pretrained(os.path.join(bert_path, "model"))
 
         return obj
+
+
+class CustomTextDataset(Dataset):
+    """
+    A lightweight PyTorch Dataset implementation for text classification tasks.
+    Replaces the HuggingFace datasets library dependency to significantly reduce Docker image size.
+    """
+    def __init__(self, tokenized_inputs, labels):
+        self.input_ids = tokenized_inputs['input_ids']
+        self.attention_mask = tokenized_inputs['attention_mask']
+        self.labels = torch.tensor(labels)
+
+    def __len__(self):
+        return len(self.labels)
+
+    def __getitem__(self, idx):
+        return {
+            'input_ids': self.input_ids[idx],
+            'attention_mask': self.attention_mask[idx],
+            'labels': self.labels[idx]
+        }
