@@ -19,6 +19,22 @@ from classifier.BaseTextClassifier import BaseTextClassifier
 from classifier.normalization.TextNormalizer import TextNormalizer
 
 
+"""
+You're facing a classic hyperparameter optimization dilemma where your model performs well on the validation set but worse on the test set.
+This indicates overfitting, but the catch is that Optuna optimizes for validation performance, 
+so it tends to select hyperparameters that maximize validation scores rather than true generalization.
+Since reducing training time or model complexity would lower validation performance, Optuna won't choose these options.
+This creates a circular problem:
+the very tool meant to find optimal hyperparameters is inadvertently selecting configurations that overfit to the validation data.
+
+You're facing a confidence calibration issue where your model may label edge cases like
+"I hate Mondays" as antisemitic because it's forced to choose between only two classes.
+Your solution is to implement a prediction threshold where classifications labeled as "antisemitic"
+require high confidence (e.g., >0.8 probability) to be accepted; otherwise, they default to "not antisemitic."
+This threshold applies only during inference, not training, ensuring the model learns naturally while
+preventing false positives in production.
+"""
+
 class BERTClassifier(BaseTextClassifier):
     def __init__(self, labels: list, normalizer: TextNormalizer(), tokenizer, config, seed: int = 42):
         super().__init__(labels, seed)
@@ -42,9 +58,20 @@ class BERTClassifier(BaseTextClassifier):
         """Normalize texts using the provided normalizer"""
         return self.normalizer.normalize_texts(texts)
 
-    def _create_model(self, num_labels):
+    def _create_model(self, num_labels, dropout=None):
         """Create model appropriate for this model type"""
-        return AutoModelForSequenceClassification.from_pretrained(self.model_type, num_labels=num_labels)
+        if dropout is None:
+            return AutoModelForSequenceClassification.from_pretrained(
+                self.model_type,
+                num_labels=num_labels
+            )
+        else:
+            return AutoModelForSequenceClassification.from_pretrained(
+                self.model_type,
+                num_labels=num_labels,
+                dropout=dropout,
+                attention_dropout=dropout
+            )
 
     def train(self, X: list[str], y: list[str], hp_ranges=None):
         """Optimize hyperparameters with Optuna"""
@@ -88,6 +115,7 @@ class BERTClassifier(BaseTextClassifier):
             "batch_size": trial.suggest_categorical("batch_size", self.hp_ranges["batch_sizes"]),
             "epochs": trial.suggest_int("epochs", *self.hp_ranges["epochs_range"]),
             "weight_decay": trial.suggest_float("weight_decay", *self.hp_ranges["weight_decay_range"]),
+            "dropout": trial.suggest_float("dropout", *self.hp_ranges["dropout_range"]),
         }
 
         X_train, X_val, y_train, y_val = train_test_split(
@@ -120,7 +148,7 @@ class BERTClassifier(BaseTextClassifier):
         val_dataset = CustomTextDataset(X_val, list(y_val))
 
         # Initialize model
-        model = self._create_model(num_labels=len(self.LABELS))
+        model = self._create_model(num_labels=len(self.LABELS), dropout=params["dropout"])
 
         # Create temporary directory for checkpoints
         with tempfile.TemporaryDirectory() as tmp_dir:
@@ -137,7 +165,7 @@ class BERTClassifier(BaseTextClassifier):
                 report_to="none",
                 eval_strategy="epoch",
                 metric_for_best_model="accuracy",
-                load_best_model_at_end=True,    # Best score per epoch
+                load_best_model_at_end=True,    # Best score *per epoch*
             )
 
             # Create trainer
@@ -172,33 +200,72 @@ class BERTClassifier(BaseTextClassifier):
         f1 = f1_score(labels, preds, average='weighted')
         return {"accuracy": acc, "f1": f1}
 
-    def predict(self, text, return_decoded=False, output=False):
-        """Predict class for a single text"""
+    def predict(self, text, return_decoded=False, output=False, threshold=0.8):
+        """Predict class for a single text with confidence threshold for antisemitic class"""
         single_input = isinstance(text, str)
         text_list = [text] if single_input else text
 
         texts_processed = self.preprocess(text_list)
-        inputs = self.tokenizer(texts_processed, truncation=True, padding="max_length", max_length=128, return_tensors="pt")
+        inputs = self.tokenizer(texts_processed, truncation=True, padding="max_length", max_length=128,
+                                return_tensors="pt")
 
-        # Get device and move inputs
-        device = next(self.best_model.parameters()).device
-        inputs = {k: v.to(device) for k, v in inputs.items()}
-
-        # Get predictions directly from model
+        # Get predictions with confidence threshold
         with torch.no_grad():
             outputs = self.best_model(**inputs)
+            logits = outputs.logits
+            probs = torch.softmax(logits, dim=-1)
 
-        # Get predicted class indices
-        y_pred = torch.argmax(outputs.logits, dim=1).cpu().numpy()
+            # Get max predictions
+            max_probs, max_indices = torch.max(probs, dim=-1)
+
+            # Find antisemitic label in label_encoder
+            try:
+                antisemitic_index = list(self.label_encoder.classes_).index(self.LABELS[0])
+                not_antisemitic_index = list(self.label_encoder.classes_).index(self.LABELS[1])
+            except ValueError:
+                # If label names are different, use 0 and 1 as defaults
+                antisemitic_index = 0
+                not_antisemitic_index = 1
+
+            # Apply threshold logic
+            y_pred = torch.where(
+                (max_indices == antisemitic_index) & (max_probs < threshold),
+                torch.full_like(max_indices, not_antisemitic_index),
+                max_indices
+            ).cpu().numpy()
 
         if output:
             y_pred_decoded = self.label_encoder.inverse_transform(y_pred).tolist()
-
             print()
-            for pred in zip(y_pred_decoded, text):
-                print(pred)
+            for pred, conf, txt in zip(y_pred_decoded, max_probs.cpu().numpy(), text_list):
+                print(f"Text: {txt}")
+                print(f"Prediction: {pred} (confidence: {conf:.3f})")
 
         return y_pred[0] if single_input else y_pred
+    #
+    # def predict(self, text, return_decoded=False, output=False):
+    #     """Predict class for a single text"""
+    #     single_input = isinstance(text, str)
+    #     text_list = [text] if single_input else text
+    #
+    #     texts_processed = self.preprocess(text_list)
+    #     inputs = self.tokenizer(texts_processed, truncation=True, padding="max_length", max_length=128, return_tensors="pt")
+    #
+    #     # Get predictions directly from model
+    #     with torch.no_grad():
+    #         outputs = self.best_model(**inputs)
+    #
+    #     # Get predicted class indices
+    #     y_pred = torch.argmax(outputs.logits, dim=1).cpu().numpy()
+    #
+    #     if output:
+    #         y_pred_decoded = self.label_encoder.inverse_transform(y_pred).tolist()
+    #
+    #         print()
+    #         for pred in zip(y_pred_decoded, text):
+    #             print(pred)
+    #
+    #     return y_pred[0] if single_input else y_pred
 
     def save_model(self, path: str):
         # Create the BERT directory

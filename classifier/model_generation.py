@@ -63,28 +63,25 @@ sklearn_configs = [
     }
 ]
 
+bert_hyperparameters = {
+            "learning_rate_range": (5e-6, 1e-4),
+            "learning_rate_log": True,
+            "batch_sizes": [16],
+            "epochs_range": (2, 5),
+            "weight_decay_range": (0.001, 0.1),
+            "dropout_range": (0, 0.5),
+        }
+
 bert_configs = [
     {
         "model_name": "distilbert uncased",
         "model_type": "distilbert-base-uncased",
-        "hyper_parameters": {
-            "learning_rate_range": (5e-6, 1e-4),
-            "learning_rate_log": True,
-            "batch_sizes": [16, 32],
-            "epochs_range": (2, 5),
-            "weight_decay_range": (0.001, 0.1),
-        }
+        "hyper_parameters": bert_hyperparameters
     },
     {
         "model_name": "vinai bertweet",
         "model_type": "vinai/bertweet-base",
-        "hyper_parameters": {
-            "learning_rate_range": (5e-6, 1e-4),
-            "learning_rate_log": True,
-            "batch_sizes": [16, 32],
-            "epochs_range": (2, 5),
-            "weight_decay_range": (0.001, 0.1),
-        },
+        "hyper_parameters": bert_hyperparameters,
         "variants": [
             {
                 "variant_name": "RoBERTa normalizer, tokenizer_normalization=True",
@@ -178,20 +175,6 @@ def ini_bert_models(configs):
     return bert_models
 
 def generate_debug_models():
-    debug_bert_configs = [
-        {
-            "model_name": "DEBUG BERT",
-            "model_type": "distilbert-base-uncased",
-            "hyper_parameters": {
-                "learning_rate_range": (5e-6, 5e-6),
-                "learning_rate_log": True,
-                "batch_sizes": [8],
-                "epochs_range": (1, 1),
-                "weight_decay_range": (0.01, 0.01),
-            },
-            "n_trials": 1,
-        }
-    ]
     debug_sklearn_configs = [
         {
             "model_name": "DEBUG SKLEARN",
@@ -203,6 +186,22 @@ def generate_debug_models():
                 'max_iter': [100]
             },
         },
+    ]
+
+    debug_bert_configs = [
+        {
+            "model_name": "DEBUG BERT",
+            "model_type": "distilbert-base-uncased",
+            "hyper_parameters": {
+                "learning_rate_range": (5e-6, 5e-6),
+                "learning_rate_log": True,
+                "batch_sizes": [8],
+                "epochs_range": (1, 1),
+                "weight_decay_range": (0.01, 0.01),
+                "dropout_range": (0.1, 0.1),
+            },
+            "n_trials": 1,
+        }
     ]
 
     return ini_sklearn_models(debug_sklearn_configs), ini_bert_models(debug_bert_configs)

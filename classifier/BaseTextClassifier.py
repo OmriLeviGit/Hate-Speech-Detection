@@ -31,8 +31,8 @@ class BaseTextClassifier(ABC):
         The data is organized by class labels.
 
         Args:
-            class_0_count: Number of samples to load for class 0 (antisemistic)
-            class_1_count: Number of samples to load for class 1 (not_antisemistic)
+            class_0_count: Number of samples to load for class 0 (antisemitic)
+            class_1_count: Number of samples to load for class 1 (not_antisemitic)
             class_2_count: Number of samples to load for class 2 (irrelevant), optional
             debug: True to work with debug data, False (default) to import data from a csv file
             set_to_min: If True, sets all class counts to the minimum available across classes for balanced dataset
