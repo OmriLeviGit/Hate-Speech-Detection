@@ -1,6 +1,6 @@
 import time, os, pickle, joblib, copy
 
-
+import numpy as np
 from sklearn.model_selection import GridSearchCV
 
 from classifier.BaseTextClassifier import BaseTextClassifier
@@ -85,28 +85,61 @@ class SKLearnClassifier(BaseTextClassifier):
 
         self.print_best_model_results(self.best_score, self.best_params, training_duration)
 
-    def predict(self, text, output=False):
-        # Handle both single text and list of texts
+    def predict(self, text, threshold=0.7, output=False):
         single_input = isinstance(text, str)
-
-        # Convert single string to list if needed
         text_list = [text] if single_input else text
 
-        # Process the list
         texts_processed = self.preprocess(text_list)
         texts_vectorized = self.vectorizer.transform(texts_processed)
 
-        y_pred = self.best_model.predict(texts_vectorized)
+        probs = self.best_model.predict_proba(texts_vectorized)
+        num_labels = probs.shape[1]
+
+        if num_labels == 2:
+            y_pred = np.where(
+                (np.argmax(probs, axis=1) == 0) & (probs[:, 0] < threshold),
+                1,
+                np.argmax(probs, axis=1)
+            )
+        else:  # 3 labels
+            antisemitic = probs[:, 0]
+            not_antisemitic = probs[:, 1]
+            y_pred = np.full(len(text_list), 2)
+            y_pred[antisemitic > threshold] = 0
+            y_pred[(not_antisemitic > threshold) & (antisemitic <= threshold)] = 1
 
         if output:
-            y_pred_decoded = self.label_encoder.inverse_transform(y_pred).tolist()
-
+            y_pred_decoded = self.label_encoder.inverse_transform(y_pred)
             print()
-            for pred in zip(y_pred_decoded, text):
-                print(pred)
+            for i, (pred, txt) in enumerate(zip(y_pred_decoded, text_list)):
+                conf = probs[i][y_pred[i]]
+                print(f"Text: {txt}")
+                print(f"Prediction: {pred} (confidence: {conf:.3f})")
 
-        # Return single item or full list based on input type
         return y_pred[0] if single_input else y_pred
+
+    # def predict(self, text, output=False):
+    #     # Handle both single text and list of texts
+    #     single_input = isinstance(text, str)
+    #
+    #     # Convert single string to list if needed
+    #     text_list = [text] if single_input else text
+    #
+    #     # Process the list
+    #     texts_processed = self.preprocess(text_list)
+    #     texts_vectorized = self.vectorizer.transform(texts_processed)
+    #
+    #     y_pred = self.best_model.predict(texts_vectorized)
+    #
+    #     if output:
+    #         y_pred_decoded = self.label_encoder.inverse_transform(y_pred).tolist()
+    #
+    #         print()
+    #         for pred in zip(y_pred_decoded, text):
+    #             print(pred)
+    #
+    #     # Return single item or full list based on input type
+    #     return y_pred[0] if single_input else y_pred
 
     def save_model(self, path: str):
         sklearn_path = os.path.join(path, "sklearn")

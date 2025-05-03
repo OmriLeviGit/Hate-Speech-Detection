@@ -131,14 +131,7 @@ class BaseTextClassifier(ABC):
 
         # Preprocess test data
         X_processed = self.preprocess(X_test)
-
-        # Encode labels if needed
-        if not np.issubdtype(np.array(y_test).dtype, np.number):
-            print("@@@@@@@@@@@@11111111")
-            y_encoded = self.label_encoder.transform(y_test)
-        else:
-            print("@@@@@@@@@@@@22222222")
-            y_encoded = y_test
+        y_encoded = self.label_encoder.transform(y_test)
 
         y_pred = self.predict(X_processed)
 

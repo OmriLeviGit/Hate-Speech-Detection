@@ -70,17 +70,6 @@ sklearn_configs = [
         },
     },
     {
-        "model_name": "RandomForestClassifier",
-        "model_class": RandomForestClassifier(),
-        "param_grid": {
-            'n_estimators': [100, 200],
-            'max_depth': [None, 10, 20],
-            'min_samples_split': [2, 5],
-            'min_samples_leaf': [1, 2],
-            'max_features': ['sqrt', 'log2', None]
-        },
-    },
-    {
         "model_name": "SGDClassifier",
         "model_class": SGDClassifier(),
         "param_grid": {
@@ -89,6 +78,17 @@ sklearn_configs = [
             'alpha': [1e-4, 1e-3],
             'max_iter': [1000]
         }
+    },
+    {
+        "model_name": "RandomForestClassifier",
+        "model_class": RandomForestClassifier(),
+        "param_grid": {
+            'n_estimators': [100],
+            'max_depth': [None, 10, 20],
+            'min_samples_split': [2, 5],
+            'min_samples_leaf': [1, 2],
+            'max_features': ['sqrt', 'log2', None]
+        },
     }
 ]
 
@@ -211,8 +211,8 @@ def ini_bert_models(configs, debug=False):
 
 def generate_models(debug=False):
     models = []
-    # models.extend(ini_sklearn_models(sklearn_configs, debug=debug))
-    models.extend(ini_bert_models(bert_configs, debug=debug))
+    models.extend(ini_sklearn_models(sklearn_configs, debug=debug))
+    # models.extend(ini_bert_models(bert_configs, debug=debug))
 
     model_names = [model.model_name for model in models]
 

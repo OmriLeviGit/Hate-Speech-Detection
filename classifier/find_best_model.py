@@ -33,14 +33,14 @@ def compare_models(models, X_train, X_test, y_train, y_test):
 
     sorted_results = sorted(results, key=lambda x: x[1], reverse=True)
 
-    # best_model.evaluate(X_test, y_test)
+    best_model.evaluate(X_test, y_test)
     best_model.save_model(save_models_path)
 
     return sorted_results
 
 
 def main():
-    debug = True
+    debug = False
 
     models = generate_models(debug)
 

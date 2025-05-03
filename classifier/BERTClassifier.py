@@ -20,22 +20,6 @@ from classifier.BaseTextClassifier import BaseTextClassifier
 from classifier.normalization.TextNormalizer import TextNormalizer
 
 
-"""
-You're facing a classic hyperparameter optimization dilemma where your model performs well on the validation set but worse on the test set.
-This indicates overfitting, but the catch is that Optuna optimizes for validation performance, 
-so it tends to select hyperparameters that maximize validation scores rather than true generalization.
-Since reducing training time or model complexity would lower validation performance, Optuna won't choose these options.
-This creates a circular problem:
-the very tool meant to find optimal hyperparameters is inadvertently selecting configurations that overfit to the validation data.
-
-You're facing a confidence calibration issue where your model may label edge cases like
-"I hate Mondays" as antisemitic because it's forced to choose between only two classes.
-Your solution is to implement a prediction threshold where classifications labeled as "antisemitic"
-require high confidence (e.g., >0.8 probability) to be accepted; otherwise, they default to "not antisemitic."
-This threshold applies only during inference, not training, ensuring the model learns naturally while
-preventing false positives in production.
-"""
-
 class BERTClassifier(BaseTextClassifier):
     def __init__(self, labels: list, normalizer: TextNormalizer(), tokenizer, config, seed: int = 42):
         super().__init__(labels, seed)
