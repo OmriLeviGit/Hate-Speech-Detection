@@ -10,6 +10,35 @@ from classifier.SKLearnClassifier import SKLearnClassifier
 from classifier.normalization.TextNormalizer import TextNormalizer
 from classifier.normalization.TextNormalizerRoBERTa import TextNormalizerRoBERTa
 
+debug_sklearn_configs = [
+    {
+        "model_name": "DEBUG SKLEARN",
+        "model_class": LogisticRegression(),
+        "param_grid": {
+            'C': [1],
+            'penalty': ['l2'],
+            'solver': ['liblinear'],
+            'max_iter': [100]
+        },
+    },
+]
+
+debug_bert_configs = [
+    {
+        "model_name": "DEBUG BERT",
+        "model_type": "distilbert-base-uncased",
+        "hyper_parameters": {
+            "learning_rate_range": (5e-6, 5e-6),
+            "learning_rate_log": True,
+            "batch_sizes": [8],
+            "epochs_range": (1, 1),
+            "weight_decay_range": (0.01, 0.01),
+            "dropout_range": (0.1, 0.1),
+        },
+        "n_trials": 1,
+    }
+]
+
 sklearn_configs = [
     {
         "model_name": "LogisticRegression",
@@ -97,7 +126,10 @@ bert_configs = [
     },
 ]
 
-def ini_sklearn_models(configs):
+def ini_sklearn_models(configs, debug=False):
+    if debug:
+        configs = debug_sklearn_configs
+
     sklearn_models = []
 
     default_labels = ["antisemitic", "not_antisemitic"]
@@ -133,7 +165,10 @@ def ini_sklearn_models(configs):
     return sklearn_models
 
 
-def ini_bert_models(configs):
+def ini_bert_models(configs, debug=False):
+    if debug:
+        configs = debug_bert_configs
+
     bert_models = []
 
     default_labels = ["antisemitic", "not_antisemitic"]
@@ -174,53 +209,16 @@ def ini_bert_models(configs):
 
     return bert_models
 
-def generate_debug_models():
-    debug_sklearn_configs = [
-        {
-            "model_name": "DEBUG SKLEARN",
-            "model_class": LogisticRegression(),
-            "param_grid": {
-                'C': [1],
-                'penalty': ['l2'],
-                'solver': ['liblinear'],
-                'max_iter': [100]
-            },
-        },
-    ]
-
-    debug_bert_configs = [
-        {
-            "model_name": "DEBUG BERT",
-            "model_type": "distilbert-base-uncased",
-            "hyper_parameters": {
-                "learning_rate_range": (5e-6, 5e-6),
-                "learning_rate_log": True,
-                "batch_sizes": [8],
-                "epochs_range": (1, 1),
-                "weight_decay_range": (0.01, 0.01),
-                "dropout_range": (0.1, 0.1),
-            },
-            "n_trials": 1,
-        }
-    ]
-
-    return ini_sklearn_models(debug_sklearn_configs), ini_bert_models(debug_bert_configs)
-
-
 def generate_models(debug=False):
-    if debug:
-        print("DEBUG MODELS")
-        return generate_debug_models()
+    models = []
+    # models.extend(ini_sklearn_models(sklearn_configs, debug=debug))
+    models.extend(ini_bert_models(bert_configs, debug=debug))
 
-    sklearn_models = ini_sklearn_models(sklearn_configs)
-    bert_models = ini_bert_models(bert_configs)
-
-    models = sklearn_models + bert_models
     model_names = [model.model_name for model in models]
 
     print(f"Generated {len(models)} model objects: \n{model_names}")
 
-    return sklearn_models, bert_models
+    return models
 
 """
 example of variant usage:

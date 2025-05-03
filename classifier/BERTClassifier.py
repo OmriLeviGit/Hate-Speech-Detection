@@ -1,11 +1,12 @@
 import tempfile
 import time, os, pickle
 
+import numpy as np
 import optuna
 import torch
 from torch.utils.data import Dataset
 from sklearn.metrics import accuracy_score, f1_score
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, KFold
 from transformers import (
     AutoModelForSequenceClassification,
     AutoTokenizer,
@@ -45,10 +46,9 @@ class BERTClassifier(BaseTextClassifier):
         self.model_name = config.get("model_name")
         self.model_type = config.get("model_type")
         self.tokenizer = tokenizer
+
         self.hp_ranges = config.get("hyper_parameters")
         self.n_trials = config.get("n_trials", 10)
-
-        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
         self.best_model = None
         self.best_score = None
@@ -73,40 +73,40 @@ class BERTClassifier(BaseTextClassifier):
                 attention_dropout=dropout
             )
 
+    def _tokenize(self, X_preprocessed):
+        return self.tokenizer(list(X_preprocessed), truncation=True, padding="max_length", max_length=128, return_tensors="pt")
+
     def train(self, X: list[str], y: list[str], hp_ranges=None):
         """Optimize hyperparameters with Optuna"""
+        print(f"Training {self.model_name}")
+
         # Validate hyperparameter config
         if hp_ranges:
             self.hp_ranges = hp_ranges
 
-        # Encode labels
+        # Preprocess texts and encode labels
+        X_preprocessed = self.preprocess(X)
         y_encoded = self.label_encoder.fit_transform(y)
 
         torch.set_num_threads(1)
         torch.set_num_interop_threads(1)
 
-        # Reset best model tracking
-        self.best_score = None
-        self.best_model = None
-
         # Create and run Optuna study
         start_time = time.time()
         study = optuna.create_study(direction="maximize")
         study.optimize(
-            lambda trial: self._objective_function(trial, X, y_encoded),
+            lambda trial: self._objective_function(trial, X_preprocessed, y_encoded),
             n_trials=self.n_trials
         )
         training_duration = time.time() - start_time
 
         # Get best trial parameters
         self.best_params = study.best_trial.params
+        self.best_score = self._perform_cross_validation(X, y_encoded, self.best_params)
 
-        # Get predictions using the best model
-        y_pred = self.predict(X)
+        self.print_best_model_results(self.best_score, self.best_params, training_duration)
 
-        self.print_best_model_results(self.best_score, self.best_params, y_encoded, y_pred, training_duration)
-
-    def _objective_function(self, trial, X, y_encoded):
+    def _objective_function(self, trial, X_preprocessed, y_encoded):
         """Optuna objective function for a single trial"""
         # Set up trial parameters
         trial_config = {
@@ -119,17 +119,14 @@ class BERTClassifier(BaseTextClassifier):
         }
 
         X_train, X_val, y_train, y_val = train_test_split(
-            X, y_encoded,
+            X_preprocessed, y_encoded,
             test_size=0.2,
             stratify=y_encoded,
             random_state=self.seed
         )
 
-        X_train_processed = self.preprocess(X_train) if hasattr(self, 'preprocess') else X_train
-        X_val_processed = self.preprocess(X_val) if hasattr(self, 'preprocess') else X_val
-
-        X_train_tokenized = self.tokenizer(list(X_train_processed), truncation=True, padding="max_length", max_length=128)
-        X_val_tokenized = self.tokenizer(list(X_val_processed), truncation=True, padding="max_length", max_length=128)
+        X_train_tokenized = self._tokenize(X_train)
+        X_val_tokenized = self._tokenize(X_val)
 
         # Train and evaluate model for this trial
         model, val_score = self._train_model(X_train_tokenized, X_val_tokenized, y_train, y_val, trial_config)
@@ -191,6 +188,32 @@ class BERTClassifier(BaseTextClassifier):
         # Return the best model and its score
         return best_model, val_score
 
+    def _perform_cross_validation(self, X, y_encoded, params, n_splits=5) -> float:
+        """Perform k-fold cross-validation with given hyperparameters"""
+        cv_scores = []
+        kf = KFold(n_splits=n_splits, shuffle=True, random_state=self.seed)
+
+        for train_idx, val_idx in kf.split(X):
+            X_train_fold = [X[i] for i in train_idx]
+            X_val_fold = [X[i] for i in val_idx]
+            y_train_fold = y_encoded[train_idx]
+            y_val_fold = y_encoded[val_idx]
+
+            X_train_tokenized = self._tokenize(X_train_fold)
+            X_val_tokenized = self._tokenize(X_val_fold)
+
+            # Train model with best hyperparameters
+            model, val_score = self._train_model(
+                X_train_tokenized,
+                X_val_tokenized,
+                y_train_fold,
+                y_val_fold,
+                params
+            )
+            cv_scores.append(val_score)
+
+        return float(np.mean(cv_scores))
+
     def _compute_metrics(self, eval_pred):
         """Compute metrics for evaluation"""
         logits, labels = eval_pred
@@ -200,14 +223,16 @@ class BERTClassifier(BaseTextClassifier):
         f1 = f1_score(labels, preds, average='weighted')
         return {"accuracy": acc, "f1": f1}
 
-    def predict(self, text, return_decoded=False, output=False, threshold=0.8):
+    def predict(self, text, return_decoded=False, threshold=0.8, output=False):
         """Predict class for a single text with confidence threshold for antisemitic class"""
         single_input = isinstance(text, str)
         text_list = [text] if single_input else text
 
         texts_processed = self.preprocess(text_list)
-        inputs = self.tokenizer(texts_processed, truncation=True, padding="max_length", max_length=128,
-                                return_tensors="pt")
+        inputs = self._tokenize(texts_processed)
+
+        if not torch.is_tensor(inputs['input_ids']):
+            inputs = {k: torch.tensor(v) for k, v in inputs.items()}
 
         # Get predictions with confidence threshold
         with torch.no_grad():
@@ -218,54 +243,39 @@ class BERTClassifier(BaseTextClassifier):
             # Get max predictions
             max_probs, max_indices = torch.max(probs, dim=-1)
 
-            # Find antisemitic label in label_encoder
-            try:
-                antisemitic_index = list(self.label_encoder.classes_).index(self.LABELS[0])
-                not_antisemitic_index = list(self.label_encoder.classes_).index(self.LABELS[1])
-            except ValueError:
-                # If label names are different, use 0 and 1 as defaults
-                antisemitic_index = 0
-                not_antisemitic_index = 1
+            # Get number of labels in model
+            num_labels = logits.shape[-1]
 
             # Apply threshold logic
-            y_pred = torch.where(
-                (max_indices == antisemitic_index) & (max_probs < threshold),
-                torch.full_like(max_indices, not_antisemitic_index),
-                max_indices
-            ).cpu().numpy()
+            if num_labels == 2:
+                # If antisemitic prediction doesn't meet threshold, change to not_antisemitic
+                y_pred = torch.where(
+                    (max_indices == 0) & (max_probs < threshold),
+                    torch.ones_like(max_indices),  # Change to index 1 (not_antisemitic)
+                    max_indices
+                )
+            else:  # num_labels == 3
+                antisemitic = probs[:, 0]
+                not_antisemitic = probs[:, 1]
+
+                y_pred = torch.full_like(max_indices, 2)  # default to irrelevant
+                y_pred = torch.where(antisemitic > threshold, torch.zeros_like(y_pred), y_pred)
+                y_pred = torch.where((not_antisemitic > threshold) & (antisemitic <= threshold),
+                                     torch.ones_like(y_pred), y_pred)
+
+
+            y_pred = y_pred.cpu().numpy()
+            probs_np = probs.cpu().numpy()
 
         if output:
             y_pred_decoded = self.label_encoder.inverse_transform(y_pred).tolist()
             print()
-            for pred, conf, txt in zip(y_pred_decoded, max_probs.cpu().numpy(), text_list):
+            for i, (pred, txt) in enumerate(zip(y_pred_decoded, text_list)):
+                conf = probs_np[i][y_pred[i]]  # confidence of final predicted class
                 print(f"Text: {txt}")
                 print(f"Prediction: {pred} (confidence: {conf:.3f})")
 
         return y_pred[0] if single_input else y_pred
-    #
-    # def predict(self, text, return_decoded=False, output=False):
-    #     """Predict class for a single text"""
-    #     single_input = isinstance(text, str)
-    #     text_list = [text] if single_input else text
-    #
-    #     texts_processed = self.preprocess(text_list)
-    #     inputs = self.tokenizer(texts_processed, truncation=True, padding="max_length", max_length=128, return_tensors="pt")
-    #
-    #     # Get predictions directly from model
-    #     with torch.no_grad():
-    #         outputs = self.best_model(**inputs)
-    #
-    #     # Get predicted class indices
-    #     y_pred = torch.argmax(outputs.logits, dim=1).cpu().numpy()
-    #
-    #     if output:
-    #         y_pred_decoded = self.label_encoder.inverse_transform(y_pred).tolist()
-    #
-    #         print()
-    #         for pred in zip(y_pred_decoded, text):
-    #             print(pred)
-    #
-    #     return y_pred[0] if single_input else y_pred
 
     def save_model(self, path: str):
         # Create the BERT directory

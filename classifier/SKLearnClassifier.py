@@ -26,7 +26,7 @@ class SKLearnClassifier(BaseTextClassifier):
         self.best_score = None
         self.best_params = None
 
-    def preprocess(self, text_list: list[str]) -> list[str]:
+    def preprocess(self, text_list: list[str], output=False) -> list[str]:
         normalizer = self.normalizer
         normalized_text_list = normalizer.normalize_texts(text_list)
 
@@ -46,19 +46,22 @@ class SKLearnClassifier(BaseTextClassifier):
             lemmatized_text = ' '.join(tokens).strip()
             processed_text_list.append(lemmatized_text)
 
-        if unrecognized_tokens > 0:
+        if output is True and unrecognized_tokens > 0:
             print(f"Undetected tokens found: {unrecognized_tokens} ")
 
         return processed_text_list
 
     def train(self, X: list[str], y: list[str], param_grid=None):
         """Optimize hyperparameters with GridSearchCV"""
+        print(f"Training {self.model_name}")
+
         # Validate hyperparameter config
         if param_grid:
             self.param_grid = param_grid
 
         # Vectorize and encode
-        X_vectorized = self.vectorizer.fit_transform(X)
+        X_preprocessed = self.preprocess(X)
+        X_vectorized = self.vectorizer.fit_transform(X_preprocessed)
         y_encoded = self.label_encoder.fit_transform(y)
 
         start_time = time.time()
@@ -74,15 +77,13 @@ class SKLearnClassifier(BaseTextClassifier):
         )
 
         grid_search.fit(X_vectorized, y_encoded)
-
         training_duration = time.time() - start_time
 
         self.best_model = grid_search.best_estimator_
         self.best_score = round(float(grid_search.best_score_), 2)
         self.best_params = grid_search.best_params_
-        y_pred = self.best_model.predict(X_vectorized)
 
-        self.print_best_model_results(self.best_score, self.best_params, y_encoded, y_pred, training_duration)
+        self.print_best_model_results(self.best_score, self.best_params, training_duration)
 
     def predict(self, text, output=False):
         # Handle both single text and list of texts
@@ -94,6 +95,7 @@ class SKLearnClassifier(BaseTextClassifier):
         # Process the list
         texts_processed = self.preprocess(text_list)
         texts_vectorized = self.vectorizer.transform(texts_processed)
+
         y_pred = self.best_model.predict(texts_vectorized)
 
         if output:

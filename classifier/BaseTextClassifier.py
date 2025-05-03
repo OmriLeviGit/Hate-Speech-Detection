@@ -134,8 +134,10 @@ class BaseTextClassifier(ABC):
 
         # Encode labels if needed
         if not np.issubdtype(np.array(y_test).dtype, np.number):
+            print("@@@@@@@@@@@@11111111")
             y_encoded = self.label_encoder.transform(y_test)
         else:
+            print("@@@@@@@@@@@@22222222")
             y_encoded = y_test
 
         y_pred = self.predict(X_processed)
@@ -153,13 +155,14 @@ class BaseTextClassifier(ABC):
         """Make prediction on a single text"""
         pass
 
-    def print_best_model_results(self, best_score, best_param, y_true, y_pred, training_duration=None):
+    def print_best_model_results(self, best_score, best_param, training_duration=None):
         print(f"\n=== Training result - Model: {self.model_name} ===")
-        print("Best Score:", round(best_score, 2))
+        print("Best Cross-validated Score:", round(best_score, 2))
         print("Best Params:", best_param)
-        # print("\nClassification Report Sample:\n", classification_report(y_true, y_pred, zero_division=0))
-        # print("\nConfusion Matrix Sample:\n", confusion_matrix(y_true, y_pred))
-        print(f"\nTraining time: {format_duration(training_duration)}")
+        if training_duration > 30:
+            print(f"\nTraining time: {format_duration(training_duration)}")
+
+        print()
 
     def print_evaluation(self, y_true, y_pred, accuracy, f1):
         print(f"\n=== Model evaluation - {self.model_name} ===")
