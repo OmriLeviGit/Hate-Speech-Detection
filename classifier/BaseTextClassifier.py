@@ -15,6 +15,8 @@ from classifier.utils import format_duration
 class BaseTextClassifier(ABC):
     """Abstract base class for text classifiers"""
 
+    save_models_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "saved_models") # static attribute
+
     def __init__(self, labels: list = None, seed = None):
         self.LABELS = labels
         self.seed = seed
@@ -164,7 +166,7 @@ class BaseTextClassifier(ABC):
         print("Confusion Matrix:\n", confusion_matrix(y_true, y_pred))
 
     @abstractmethod
-    def save_model(self, path: str):
+    def save_model(self):
         """Save the model"""
         pass
 
@@ -174,36 +176,62 @@ class BaseTextClassifier(ABC):
         """Load a saved model"""
 
     @staticmethod
-    def load_best_model(path: str):
-        """Load a saved model"""
-        try:
-            bert_path = os.path.join(path, "BERT")
-            with open(os.path.join(bert_path, "classifier_class.pkl"), "rb") as f:
-                bert_class = pickle.load(f)
+    def load_best_model():
+        """Load the best model from all subfolders under BERT and SKlearn directories"""
+        base_path = BaseTextClassifier.save_models_path
+        best_score = float('-inf')
+        best_model_type = None
+        best_subfolder = None
 
-            sklearn_path = os.path.join(path, "SKlearn")
-            with open(os.path.join(sklearn_path, "classifier_class.pkl"), "rb") as f:
-                sklearn_class = pickle.load(f)
+        # Check BERT models
+        bert_path = os.path.join(base_path, "bert")
+        if os.path.exists(bert_path):
+            bert_subfolders = [d for d in os.listdir(bert_path) if os.path.isdir(os.path.join(bert_path, d))]
 
-            if bert_class.best_score > sklearn_class.best_score:
-                from .BERTClassifier import BERTClassifier
-                return BERTClassifier.load_model(path)
+            for subfolder in bert_subfolders:
+                classifier_path = os.path.join(bert_path, subfolder, "classifier_class.pkl")
+                if os.path.exists(classifier_path):
+                    try:
+                        with open(classifier_path, "rb") as f:
+                            classifier = pickle.load(f)
 
+                        if hasattr(classifier, 'best_score') and classifier.best_score > best_score:
+                            best_score = classifier.best_score
+                            best_model_type = "bert"
+                            best_subfolder = subfolder
+                    except:
+                        continue
+
+        # Check SKlearn models
+        sklearn_path = os.path.join(base_path, "sklearn")
+        if os.path.exists(sklearn_path):
+            sklearn_subfolders = [d for d in os.listdir(sklearn_path) if os.path.isdir(os.path.join(sklearn_path, d))]
+
+            for subfolder in sklearn_subfolders:
+                classifier_path = os.path.join(sklearn_path, subfolder, "classifier_class.pkl")
+                if os.path.exists(classifier_path):
+                    try:
+                        with open(classifier_path, "rb") as f:
+                            classifier = pickle.load(f)
+
+                        if hasattr(classifier, 'best_score') and classifier.best_score > best_score:
+                            best_score = classifier.best_score
+                            best_model_type = "sklearn"
+                            best_subfolder = subfolder
+                    except:
+                        continue
+
+        # Load the best model found
+        if best_model_type == "bert":
+            from .BERTClassifier import BERTClassifier
+            model_path = os.path.join(base_path, "bert", best_subfolder)
+            return BERTClassifier.load_model(model_path)
+        elif best_model_type == "sklearn":
             from .SKLearnClassifier import SKLearnClassifier
-            return SKLearnClassifier.load_model(path)
-
-        except FileNotFoundError:
-            # If only one model exists, try each type
-            try:
-                from .BERTClassifier import BERTClassifier
-                return BERTClassifier.load_model(path)
-            except FileNotFoundError:
-                try:
-                    from .SKLearnClassifier import SKLearnClassifier
-                    return SKLearnClassifier.load_model(path)
-                except FileNotFoundError:
-                    raise ValueError(f"No valid classifier model found at path: {path}")
-
+            model_path = os.path.join(base_path, "sklearn", best_subfolder)
+            return SKLearnClassifier.load_model(model_path)
+        else:
+            raise ValueError(f"No valid classifier model found at path: {base_path}")
 
     def _initialize_test_dataset(self):
         class_0 = [

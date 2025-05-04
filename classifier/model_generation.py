@@ -35,7 +35,6 @@ debug_bert_configs = [
             "weight_decay_range": (0.01, 0.01),
             "dropout_range": (0.1, 0.1),
         },
-        "n_trials": 1,
     }
 ]
 
@@ -212,7 +211,7 @@ def ini_bert_models(configs, debug=False):
 def generate_models(debug=False):
     models = []
     models.extend(ini_sklearn_models(sklearn_configs, debug=debug))
-    # models.extend(ini_bert_models(bert_configs, debug=debug))
+    models.extend(ini_bert_models(bert_configs, debug=debug))
 
     model_names = [model.model_name for model in models]
 

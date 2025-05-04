@@ -8,8 +8,6 @@ from classifier.BaseTextClassifier import BaseTextClassifier
 from classifier.model_generation import generate_models
 
 
-script_dir = os.path.dirname(os.path.abspath(__file__))
-save_models_path = os.path.join(script_dir, "saved_models")
 
 def compare_models(models, X_train, X_test, y_train, y_test):
     model_names = [model.model_name for model in models]
@@ -28,13 +26,15 @@ def compare_models(models, X_train, X_test, y_train, y_test):
         if not best_model or score > best_model.best_score:
             best_model = model
 
+        model.save_model()
+
     end_time = time.time()
     utils.print_header(f"Done comparing | Time: {end_time - start_time}")
 
     sorted_results = sorted(results, key=lambda x: x[1], reverse=True)
 
     best_model.evaluate(X_test, y_test)
-    best_model.save_model(save_models_path)
+    best_model.save_model()
 
     return sorted_results
 
@@ -52,13 +52,12 @@ def main():
     sorted_results = sorted(model_results, key=lambda x: x[1], reverse=True)
 
     print(f"\n\nBest model overall: {sorted_results[0]}\n")
-
     print("Models sorted by score:")
     for model_name, score, params in sorted_results:
         print(f"{model_name}: {score:.2f} | Params: {params}")
 
     df = pd.DataFrame(sorted_results, columns=["Model name", "Score", "Params"])
-    output_path = os.path.join(save_models_path, "final_model_results.csv")
+    output_path = os.path.join(BaseTextClassifier.save_models_path, "final_model_results.csv")
     df.to_csv(output_path, index=False)
 
     # loaded_classifier = BaseTextClassifier.load_best_model(save_models_path)

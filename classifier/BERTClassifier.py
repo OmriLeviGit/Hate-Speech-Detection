@@ -32,7 +32,7 @@ class BERTClassifier(BaseTextClassifier):
         self.tokenizer = tokenizer
 
         self.hp_ranges = config.get("hyper_parameters")
-        self.n_trials = config.get("n_trials", 10)
+        self.n_trials = config.get("n_trials", 1)
 
         self.best_model = None
         self.best_score = None
@@ -261,9 +261,9 @@ class BERTClassifier(BaseTextClassifier):
 
         return y_pred[0] if single_input else y_pred
 
-    def save_model(self, path: str):
+    def save_model(self):
         # Create the BERT directory
-        bert_path = os.path.join(path, "bert")
+        bert_path = str(os.path.join(BaseTextClassifier.save_models_path, "bert", self.model_name))
         os.makedirs(bert_path, exist_ok=True)
 
         # Save model and tokenizer in the BERT directory
@@ -287,7 +287,7 @@ class BERTClassifier(BaseTextClassifier):
 
     @staticmethod
     def load_model(path: str):
-        bert_path = os.path.join(path, "BERT")
+        bert_path = os.path.join(BaseTextClassifier.save_models_path, "bert", path)
         with open(os.path.join(bert_path, "classifier_class.pkl"), "rb") as f:
             obj = pickle.load(f)
 

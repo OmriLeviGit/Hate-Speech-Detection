@@ -141,8 +141,8 @@ class SKLearnClassifier(BaseTextClassifier):
     #     # Return single item or full list based on input type
     #     return y_pred[0] if single_input else y_pred
 
-    def save_model(self, path: str):
-        sklearn_path = os.path.join(path, "sklearn")
+    def save_model(self):
+        sklearn_path = str(os.path.join(BaseTextClassifier.save_models_path, "sklearn", self.model_name))
         os.makedirs(sklearn_path, exist_ok=True)
 
         tmp = copy.deepcopy(self)
@@ -155,7 +155,7 @@ class SKLearnClassifier(BaseTextClassifier):
 
     @staticmethod
     def load_model(path: str):
-        sklearn_path = os.path.join(path, "sklearn")
+        sklearn_path = os.path.join(BaseTextClassifier.save_models_path, "sklearn", path)
         with open(os.path.join(sklearn_path, "classifier_class.pkl"), "rb") as f:
             obj = pickle.load(f)
             obj.best_model = None
