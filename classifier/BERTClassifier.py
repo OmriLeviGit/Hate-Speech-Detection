@@ -21,6 +21,15 @@ from classifier.normalization.TextNormalizer import TextNormalizer
 from classifier.utils import format_duration
 
 
+"""
+When implementing hyperparameter optimization for multiple model architectures using Optuna with k-fold 
+cross-validation, what's the most appropriate metric for final model selection?
+Since each model architecture goes through its own optimization process resulting in both cross-validation
+scores and a final test score on the held-out dataset, should I prioritize the model with the highest
+cross-validation performance during optimization, or the one with the best final test score? Given that the
+final model is trained on the entire training set rather than just the cross-validation folds, how do I make a
+principled choice between different model architectures?
+"""
 class BERTClassifier(BaseTextClassifier):
     def __init__(self, labels: list, normalizer: TextNormalizer(), tokenizer, config, seed: int = 42):
         super().__init__(labels, seed)
@@ -31,6 +40,7 @@ class BERTClassifier(BaseTextClassifier):
         self.model_name = config.get("model_name")
         self.model_type = config.get("model_type")
         self.tokenizer = tokenizer
+        torch.set_num_threads(1)
 
         self.hp_ranges = config.get("hyper_parameters")
         self.n_trials = config.get("n_trials", 1)
@@ -45,20 +55,14 @@ class BERTClassifier(BaseTextClassifier):
 
     def _create_model(self, num_labels, dropout=None):
         """Create model appropriate for this model type"""
-        # First load the config
         config = AutoConfig.from_pretrained(self.model_type)
-
-        # Set num_labels in the config
         config.num_labels = num_labels
 
-        # Set dropout parameters in the config if specified
         if dropout is not None:
             if "roberta" in self.model_type.lower():
                 config.hidden_dropout_prob = dropout
                 config.attention_probs_dropout_prob = dropout
-            # Add other model types as needed
 
-        # Create model with the modified config (don't pass num_labels separately)
         return AutoModelForSequenceClassification.from_pretrained(
             self.model_type,
             config=config
@@ -67,34 +71,31 @@ class BERTClassifier(BaseTextClassifier):
     def _tokenize(self, X_preprocessed):
         return self.tokenizer(list(X_preprocessed), truncation=True, padding="max_length", max_length=128, return_tensors="pt")
 
-    def train(self, X: list[str], y: list[str], hp_ranges=None):
-        """Optimize hyperparameters with Optuna"""
-        print(f"Training {self.model_name}, Device: {torch.device("cuda" if torch.cuda.is_available() else "cpu")}")
+    def train(self, X: list[str], y: list[str]):
+        """wrapper function, a better design would be to call each one directly"""
+        self.optimize_hyperparameters(X, y)
+        self.best_model = self.train_final_model(X, y, self.best_params)
 
-        # Validate hyperparameter config
-        if hp_ranges:
-            self.hp_ranges = hp_ranges
+    def optimize_hyperparameters(self, X: list[str], y: list[str]):
+        """Train model with hyperparameter optimization"""
+        print(f"Start optimizing {self.model_name}, \
+              Device: {torch.device("cuda" if torch.cuda.is_available() else "cpu")}")
 
         # Preprocess texts and encode labels
         X_preprocessed = self.preprocess(X)
         y_encoded = self.label_encoder.fit_transform(y)
 
-        torch.set_num_threads(1)
-
         # Create and run Optuna study
-        start_time = time.time()
+        opt_start_time = time.time()
         study = optuna.create_study(direction="maximize")
         study.optimize(
             lambda trial: self._objective_function(trial, X_preprocessed, y_encoded),
             n_trials=self.n_trials
         )
-        training_duration = time.time() - start_time
+        training_duration = time.time() - opt_start_time
 
-        # Get best trial parameters
+        self.best_score = study.best_value
         self.best_params = study.best_trial.params
-
-        # k cross validate results
-        self.best_score = self._perform_cross_validation(X, y_encoded, self.best_params)
 
         self.print_best_model_results(self.best_score, self.best_params, training_duration)
 
@@ -110,25 +111,42 @@ class BERTClassifier(BaseTextClassifier):
             "dropout": trial.suggest_float("dropout", *self.hp_ranges["dropout_range"]),
         }
 
-        X_train, X_val, y_train, y_val = train_test_split(
-            X_preprocessed, y_encoded,
-            test_size=0.2,
-            stratify=y_encoded,
-            random_state=self.seed
-        )
+        return self._perform_cross_validation(X_preprocessed, y_encoded, trial_config)
 
-        X_train_tokenized = self._tokenize(X_train)
-        X_val_tokenized = self._tokenize(X_val)
+    def _perform_cross_validation(self, X, y_encoded, params, n_splits=5) -> float:
+        """Perform k-fold cross-validation with given hyperparameters"""
+        print("\n=== Start cross validation ===")
+        cv_scores = []
+        kf = KFold(n_splits=n_splits, shuffle=True, random_state=self.seed)
 
-        # Train and evaluate model for this trial
-        model, val_score = self._train_model(X_train_tokenized, X_val_tokenized, y_train, y_val, trial_config)
+        start_time = time.time()
 
-        # Track best model in memory
-        if not self.best_score or val_score > self.best_score:
-            self.best_score = val_score # best overall
-            self.best_model = model
+        for fold_idx, (train_idx, val_idx) in enumerate(kf.split(X)):
+            print(f"\nFOLD {fold_idx + 1}/{n_splits}")
 
-        return val_score
+            X_train_fold = [X[i] for i in train_idx]
+            X_val_fold = [X[i] for i in val_idx]
+            y_train_fold = y_encoded[train_idx]
+            y_val_fold = y_encoded[val_idx]
+
+            X_train_tokenized = self._tokenize(X_train_fold)
+            X_val_tokenized = self._tokenize(X_val_fold)
+
+            # Train model with best hyperparameters
+            val_score = self._train_model(
+                X_train_tokenized,
+                X_val_tokenized,
+                y_train_fold,
+                y_val_fold,
+                params
+            )
+            cv_scores.append(val_score)
+
+        training_duration = time.time() - start_time
+
+        print(f"\nK-cross validation took: {format_duration(training_duration)}")
+
+        return float(np.mean(cv_scores))
 
     def _train_model(self, X_train, X_val, y_train, y_val, params):
         """Train a model with given parameters and data"""
@@ -169,48 +187,53 @@ class BERTClassifier(BaseTextClassifier):
             )
 
             trainer.train()
-
-            best_model = trainer.model
-
             val_score = trainer.evaluate()["eval_accuracy"]
 
         # Return the best model and its score
-        return best_model, val_score
+        return val_score
 
-    def _perform_cross_validation(self, X, y_encoded, params, n_splits=5) -> float:
-        """Perform k-fold cross-validation with given hyperparameters"""
-        print("\n=== Start cross validation ===")
-        cv_scores = []
-        kf = KFold(n_splits=n_splits, shuffle=True, random_state=self.seed)
+    def train_final_model(self, X, y, params):
+        """Train final model on all data using best parameters"""
+        print("Training final model with best parameters...")
+
+        X_preprocessed = self.preprocess(X)
+        y_encoded = self.label_encoder.fit_transform(y)
+
+        X_tokenized = self._tokenize(X_preprocessed)
+
+        train_dataset = CustomTextDataset(X_tokenized, list(y_encoded))
+
+        model = self._create_model(num_labels=len(self.LABELS), dropout=params["dropout"])
 
         start_time = time.time()
-
-        for fold_idx, (train_idx, val_idx) in enumerate(kf.split(X)):
-            print(f"\nFOLD {fold_idx + 1}/{n_splits}")
-
-            X_train_fold = [X[i] for i in train_idx]
-            X_val_fold = [X[i] for i in val_idx]
-            y_train_fold = y_encoded[train_idx]
-            y_val_fold = y_encoded[val_idx]
-
-            X_train_tokenized = self._tokenize(X_train_fold)
-            X_val_tokenized = self._tokenize(X_val_fold)
-
-            # Train model with best hyperparameters
-            model, val_score = self._train_model(
-                X_train_tokenized,
-                X_val_tokenized,
-                y_train_fold,
-                y_val_fold,
-                params
+        # Create temporary directory for checkpoints
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            training_args = TrainingArguments(
+                output_dir=tmp_dir,
+                learning_rate=params["learning_rate"],
+                per_device_train_batch_size=params["batch_size"],
+                per_device_eval_batch_size=params["batch_size"],
+                num_train_epochs=params["epochs"],
+                weight_decay=params["weight_decay"],
+                save_strategy="epoch",
+                save_total_limit=1,
+                report_to="none",
             )
-            cv_scores.append(val_score)
+
+            trainer = Trainer(
+                model=model,
+                args=training_args,
+                train_dataset=train_dataset,
+                data_collator=DataCollatorWithPadding(tokenizer=self.tokenizer),
+                compute_metrics=self._compute_metrics
+            )
+
+            trainer.train()
 
         training_duration = time.time() - start_time
+        print(f"Final model training took: {format_duration(training_duration)}")
 
-        print(f"\nK-cross validation took: {format_duration(training_duration)}")
-
-        return float(np.mean(cv_scores))
+        return model
 
     def _compute_metrics(self, eval_pred):
         """Compute metrics for evaluation"""

@@ -40,7 +40,7 @@ def compare_models(models, X_train, X_test, y_train, y_test):
 
 
 def main():
-    debug = False
+    debug = True
 
     models = generate_models(debug)
 
