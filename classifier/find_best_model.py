@@ -20,10 +20,11 @@ def compare_models(models, X_train, X_test, y_train, y_test):
     for model in models:
         model.train(X_train, y_train)
 
-        score = model.best_score
-        results.append((model.model_name, score, model.best_params))
+        cv_score = model.best_score
+        evaluation = model.evaluate(X_test, y_test)
+        results.append((model.model_name, cv_score, evaluation, model.best_params))
 
-        if not best_model or score > best_model.best_score:
+        if not best_model or cv_score > best_model.best_score:
             best_model = model
 
         model.save_model()
@@ -31,10 +32,7 @@ def compare_models(models, X_train, X_test, y_train, y_test):
     end_time = time.time()
     utils.print_header(f"Done comparing | Time: {end_time - start_time}")
 
-    sorted_results = sorted(results, key=lambda x: x[1], reverse=True)
-
-    best_model.evaluate(X_test, y_test)
-    best_model.save_model()
+    sorted_results = sorted(results, key=lambda x: x[1], reverse=True)  # sort by cv_score
 
     return sorted_results
 
@@ -49,14 +47,12 @@ def main():
 
     model_results = compare_models(models, X_train, X_test, y_train, y_test)
 
-    sorted_results = sorted(model_results, key=lambda x: x[1], reverse=True)
-
-    print(f"\n\nBest model overall: {sorted_results[0]}\n")
+    print(f"\n\nBest model overall: {model_results[0]}\n")
     print("Models sorted by score:")
-    for model_name, score, params in sorted_results:
-        print(f"{model_name}: {score:.2f} | Params: {params}")
+    for model_name, cv_score, evaluation, params in model_results:
+        print(f"{model_name}: CV Score = {cv_score:.2f} | Evaluation = {evaluation:.2f} | Params: {params}")
 
-    df = pd.DataFrame(sorted_results, columns=["Model name", "Score", "Params"])
+    df = pd.DataFrame(model_results, columns=["Model name", "CV Score", "Evaluation", "Params"])
     output_path = os.path.join(BaseTextClassifier.save_models_path, "final_model_results.csv")
     df.to_csv(output_path, index=False)
 
