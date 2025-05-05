@@ -163,7 +163,7 @@ class BaseTextClassifier(ABC):
         print(f"\n=== Model evaluation - {self.model_name} ===")
         print(f"Accuracy score: {round(accuracy, 2)} | f1 score: {round(f1, 2)}", )
         print("\nClassification Report:\n", classification_report(y_true, y_pred, zero_division=0))
-        print("Confusion Matrix:\n", confusion_matrix(y_true, y_pred))
+        print("Confusion Matrix:\n", confusion_matrix(y_true, y_pred), "\n")
 
     @abstractmethod
     def save_model(self):

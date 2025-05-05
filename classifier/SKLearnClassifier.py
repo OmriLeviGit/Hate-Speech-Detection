@@ -1,6 +1,8 @@
 import time, os, pickle, joblib, copy
 
 import numpy as np
+from sklearn.calibration import CalibratedClassifierCV
+from sklearn.frozen import FrozenEstimator
 from sklearn.model_selection import GridSearchCV
 
 from classifier.BaseTextClassifier import BaseTextClassifier
@@ -82,6 +84,14 @@ class SKLearnClassifier(BaseTextClassifier):
         self.best_model = grid_search.best_estimator_
         self.best_score = round(float(grid_search.best_score_), 2)
         self.best_params = grid_search.best_params_
+
+        # calibrate models without predict_proba
+        if not (hasattr(grid_search.best_estimator_, 'predict_proba') and callable(
+                grid_search.best_estimator_.predict_proba)):
+            frozen_estimator = FrozenEstimator(grid_search.best_estimator_)
+            calibrated = CalibratedClassifierCV(frozen_estimator)
+            calibrated.fit(X_vectorized, y_encoded)
+            self.best_model = calibrated
 
         self.print_best_model_results(self.best_score, self.best_params, training_duration)
 

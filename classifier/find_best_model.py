@@ -10,9 +10,6 @@ from classifier.model_generation import generate_models
 
 
 def compare_models(models, X_train, X_test, y_train, y_test):
-    model_names = [model.model_name for model in models]
-    utils.print_header(f"\nComparing models: {model_names}\n")
-
     results = []
     start_time = time.time()
 
@@ -34,9 +31,9 @@ def compare_models(models, X_train, X_test, y_train, y_test):
 
 
 def main():
-    debug = True
+    debug = False
 
-    models = generate_models(debug)
+    models = generate_models(debug=debug)
 
     data = models[0].load_data(set_to_min=True, debug=debug)
     X_train, X_test, y_train, y_test = models[0].prepare_dataset(data)
