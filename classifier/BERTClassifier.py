@@ -13,7 +13,7 @@ from transformers import (
     DataCollatorWithPadding,
     EarlyStoppingCallback,
     Trainer,
-    TrainingArguments,
+    TrainingArguments, AutoConfig,
 )
 
 from classifier.BaseTextClassifier import BaseTextClassifier
@@ -44,18 +44,24 @@ class BERTClassifier(BaseTextClassifier):
 
     def _create_model(self, num_labels, dropout=None):
         """Create model appropriate for this model type"""
-        if dropout is None:
-            return AutoModelForSequenceClassification.from_pretrained(
-                self.model_type,
-                num_labels=num_labels
-            )
-        else:
-            return AutoModelForSequenceClassification.from_pretrained(
-                self.model_type,
-                num_labels=num_labels,
-                dropout=dropout,
-                attention_dropout=dropout
-            )
+        # First load the config
+        config = AutoConfig.from_pretrained(self.model_type)
+
+        # Set num_labels in the config
+        config.num_labels = num_labels
+
+        # Set dropout parameters in the config if specified
+        if dropout is not None:
+            if "roberta" in self.model_type.lower():
+                config.hidden_dropout_prob = dropout
+                config.attention_probs_dropout_prob = dropout
+            # Add other model types as needed
+
+        # Create model with the modified config (don't pass num_labels separately)
+        return AutoModelForSequenceClassification.from_pretrained(
+            self.model_type,
+            config=config
+        )
 
     def _tokenize(self, X_preprocessed):
         return self.tokenizer(list(X_preprocessed), truncation=True, padding="max_length", max_length=128, return_tensors="pt")
@@ -63,6 +69,8 @@ class BERTClassifier(BaseTextClassifier):
     def train(self, X: list[str], y: list[str], hp_ranges=None):
         """Optimize hyperparameters with Optuna"""
         print(f"Training {self.model_name}")
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        print(f"Using device: {device}")
 
         # Validate hyperparameter config
         if hp_ranges:
@@ -73,7 +81,6 @@ class BERTClassifier(BaseTextClassifier):
         y_encoded = self.label_encoder.fit_transform(y)
 
         torch.set_num_threads(1)
-        torch.set_num_interop_threads(1)
 
         # Create and run Optuna study
         start_time = time.time()

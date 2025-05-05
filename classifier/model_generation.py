@@ -101,11 +101,11 @@ bert_hyperparameters = {
         }
 
 bert_configs = [
-    {
-        "model_name": "distilbert uncased",
-        "model_type": "distilbert-base-uncased",
-        "hyper_parameters": bert_hyperparameters
-    },
+    # {
+    #     "model_name": "distilbert uncased",
+    #     "model_type": "distilbert-base-uncased",
+    #     "hyper_parameters": bert_hyperparameters
+    # },
     {
         "model_name": "vinai bertweet",
         "model_type": "vinai/bertweet-base",
@@ -210,8 +210,9 @@ def ini_bert_models(configs, debug=False):
 
 def generate_models(debug=False):
     models = []
-    models.extend(ini_sklearn_models(sklearn_configs, debug=debug))
+    # models.extend(ini_sklearn_models(sklearn_configs, debug=debug))
     models.extend(ini_bert_models(bert_configs, debug=debug))
+    models = [models[len(models)-1]]
 
     model_names = [model.model_name for model in models]
 

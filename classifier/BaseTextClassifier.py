@@ -155,6 +155,7 @@ class BaseTextClassifier(ABC):
         print("Best Cross-validated Score:", round(best_score, 2))
         print("Best Params:", best_param)
         if training_duration > 30:
+            print("@@@  RAW TRAINING DURATION", training_duration)
             print(f"\nTraining time: {format_duration(training_duration)}")
 
         print()
