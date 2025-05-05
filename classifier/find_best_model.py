@@ -14,7 +14,6 @@ def compare_models(models, X_train, X_test, y_train, y_test):
     utils.print_header(f"\nComparing models: {model_names}\n")
 
     results = []
-    best_model = None
     start_time = time.time()
 
     for model in models:
@@ -23,9 +22,6 @@ def compare_models(models, X_train, X_test, y_train, y_test):
         cv_score = model.best_score
         evaluation = model.evaluate(X_test, y_test)
         results.append((model.model_name, cv_score, evaluation, model.best_params))
-
-        if not best_model or cv_score > best_model.best_score:
-            best_model = model
 
         model.save_model()
 

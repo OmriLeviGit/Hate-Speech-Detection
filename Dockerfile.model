@@ -20,4 +20,4 @@ WORKDIR /app
 COPY --from=builder /usr/local /usr/local
 COPY --from=builder /app /app
 
-CMD ["python3", "-m", "classifier.test"]
+CMD ["python3", "-m", "classifier.find_best_model"]

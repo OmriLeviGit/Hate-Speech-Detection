@@ -5,7 +5,7 @@ services:
       dockerfile: Dockerfile.model
     image: model
     volumes:
-      - ./classifier/saved_models:/app/classifier/saved_models   # For saving/loading trained models
+      - ./classifier:/app/classifier  # For saving/loading trained models
       - spacy_models:/root/.cache/spacy           # For spaCy models
       - huggingface_models:/root/.cache/huggingface  # For Hugging Face models
     environment:
