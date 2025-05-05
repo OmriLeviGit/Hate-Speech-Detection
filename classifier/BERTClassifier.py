@@ -78,8 +78,7 @@ class BERTClassifier(BaseTextClassifier):
 
     def optimize_hyperparameters(self, X: list[str], y: list[str]):
         """Train model with hyperparameter optimization"""
-        print(f"Start optimizing {self.model_name}, \
-              Device: {torch.device("cuda" if torch.cuda.is_available() else "cpu")}")
+        print(f"Start optimizing {self.model_name}, Device: {torch.device('cuda' if torch.cuda.is_available() else 'cpu')}")
 
         # Preprocess texts and encode labels
         X_preprocessed = self.preprocess(X)
