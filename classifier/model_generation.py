@@ -101,11 +101,11 @@ bert_hyperparameters = {
         }
 
 bert_configs = [
-    # {
-    #     "model_name": "distilbert uncased",
-    #     "model_type": "distilbert-base-uncased",
-    #     "hyper_parameters": bert_hyperparameters
-    # },
+    {
+        "model_name": "distilbert uncased",
+        "model_type": "distilbert-base-uncased",
+        "hyper_parameters": bert_hyperparameters
+    },
     {
         "model_name": "vinai bertweet",
         "model_type": "vinai/bertweet-base",
@@ -210,35 +210,11 @@ def ini_bert_models(configs, debug=False):
 
 def generate_models(debug=False):
     models = []
-    # models.extend(ini_sklearn_models(sklearn_configs, debug=debug))
+    models.extend(ini_sklearn_models(sklearn_configs, debug=debug))
     models.extend(ini_bert_models(bert_configs, debug=debug))
-    models = [models[len(models)-1]]
 
     model_names = [model.model_name for model in models]
 
     print(f"Generated {len(models)} model objects: \n{model_names}")
 
     return models
-
-"""
-example of variant usage:
-
-    {
-    "model_name": "SGDClassifier",
-    "model_class": SGDClassifier(),
-    "param_grid": {
-        'loss': ['hinge', 'log_loss'],
-        'penalty': ['l2', 'elasticnet'],
-        'alpha': [1e-4, 1e-3],
-        'max_iter': [1000]
-    },
-    "variants": [
-        {
-            "variant_name": "custom",
-            "normalizer": TextNormalizer(),
-            "vectorizer": CountVectorizer(max_features=1000),
-            "labels": ["label3", "label4", "label5"]
-        }
-    ]
-}
-"""

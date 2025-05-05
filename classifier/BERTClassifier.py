@@ -18,6 +18,7 @@ from transformers import (
 
 from classifier.BaseTextClassifier import BaseTextClassifier
 from classifier.normalization.TextNormalizer import TextNormalizer
+from classifier.utils import format_duration
 
 
 class BERTClassifier(BaseTextClassifier):
@@ -68,9 +69,7 @@ class BERTClassifier(BaseTextClassifier):
 
     def train(self, X: list[str], y: list[str], hp_ranges=None):
         """Optimize hyperparameters with Optuna"""
-        print(f"Training {self.model_name}")
-        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        print(f"Using device: {device}")
+        print(f"Training {self.model_name}, Device: {torch.device("cuda" if torch.cuda.is_available() else "cpu")}")
 
         # Validate hyperparameter config
         if hp_ranges:
@@ -93,6 +92,8 @@ class BERTClassifier(BaseTextClassifier):
 
         # Get best trial parameters
         self.best_params = study.best_trial.params
+
+        # k cross validate results
         self.best_score = self._perform_cross_validation(X, y_encoded, self.best_params)
 
         self.print_best_model_results(self.best_score, self.best_params, training_duration)
@@ -167,13 +168,10 @@ class BERTClassifier(BaseTextClassifier):
                 callbacks=[EarlyStoppingCallback(early_stopping_patience=3)]
             )
 
-            # Train model
             trainer.train()
 
-            # Now trainer.model contains the best model from this training run
             best_model = trainer.model
 
-            # Get validation score using the best model
             val_score = trainer.evaluate()["eval_accuracy"]
 
         # Return the best model and its score
@@ -181,10 +179,15 @@ class BERTClassifier(BaseTextClassifier):
 
     def _perform_cross_validation(self, X, y_encoded, params, n_splits=5) -> float:
         """Perform k-fold cross-validation with given hyperparameters"""
+        print("\n=== Start cross validation ===")
         cv_scores = []
         kf = KFold(n_splits=n_splits, shuffle=True, random_state=self.seed)
 
-        for train_idx, val_idx in kf.split(X):
+        start_time = time.time()
+
+        for fold_idx, (train_idx, val_idx) in enumerate(kf.split(X)):
+            print(f"\nFOLD {fold_idx + 1}/{n_splits}")
+
             X_train_fold = [X[i] for i in train_idx]
             X_val_fold = [X[i] for i in val_idx]
             y_train_fold = y_encoded[train_idx]
@@ -202,6 +205,10 @@ class BERTClassifier(BaseTextClassifier):
                 params
             )
             cv_scores.append(val_score)
+
+        training_duration = time.time() - start_time
+
+        print(f"\nK-cross validation took: {format_duration(training_duration)}")
 
         return float(np.mean(cv_scores))
 
