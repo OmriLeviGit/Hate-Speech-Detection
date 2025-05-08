@@ -15,7 +15,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-classifier = BaseTextClassifier.load_best_model("saved_models")
+classifier = BaseTextClassifier.load_best_model()
 
 @app.post("/classifier/predict")
 async def classify(data: dict):

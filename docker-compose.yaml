@@ -6,12 +6,10 @@ services:
     image: model
     volumes:
       - ./classifier:/app/classifier  # For saving/loading trained models
-      - spacy_models:/root/.cache/spacy           # For spaCy models
       - huggingface_models:/root/.cache/huggingface  # For Hugging Face models
     environment:
       - PYTHONUNBUFFERED=1
 
 volumes:
   practicumx_saved_models:
-  spacy_models:
   huggingface_models:

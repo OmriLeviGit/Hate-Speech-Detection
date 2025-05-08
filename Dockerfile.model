@@ -10,6 +10,8 @@ COPY requirements-model.txt .
 
 RUN pip install --no-cache-dir --prefer-binary -r requirements-model.txt
 
+RUN python -m spacy download en_core_web_lg
+
 COPY classifier/ ./classifier/
 COPY setup.py .
 
@@ -20,4 +22,4 @@ WORKDIR /app
 COPY --from=builder /usr/local /usr/local
 COPY --from=builder /app /app
 
-CMD ["python3", "-m", "classifier.find_best_model"]
+CMD ["python3", "-m", "classifier.compare_models"]

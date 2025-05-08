@@ -1,107 +1,54 @@
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.linear_model import LogisticRegression, SGDClassifier
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.svm import LinearSVC
+import os
+import time
 
-from classifier.SKLearnClassifier import SKLearnClassifier
-from classifier.normalization.TextNormalizer import TextNormalizer
+import pandas as pd
+
+from classifier import utils
+from classifier.BaseTextClassifier import BaseTextClassifier
+from classifier.model_generation import generate_models
 
 
-# LogisticRegression
-lr_param_grid = {
-    'C': [0.5, 1, 5],
-    'penalty': ['l2'],
-    'solver': ['liblinear', 'lbfgs'],
-    'max_iter': [1000]
-}
 
-# LinearSVC
-svc_param_grid = {
-    'C': [0.1, 1, 10],
-    'max_iter': [1000],
-    'loss': ['squared_hinge'],
-    'dual': [False]
-}
+def compare_models(models, debug=False):
+    # load and prepare once
+    data = models[0].load_data(set_to_min=True, debug=debug)
+    X_train, X_test, y_train, y_test = models[0].prepare_dataset(data)
 
-# KNeighborsClassifier
-knn_param_grid = {
-    'n_neighbors': [3, 5, 7, 11],
-    'weights': ['uniform', 'distance'],
-    'metric': ['euclidean']
-}
+    results = []
+    start_time = time.time()
 
-# RandomForestClassifier
-rf_param_grid = {
-    'n_estimators': [100, 200],
-    'max_depth': [None, 10, 20],
-    'min_samples_split': [2, 5],
-    'min_samples_leaf': [1, 2],
-    'max_features': ['sqrt', 'log2', None]
-}
+    for model in models:
+        model.train(X_train, y_train)
 
-# SGDClassifier
-sgd_param_grid = {
-    'loss': ['hinge', 'log_loss'],
-    'penalty': ['l2', 'elasticnet'],
-    'alpha': [1e-4, 1e-3],
-    'max_iter': [1000]
-}
+        cv_score = model.best_score
+        evaluation = model.evaluate(X_test, y_test)
+        results.append((model.model_name, cv_score, evaluation, model.best_params))
 
-configs = [
-    {
-        "model_name": "LogisticRegression",
-        "model_class": LogisticRegression(),
-        "param_grid": lr_param_grid,
-    },
-    {
-        "model_name": "LinearSVC",
-        "model_class": LinearSVC(),
-        "param_grid": svc_param_grid,
-    },
-    {
-        "model_name": "KNeighborsClassifier",
-        "model_class": KNeighborsClassifier(),
-        "param_grid": knn_param_grid,
-    },
-    {
-        "model_name": "RandomForestClassifier",
-        "model_class": RandomForestClassifier(),
-        "param_grid": rf_param_grid,
-    },
-    {
-        "model_name": "SGDClassifier",
-        "model_class": SGDClassifier(),
-        "param_grid": sgd_param_grid,
-    }
-]
+        model.save_model()
 
-def ini_sklearn_models(labels):
-    models = []
-    for config in configs:
-        normalizer = TextNormalizer(emoji='text')
-        classifier = SKLearnClassifier(labels, normalizer, TfidfVectorizer(), config)
-        models.append(classifier)
+    end_time = time.time()
+    utils.print_header(f"Done comparing | Time: {end_time - start_time}")
 
-    return models
+    sorted_results = sorted(results, key=lambda x: x[1], reverse=True)  # sort by cv_score
+
+    return sorted_results
+
 
 def main():
-    labels = ["antisemitic", "not_antisemitic"]
-    normalizer = TextNormalizer(emoji='text')
+    debug = True
 
-    classifier = SKLearnClassifier(labels, normalizer, TfidfVectorizer(), configs[0])
+    models = generate_models(debug=debug)
+    model_results = compare_models(models, debug=debug)
 
-    data = classifier.load_data(set_to_min=True, debug='debug')
+    print(f"\n\nBest model overall: {model_results[0]}\n\nModels sorted by score:")
+    for model_name, cv_score, evaluation, params in model_results:
+        print(f"{model_name}: CV Score = {cv_score:.2f} | Evaluation = {evaluation:.2f} | Params: {params}")
 
-    X_train, X_test, y_train, y_test = classifier.prepare_dataset(data)
+    df = pd.DataFrame(model_results, columns=["Model name", "CV Score", "Evaluation", "Params"])
+    output_path = os.path.join(BaseTextClassifier.save_models_path, "comparison_result.csv")
+    df.to_csv(output_path, index=False)
 
-    X_train = classifier.preprocess(X_train)
-
-    classifier.train(X_train, y_train)
-
-    classifier.evaluate(X_test, y_test)
-
-    predictions = classifier.predict(X_test, True)
+    # loaded_classifier = BaseTextClassifier.load_best_model(save_models_path)
 
 
 if __name__ == "__main__":

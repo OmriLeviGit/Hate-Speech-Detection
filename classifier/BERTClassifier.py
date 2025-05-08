@@ -72,9 +72,10 @@ class BERTClassifier(BaseTextClassifier):
         return self.tokenizer(list(X_preprocessed), truncation=True, padding="max_length", max_length=128, return_tensors="pt")
 
     def train(self, X: list[str], y: list[str]):
-        """wrapper function, a better design would be to call each one directly"""
+        """wrapper function, a better design would be to call each one directly, but I didn't want to make too
+        many structural changes all at once"""
         self.optimize_hyperparameters(X, y)
-        self.best_model = self.train_final_model(X, y, self.best_params)
+        self.train_final_model(X, y, self.best_params)
 
     def optimize_hyperparameters(self, X: list[str], y: list[str]):
         """Train model with hyperparameter optimization"""
@@ -232,7 +233,7 @@ class BERTClassifier(BaseTextClassifier):
         training_duration = time.time() - start_time
         print(f"Final model training took: {format_duration(training_duration)}")
 
-        return model
+        self.best_model = model
 
     def _compute_metrics(self, eval_pred):
         """Compute metrics for evaluation"""

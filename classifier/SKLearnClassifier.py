@@ -85,71 +85,68 @@ class SKLearnClassifier(BaseTextClassifier):
         self.best_score = round(float(grid_search.best_score_), 2)
         self.best_params = grid_search.best_params_
 
-        # calibrate models without predict_proba
-        if not (hasattr(grid_search.best_estimator_, 'predict_proba') and callable(
-                grid_search.best_estimator_.predict_proba)):
-            frozen_estimator = FrozenEstimator(grid_search.best_estimator_)
-            calibrated = CalibratedClassifierCV(frozen_estimator)
+        # Calibrate models after training if they don't support probability estimation
+        # This improves decision boundary quality and enables accessing confidence scores if needed
+        if not (hasattr(self.best_model, 'predict_proba') and callable(self.best_model.predict_proba)):
+            calibrated = CalibratedClassifierCV(FrozenEstimator(self.best_model))
             calibrated.fit(X_vectorized, y_encoded)
             self.best_model = calibrated
 
         self.print_best_model_results(self.best_score, self.best_params, training_duration)
 
-    def predict(self, text, threshold=0.7, output=False):
+    # def predict(self, text, threshold=0.7, output=False):
+    #     single_input = isinstance(text, str)
+    #     text_list = [text] if single_input else text
+    #
+    #     texts_processed = self.preprocess(text_list)
+    #     texts_vectorized = self.vectorizer.transform(texts_processed)
+    #
+    #     probs = self.best_model.predict_proba(texts_vectorized)
+    #     num_labels = probs.shape[1]
+    #
+    #     if num_labels == 2:
+    #         class0_probs = probs[:, 0]
+    #         y_pred = np.where(class0_probs >= threshold, 0, 1)
+    #
+    #     else:  # 3 labels
+    #         antisemitic_prob = probs[:, 0]
+    #         not_antisemitic_prob = probs[:, 1]
+    #         # Default to "uncertain" (label 2)
+    #         y_pred = np.full(len(text_list), 2)
+    #         # Assign "antisemitic" (label 0) if probability exceeds threshold
+    #         y_pred[antisemitic_prob > threshold] = 0
+    #         # Assign "not_antisemitic" (label 1) if its probability exceeds threshold AND antisemitic doesn't
+    #         y_pred[(not_antisemitic_prob > threshold) & (antisemitic_prob <= threshold)] = 1
+    #
+    #     if output:
+    #         y_pred_decoded = self.label_encoder.inverse_transform(y_pred)
+    #         print()
+    #         for i, (pred, txt) in enumerate(zip(y_pred_decoded, text_list)):
+    #             conf = probs[i][y_pred[i]]
+    #             print(f"Text: {txt}")
+    #             print(f"Prediction: {pred} (confidence: {conf:.3f})")
+    #
+    #     return y_pred[0] if single_input else y_pred
+
+    def predict(self, text, output=False):
         single_input = isinstance(text, str)
+
         text_list = [text] if single_input else text
 
         texts_processed = self.preprocess(text_list)
         texts_vectorized = self.vectorizer.transform(texts_processed)
 
-        probs = self.best_model.predict_proba(texts_vectorized)
-        num_labels = probs.shape[1]
-
-        if num_labels == 2:
-            y_pred = np.where(
-                (np.argmax(probs, axis=1) == 0) & (probs[:, 0] < threshold),
-                1,
-                np.argmax(probs, axis=1)
-            )
-        else:  # 3 labels
-            antisemitic = probs[:, 0]
-            not_antisemitic = probs[:, 1]
-            y_pred = np.full(len(text_list), 2)
-            y_pred[antisemitic > threshold] = 0
-            y_pred[(not_antisemitic > threshold) & (antisemitic <= threshold)] = 1
+        y_pred = self.best_model.predict(texts_vectorized)
 
         if output:
-            y_pred_decoded = self.label_encoder.inverse_transform(y_pred)
+            y_pred_decoded = self.label_encoder.inverse_transform(y_pred).tolist()
+
             print()
-            for i, (pred, txt) in enumerate(zip(y_pred_decoded, text_list)):
-                conf = probs[i][y_pred[i]]
-                print(f"Text: {txt}")
-                print(f"Prediction: {pred} (confidence: {conf:.3f})")
+            for pred in zip(y_pred_decoded, text):
+                print(pred)
 
+        # Return single item or full list based on input type
         return y_pred[0] if single_input else y_pred
-
-    # def predict(self, text, output=False):
-    #     # Handle both single text and list of texts
-    #     single_input = isinstance(text, str)
-    #
-    #     # Convert single string to list if needed
-    #     text_list = [text] if single_input else text
-    #
-    #     # Process the list
-    #     texts_processed = self.preprocess(text_list)
-    #     texts_vectorized = self.vectorizer.transform(texts_processed)
-    #
-    #     y_pred = self.best_model.predict(texts_vectorized)
-    #
-    #     if output:
-    #         y_pred_decoded = self.label_encoder.inverse_transform(y_pred).tolist()
-    #
-    #         print()
-    #         for pred in zip(y_pred_decoded, text):
-    #             print(pred)
-    #
-    #     # Return single item or full list based on input type
-    #     return y_pred[0] if single_input else y_pred
 
     def save_model(self):
         sklearn_path = str(os.path.join(BaseTextClassifier.save_models_path, "sklearn", self.model_name))
