@@ -40,7 +40,7 @@ class BERTClassifier(BaseTextClassifier):
         self.model_name = config.get("model_name")
         self.model_type = config.get("model_type")
         self.tokenizer = tokenizer
-        torch.set_num_threads(1)
+        # torch.set_num_threads(1)
 
         self.hp_ranges = config.get("hyper_parameters")
         self.n_trials = config.get("n_trials", 1)

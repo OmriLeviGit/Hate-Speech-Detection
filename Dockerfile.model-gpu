@@ -1,0 +1,25 @@
+FROM pytorch/pytorch:1.13.1-cuda11.6-cudnn8-runtime AS builder
+
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY requirements-model.txt .
+
+RUN pip install --no-cache-dir --prefer-binary -r requirements-model.txt
+
+RUN python -m spacy download en_core_web_lg
+
+COPY classifier/ ./classifier/
+COPY setup.py .
+
+FROM pytorch/pytorch:1.13.1-cuda11.6-cudnn8-runtime
+
+WORKDIR /app
+
+COPY --from=builder /usr/local /usr/local
+COPY --from=builder /app /app
+
+CMD ["python3", "-m", "classifier.compare_models"]
