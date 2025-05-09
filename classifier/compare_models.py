@@ -42,7 +42,7 @@ def main():
 
     print(f"\n\nBest model overall: {model_results[0]}\n\nModels sorted by score:")
     for model_name, cv_score, evaluation, params in model_results:
-        print(f"{model_name}: CV Score = {cv_score:.2f} | Evaluation = {evaluation:.2f} | Params: {params}")
+        print(f"{model_name}: CV Score = {cv_score:.2f} | Evaluation = {evaluation} | Params: {params}")
 
     df = pd.DataFrame(model_results, columns=["Model name", "CV Score", "Evaluation", "Params"])
     output_path = os.path.join(BaseTextClassifier.save_models_path, "comparison_result.csv")
