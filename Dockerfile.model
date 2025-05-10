@@ -8,7 +8,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 COPY requirements-model.txt .
 
-# add cpu only
+# pytorch cpu only
 RUN echo "--extra-index-url https://download.pytorch.org/whl/cpu" > temp-requirements.txt && \
     cat requirements-model.txt >> temp-requirements.txt && \
     mv temp-requirements.txt requirements-model.txt

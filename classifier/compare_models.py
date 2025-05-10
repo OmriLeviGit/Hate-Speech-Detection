@@ -2,7 +2,6 @@ import os
 import time
 
 import pandas as pd
-import torch
 
 from classifier import utils
 from classifier.BaseTextClassifier import BaseTextClassifier
@@ -27,30 +26,28 @@ def compare_models(models, debug=False):
 
         model.save_model()
 
-    end_time = time.time()
-    utils.print_header(f"Done comparing | Time: {end_time - start_time}")
+    total_time = utils.format_duration(time.time() - start_time)
+    utils.print_header(f"Done comparing | Time: {total_time}")
 
-    sorted_results = sorted(results, key=lambda x: x[1], reverse=True)  # sort by cv_score
+    sorted_results = sorted(results, key=lambda x: x[2][0], reverse=True)  # sort by evaluation score
 
-    return sorted_results
-
+    return sorted_results, total_time
 
 def main():
-    debug = True
-    print("GPU available" if torch.cuda.is_available() else "GPU not available")
+    debug = False
+    # utils.check_device()
 
     models = generate_models(debug=debug)
-    model_results = compare_models(models, debug=debug)
+    model_results, total_time = compare_models(models, debug=debug)
 
-    print(f"\n\nBest model overall: {model_results[0]}\n\nModels sorted by score:")
-    for model_name, cv_score, evaluation, params in model_results:
-        print(f"{model_name}: CV Score = {cv_score:.2f} | Evaluation = {evaluation} | Params: {params}")
-
+    # Save results
     df = pd.DataFrame(model_results, columns=["Model name", "CV Score", "Evaluation", "Params"])
+    df.loc[len(df)] = ['Total Time: ', '', total_time, '']
+
     output_path = os.path.join(BaseTextClassifier.save_models_path, "comparison_result.csv")
     df.to_csv(output_path, index=False)
 
-    # loaded_classifier = BaseTextClassifier.load_best_model()
+    print(f"Finished running in {total_time}, best model: {model_results[0]}")
 
 
 if __name__ == "__main__":

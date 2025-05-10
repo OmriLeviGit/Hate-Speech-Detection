@@ -21,15 +21,6 @@ from classifier.normalization.TextNormalizer import TextNormalizer
 from classifier.utils import format_duration
 
 
-"""
-When implementing hyperparameter optimization for multiple model architectures using Optuna with k-fold 
-cross-validation, what's the most appropriate metric for final model selection?
-Since each model architecture goes through its own optimization process resulting in both cross-validation
-scores and a final test score on the held-out dataset, should I prioritize the model with the highest
-cross-validation performance during optimization, or the one with the best final test score? Given that the
-final model is trained on the entire training set rather than just the cross-validation folds, how do I make a
-principled choice between different model architectures?
-"""
 class BERTClassifier(BaseTextClassifier):
     def __init__(self, labels: list, normalizer: TextNormalizer(), tokenizer, config, seed: int = 42):
         super().__init__(labels, seed)
@@ -244,57 +235,84 @@ class BERTClassifier(BaseTextClassifier):
         f1 = f1_score(labels, preds, average='weighted')
         return {"accuracy": acc, "f1": f1}
 
-    def predict(self, text, return_decoded=False, threshold=0.8, output=False):
-        """Predict class for a single text with confidence threshold for antisemitic class"""
+    # def predict(self, text, return_decoded=False, threshold=0.8, output=False):
+    #     """Predict class for a single text with confidence threshold for antisemitic class"""
+    #     single_input = isinstance(text, str)
+    #     text_list = [text] if single_input else text
+
+    #     texts_processed = self.preprocess(text_list)
+    #     inputs = self._tokenize(texts_processed)
+
+    #     if not torch.is_tensor(inputs['input_ids']):
+    #         inputs = {k: torch.tensor(v) for k, v in inputs.items()}
+
+    #     # Get predictions with confidence threshold
+    #     with torch.no_grad():
+    #         outputs = self.best_model(**inputs)
+    #         logits = outputs.logits
+    #         probs = torch.softmax(logits, dim=-1)
+
+    #         # Get max predictions
+    #         max_probs, max_indices = torch.max(probs, dim=-1)
+
+    #         # Get number of labels in model
+    #         num_labels = logits.shape[-1]
+
+    #         # Apply threshold logic
+    #         if num_labels == 2:
+    #             # If antisemitic prediction doesn't meet threshold, change to not_antisemitic
+    #             y_pred = torch.where(
+    #                 (max_indices == 0) & (max_probs < threshold),
+    #                 torch.ones_like(max_indices),  # Change to index 1 (not_antisemitic)
+    #                 max_indices
+    #             )
+    #         else:  # num_labels == 3
+    #             antisemitic = probs[:, 0]
+    #             not_antisemitic = probs[:, 1]
+
+    #             y_pred = torch.full_like(max_indices, 2)  # default to irrelevant
+    #             y_pred = torch.where(antisemitic > threshold, torch.zeros_like(y_pred), y_pred)
+    #             y_pred = torch.where((not_antisemitic > threshold) & (antisemitic <= threshold),
+    #                                  torch.ones_like(y_pred), y_pred)
+
+
+    #         y_pred = y_pred.cpu().numpy()
+    #         probs_np = probs.cpu().numpy()
+
+    #     if output:
+    #         y_pred_decoded = self.label_encoder.inverse_transform(y_pred).tolist()
+    #         print()
+    #         for i, (pred, txt) in enumerate(zip(y_pred_decoded, text_list)):
+    #             conf = probs_np[i][y_pred[i]]  # confidence of final predicted class
+    #             print(f"Text: {txt}")
+    #             print(f"Prediction: {pred} (confidence: {conf:.3f})")
+
+    #     return y_pred[0] if single_input else y_pred
+
+    def predict(self, text, return_decoded=False, output=False):
         single_input = isinstance(text, str)
         text_list = [text] if single_input else text
 
         texts_processed = self.preprocess(text_list)
-        inputs = self._tokenize(texts_processed)
+        inputs = self.tokenizer(texts_processed, truncation=True, padding="max_length", max_length=128, return_tensors="pt")
 
-        if not torch.is_tensor(inputs['input_ids']):
-            inputs = {k: torch.tensor(v) for k, v in inputs.items()}
+        # Get device and move inputs
+        device = next(self.best_model.parameters()).device
+        inputs = {k: v.to(device) for k, v in inputs.items()}
 
-        # Get predictions with confidence threshold
+        # Get predictions directly from model
         with torch.no_grad():
             outputs = self.best_model(**inputs)
-            logits = outputs.logits
-            probs = torch.softmax(logits, dim=-1)
 
-            # Get max predictions
-            max_probs, max_indices = torch.max(probs, dim=-1)
-
-            # Get number of labels in model
-            num_labels = logits.shape[-1]
-
-            # Apply threshold logic
-            if num_labels == 2:
-                # If antisemitic prediction doesn't meet threshold, change to not_antisemitic
-                y_pred = torch.where(
-                    (max_indices == 0) & (max_probs < threshold),
-                    torch.ones_like(max_indices),  # Change to index 1 (not_antisemitic)
-                    max_indices
-                )
-            else:  # num_labels == 3
-                antisemitic = probs[:, 0]
-                not_antisemitic = probs[:, 1]
-
-                y_pred = torch.full_like(max_indices, 2)  # default to irrelevant
-                y_pred = torch.where(antisemitic > threshold, torch.zeros_like(y_pred), y_pred)
-                y_pred = torch.where((not_antisemitic > threshold) & (antisemitic <= threshold),
-                                     torch.ones_like(y_pred), y_pred)
-
-
-            y_pred = y_pred.cpu().numpy()
-            probs_np = probs.cpu().numpy()
+        # Get predicted class indices
+        y_pred = torch.argmax(outputs.logits, dim=1).cpu().numpy()
 
         if output:
             y_pred_decoded = self.label_encoder.inverse_transform(y_pred).tolist()
+
             print()
-            for i, (pred, txt) in enumerate(zip(y_pred_decoded, text_list)):
-                conf = probs_np[i][y_pred[i]]  # confidence of final predicted class
-                print(f"Text: {txt}")
-                print(f"Prediction: {pred} (confidence: {conf:.3f})")
+            for pred in zip(y_pred_decoded, text):
+                print(pred)
 
         return y_pred[0] if single_input else y_pred
 

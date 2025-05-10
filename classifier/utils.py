@@ -1,4 +1,5 @@
 import copy
+import torch
 
 from sklearn.metrics import classification_report, confusion_matrix
 
@@ -21,23 +22,19 @@ def format_duration(seconds):
     return f"{int(minutes)}:{int(seconds):02}"
 
 
-def generate_model_configs(base_configs, learning_rates, l2_values):
-    all_configs = []
+def check_device():
+    cuda_available = torch.cuda.is_available()
+    print(f"CUDA available: {cuda_available}")
 
-    for base_config in base_configs:
-        for lr in learning_rates:
-            for l2 in l2_values:
-                # Create a deep copy to avoid modifying the original
-                config = copy.deepcopy(base_config)
-
-                # Update the hyperparameters
-                config["hyper_parameters"]["learning_rate"] = lr
-                config["hyper_parameters"]["l2_regularization"] = l2
-
-                # Update the model name to reflect the parameters
-                config["model_name"] = f"{base_config['model_name']} (lr={lr:.3f}, l2={l2:.3f})"
-
-                # Add to our list of configurations
-                all_configs.append(config)
-
-    return all_configs
+    if cuda_available:
+        print(f"CUDA version: {torch.version.cuda}")
+        print(f"GPU count: {torch.cuda.device_count()}")
+        print(f"Current GPU: {torch.cuda.get_device_name(0)}")
+        
+        try:
+            tensor = torch.randn(3, 3).cuda()
+            print(f"Tensor on GPU: {tensor}")
+        except Exception as e:
+            print(f"Failed to allocate tensor on GPU: {e}")
+    else:
+        print("CUDA is not available, running on CPU.")
