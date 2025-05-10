@@ -1,4 +1,4 @@
-FROM python:3.9.16-slim AS builder
+FROM python:3.9-slim AS builder
 
 WORKDIR /app
 
@@ -8,6 +8,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 COPY requirements-model.txt .
 
+# add cpu only
+RUN echo "--extra-index-url https://download.pytorch.org/whl/cpu" > temp-requirements.txt && \
+    cat requirements-model.txt >> temp-requirements.txt && \
+    mv temp-requirements.txt requirements-model.txt
+
 RUN pip install --no-cache-dir --prefer-binary -r requirements-model.txt
 
 RUN python -m spacy download en_core_web_lg
@@ -15,7 +20,7 @@ RUN python -m spacy download en_core_web_lg
 COPY classifier/ ./classifier/
 COPY setup.py .
 
-FROM python:3.9.16-slim
+FROM python:3.9-slim
 
 WORKDIR /app
 

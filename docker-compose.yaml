@@ -2,11 +2,22 @@ services:
   classifier:
     build:
       context: .
-      dockerfile: Dockerfile.model
-    image: model
+      dockerfile: Dockerfile.model  # CPU version
+    image: model-cpu
     volumes:
-      - ./classifier:/app/classifier  # For saving/loading trained models
-      - huggingface_models:/root/.cache/huggingface  # For Hugging Face models
+      - ./classifier:/app/classifier
+      - huggingface_models:/root/.cache/huggingface
+    environment:
+      - PYTHONUNBUFFERED=1
+
+  classifier-gpu:
+    build:
+      context: .
+      dockerfile: Dockerfile.model-gpu  # GPU version
+    image: model-gpu
+    volumes:
+      - ./classifier:/app/classifier
+      - huggingface_models:/root/.cache/huggingface
     environment:
       - PYTHONUNBUFFERED=1
     deploy:
@@ -18,5 +29,4 @@ services:
               capabilities: [ gpu ]
 
 volumes:
-  practicumx_saved_models:
   huggingface_models:

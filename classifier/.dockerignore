@@ -3,3 +3,9 @@ __pycache__/
 *.ipynb
 .git
 *.md
+
+saved_models
+
+# Ignore all CSV files except for results.csv
+*.csv
+!results.csv

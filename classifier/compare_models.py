@@ -2,6 +2,7 @@ import os
 import time
 
 import pandas as pd
+import torch
 
 from classifier import utils
 from classifier.BaseTextClassifier import BaseTextClassifier
@@ -36,6 +37,7 @@ def compare_models(models, debug=False):
 
 def main():
     debug = True
+    print("GPU available" if torch.cuda.isavailable() else "GPU not available")
 
     models = generate_models(debug=debug)
     model_results = compare_models(models, debug=debug)
@@ -48,7 +50,7 @@ def main():
     output_path = os.path.join(BaseTextClassifier.save_models_path, "comparison_result.csv")
     df.to_csv(output_path, index=False)
 
-    # loaded_classifier = BaseTextClassifier.load_best_model(save_models_path)
+    loaded_classifier = BaseTextClassifier.load_best_model(save_models_path)
 
 
 if __name__ == "__main__":
