@@ -1,5 +1,5 @@
 import tempfile
-import time, os, pickle
+import time, os, pickle, shutil
 
 import numpy as np
 import optuna
@@ -148,11 +148,14 @@ class BERTClassifier(BaseTextClassifier):
         # Initialize model
         model = self._create_model(num_labels=len(self.LABELS), dropout=params["dropout"])
 
+        checkpoint_dir = "/tmp/training/checkpoints"
+        os.makedirs(checkpoint_dir, exist_ok=True)
+
         # Create temporary directory for checkpoints
         with tempfile.TemporaryDirectory() as tmp_dir:
             # Get training arguments
             training_args = TrainingArguments(
-                output_dir=tmp_dir,
+                output_dir=checkpoint_dir,
                 learning_rate=params["learning_rate"],
                 per_device_train_batch_size=params["batch_size"],
                 per_device_eval_batch_size=params["batch_size"],
@@ -180,7 +183,8 @@ class BERTClassifier(BaseTextClassifier):
             trainer.train()
             val_score = trainer.evaluate()["eval_accuracy"]
 
-        # Return the best model and its score
+        shutil.rmtree(checkpoint_dir, ignore_errors=True)
+
         return val_score
 
     def train_final_model(self, X, y, params):
@@ -196,11 +200,14 @@ class BERTClassifier(BaseTextClassifier):
 
         model = self._create_model(num_labels=len(self.LABELS), dropout=params["dropout"])
 
+        checkpoint_dir = "/tmp/training/checkpoints"
+        os.makedirs(checkpoint_dir, exist_ok=True)
+
         start_time = time.time()
         # Create temporary directory for checkpoints
         with tempfile.TemporaryDirectory() as tmp_dir:
             training_args = TrainingArguments(
-                output_dir=tmp_dir,
+                output_dir=checkpoint_dir,
                 learning_rate=params["learning_rate"],
                 per_device_train_batch_size=params["batch_size"],
                 per_device_eval_batch_size=params["batch_size"],
@@ -220,6 +227,8 @@ class BERTClassifier(BaseTextClassifier):
             )
 
             trainer.train()
+
+        shutil.rmtree(checkpoint_dir, ignore_errors=True)
 
         training_duration = time.time() - start_time
         print(f"Final model training took: {format_duration(training_duration)}")
