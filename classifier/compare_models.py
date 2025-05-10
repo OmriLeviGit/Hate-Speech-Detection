@@ -34,10 +34,26 @@ def compare_models(models, debug=False):
 
     return sorted_results
 
+def check_device():
+    cuda_available = torch.cuda.is_available()
+    print(f"CUDA available: {cuda_available}")
+
+    if cuda_available:
+        print(f"CUDA version: {torch.version.cuda}")
+        print(f"GPU count: {torch.cuda.device_count()}")
+        print(f"Current GPU: {torch.cuda.get_device_name(0)}")
+        
+        try:
+            tensor = torch.randn(3, 3).cuda()
+            print(f"Tensor on GPU: {tensor}")
+        except Exception as e:
+            print(f"Failed to allocate tensor on GPU: {e}")
+    else:
+        print("CUDA is not available, running on CPU.")
 
 def main():
-    debug = True
-    print("GPU available" if torch.cuda.is_available() else "GPU not available")
+    debug = False
+    # check_device()
 
     models = generate_models(debug=debug)
     model_results = compare_models(models, debug=debug)
