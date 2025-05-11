@@ -1,5 +1,5 @@
 import tempfile
-import time, os, pickle, shutil
+import time, os, pickle
 
 import numpy as np
 import optuna
