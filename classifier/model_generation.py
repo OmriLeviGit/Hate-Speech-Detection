@@ -210,7 +210,7 @@ def ini_bert_models(configs, debug=False):
 
 def generate_models(debug=False):
     models = []
-    models.extend(ini_sklearn_models(sklearn_configs, debug=debug))
+    # models.extend(ini_sklearn_models(sklearn_configs, debug=debug))
     models.extend(ini_bert_models(bert_configs, debug=debug))
 
     model_names = [model.model_name for model in models]

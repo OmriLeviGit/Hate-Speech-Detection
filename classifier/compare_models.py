@@ -5,14 +5,17 @@ import pandas as pd
 
 from classifier import utils
 from classifier.BaseTextClassifier import BaseTextClassifier
+from classifier.augment_text import augment_minority
 from classifier.model_generation import generate_models
 
 
 
 def compare_models(models, debug=False):
     # load and prepare once
-    data = models[0].load_data(set_to_min=True, debug=debug)
+    data = models[0].load_data(debug=debug)
     X_train, X_test, y_train, y_test = models[0].prepare_dataset(data)
+
+    X_train, y_train = augment_minority(X_train, y_train)
 
     results = []
     start_time = time.time()
@@ -34,7 +37,7 @@ def compare_models(models, debug=False):
     return sorted_results, total_time
 
 def main():
-    debug = False
+    debug = True
     # utils.check_device()
 
     models = generate_models(debug=debug)

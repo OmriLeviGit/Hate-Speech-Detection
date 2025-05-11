@@ -14,7 +14,7 @@ RUN bash -c 'echo "--extra-index-url https://download.pytorch.org/whl/cpu" > /tm
     pip install --prefer-binary -r /tmp/reqs'
 
 RUN python -m spacy download en_core_web_lg
-RUN python -m nltk.downloader wordnet omw-1.4 averaged_perceptron_tagger
+RUN python -m nltk.downloader wordnet omw-1.4 averaged_perceptron_tagger averaged_perceptron_tagger_eng -d /usr/local/share/nltk_data
 
 COPY classifier/ ./classifier/
 COPY setup.py .

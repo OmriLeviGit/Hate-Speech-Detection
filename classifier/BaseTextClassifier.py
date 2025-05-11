@@ -27,7 +27,7 @@ class BaseTextClassifier(ABC):
         self.best_model = None
         self.model_name = None
 
-    def load_data(self, class_0_count=None, class_1_count=None, class_2_count=None,set_to_min=False,
+    def load_data(self, class_0_count=None, class_1_count=None, class_2_count=None, set_to_min=False,
                   debug=False) -> dict[str, list]:
         data = {}
 
@@ -80,7 +80,8 @@ class BaseTextClassifier(ABC):
 
         return data
 
-    def prepare_dataset(self, datasets: dict[str, list[str]], test_size = 0.2) -> tuple[list[str], list[str], list[str], list[str]]:
+    def prepare_dataset(self, datasets: dict[str, list[str]], test_size = 0.2, augment=False, augment_ratio=1) \
+            -> tuple[list[str], list[str], list[str], list[str]]:
         """Prepare and split into train and test sets"""
         posts = []
         labels = []
@@ -101,6 +102,10 @@ class BaseTextClassifier(ABC):
             stratify=y_shuffled,
             random_state=self.seed
         )
+
+        # if augment:
+        #     X_train_list, y_train_list = self.augment_minority(X_train.tolist(),y_train.tolist(), augment_ratio)
+        #     return X_train_list, X_test.tolist(), y_train_list, y_test.tolist()
 
         return X_train.tolist(), X_test.tolist(), y_train.tolist(), y_test.tolist()
 
