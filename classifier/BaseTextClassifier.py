@@ -1,6 +1,8 @@
 import os
 import pickle
 from abc import ABC, abstractmethod
+import nlpaug.augmenter.word as naw
+from collections import Counter
 
 import numpy as np
 import pandas as pd
@@ -27,21 +29,6 @@ class BaseTextClassifier(ABC):
 
     def load_data(self, class_0_count=None, class_1_count=None, class_2_count=None,set_to_min=False,
                   debug=False) -> dict[str, list]:
-        """Load data from file or use sample data.
-
-        This function loads text data for classification either from a csv file, or mock data.
-        The data is organized by class labels.
-
-        Args:
-            class_0_count: Number of samples to load for class 0 (antisemitic)
-            class_1_count: Number of samples to load for class 1 (not_antisemitic)
-            class_2_count: Number of samples to load for class 2 (irrelevant), optional
-            debug: True to work with debug data, False (default) to import data from a csv file
-            set_to_min: If True, sets all class counts to the minimum available across classes for balanced dataset
-
-        Returns:
-            Dictionary mapping class labels to lists of text samples.
-        """
         data = {}
 
         if debug:
@@ -49,7 +36,7 @@ class BaseTextClassifier(ABC):
             return self._initialize_test_dataset()
 
         script_dir = os.path.dirname(os.path.abspath(__file__))
-        df = pd.read_csv(os.path.join(script_dir, 'results_may_09_2025.csv'))
+        df = pd.read_csv(os.path.join(script_dir, 'results.csv'))
 
         sentiment_mapping = {
             'Positive': "antisemitic",

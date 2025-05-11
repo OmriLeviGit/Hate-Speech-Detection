@@ -1,8 +1,8 @@
 services:
-  classifier:
+  classifier-cpu:
     build:
       context: .
-      dockerfile: Dockerfile.model  # CPU version
+      dockerfile: classifier/Dockerfile.cpu
       args:
         - BUILDKIT_INLINE_CACHE=1
     image: model-cpu
@@ -15,7 +15,7 @@ services:
   classifier-gpu:
     build:
       context: .
-      dockerfile: Dockerfile.model-gpu  # GPU version
+      dockerfile: classifier/Dockerfile.gpu
       args:
         - BUILDKIT_INLINE_CACHE=1
     image: model-gpu

@@ -1,0 +1,27 @@
+FROM python:3.9-slim AS builder
+
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY classifier/requirements.txt .
+
+# pytorch cpu only, bash trick to avoid rebuilding; puts the download link *at the beginning of the requirements*
+RUN bash -c 'echo "--extra-index-url https://download.pytorch.org/whl/cpu" > /tmp/reqs && \
+    cat requirements.txt >> /tmp/reqs && \
+    pip install --prefer-binary -r /tmp/reqs'
+
+RUN python -m spacy download en_core_web_lg
+RUN python -m nltk.downloader wordnet omw-1.4 averaged_perceptron_tagger
+
+COPY classifier/ ./classifier/
+COPY setup.py .
+
+FROM python:3.9-slim
+
+COPY --from=builder /usr/local /usr/local
+COPY --from=builder /app /app
+
+CMD ["python3", "-m", "classifier.augment_text"]

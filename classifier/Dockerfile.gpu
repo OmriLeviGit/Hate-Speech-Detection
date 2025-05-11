@@ -6,23 +6,20 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     && rm -rf /var/lib/apt/lists/*
 
-COPY requirements-model.txt .
+COPY classifier/requirements.txt .
 
-# pytorch gpu
-RUN echo "--extra-index-url https://download.pytorch.org/whl/cu118" > temp-requirements.txt && \
-    cat requirements-model.txt >> temp-requirements.txt && \
-    mv temp-requirements.txt requirements-model.txt
-
-RUN pip install --no-cache-dir --prefer-binary -r requirements-model.txt
+# pytorch gpu only, bash trick to avoid rebuilding; puts the download link *at the beginning of the requirements*
+RUN bash -c 'echo "--extra-index-url https://download.pytorch.org/whl/cu118" > /tmp/reqs && \
+    cat requirements.txt >> /tmp/reqs && \
+    pip install --prefer-binary -r /tmp/reqs'
 
 RUN python -m spacy download en_core_web_lg
+RUN python -m nltk.downloader wordnet omw-1.4 averaged_perceptron_tagger
 
 COPY classifier/ ./classifier/
 COPY setup.py .
 
 FROM python:3.9-slim
-
-WORKDIR /app
 
 COPY --from=builder /usr/local /usr/local
 COPY --from=builder /app /app

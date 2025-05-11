@@ -15,7 +15,8 @@ services:
           memory: 256M
 
   backend:
-    build: ./serverside
+    build:
+      context: ./serverside
     ports:
       - "8080:8080"
     volumes:
@@ -30,7 +31,8 @@ services:
           memory: 512M
 
   frontend:
-    build: ./clientside
+    build:
+      context: ./clientside
     ports:
       - "80:80"
     volumes:

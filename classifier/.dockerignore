@@ -9,4 +9,3 @@ saved_models
 # Ignore all CSV files except for results.csv
 *.csv
 !results.csv
-!results_may_09_2025.csv
