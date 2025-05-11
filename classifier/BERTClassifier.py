@@ -1,5 +1,5 @@
 import tempfile
-import time, os, pickle
+import time, os, pickle, shutil
 
 import numpy as np
 import optuna
@@ -180,7 +180,6 @@ class BERTClassifier(BaseTextClassifier):
             trainer.train()
             val_score = trainer.evaluate()["eval_accuracy"]
 
-        # Return the best model and its score
         return val_score
 
     def train_final_model(self, X, y, params):

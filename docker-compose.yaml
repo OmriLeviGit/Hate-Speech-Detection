@@ -22,6 +22,7 @@ services:
     volumes:
       - ./classifier:/app/classifier
       - huggingface_models:/root/.cache/huggingface
+      - /mnt/ssd/training:/tmp/training
     environment:
       - PYTHONUNBUFFERED=1
     deploy:
