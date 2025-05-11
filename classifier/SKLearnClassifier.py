@@ -118,22 +118,31 @@ class SKLearnClassifier(BaseTextClassifier):
         sklearn_path = str(os.path.join(BaseTextClassifier.save_models_path, "sklearn", self.model_name))
         os.makedirs(sklearn_path, exist_ok=True)
 
-        tmp = copy.deepcopy(self)
-        tmp.best_model = None
+        # Save model
+        joblib.dump(self.best_model, os.path.join(sklearn_path, "sk_model.pkl"))
+        joblib.dump(self.vectorizer, os.path.join(sklearn_path, "vectorizer.pkl"))
+
+        # Save temporary references
+        temp_best_model = self.best_model
+        temp_vectorizer = self.vectorizer
+
+        # Clear problematic attributes
+        self.best_model = None
+        self.vectorizer = None
 
         with open(os.path.join(sklearn_path, "classifier_class.pkl"), "wb") as f:
-            pickle.dump(tmp, f)
+            pickle.dump(self, f)
 
-        joblib.dump(self.best_model, os.path.join(sklearn_path, "sk_model.pkl"))
+        self.best_model = temp_best_model
+        self.vectorizer = temp_vectorizer
 
     @staticmethod
     def load_model(path: str):
-        sklearn_path = os.path.join(BaseTextClassifier.save_models_path, "sklearn", path)
+        sklearn_path = str(os.path.join(BaseTextClassifier.save_models_path, "sklearn", path))
         with open(os.path.join(sklearn_path, "classifier_class.pkl"), "rb") as f:
             obj = pickle.load(f)
-            obj.best_model = None
-            obj.tokenizer = None
 
         obj.best_model = joblib.load(os.path.join(sklearn_path, "sk_model.pkl"))
+        obj.vectorizer = joblib.load(os.path.join(sklearn_path, "vectorizer.pkl"))
 
         return obj

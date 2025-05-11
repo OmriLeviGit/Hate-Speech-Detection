@@ -277,7 +277,7 @@ class BERTClassifier(BaseTextClassifier):
         temp_best_model = self.best_model
         temp_tokenizer = self.tokenizer
 
-        # Clear potentially problematic attributes
+        # Clear problematic attributes
         self.best_model = None
         self.tokenizer = None
 

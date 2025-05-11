@@ -7,8 +7,6 @@ initiate_job.sh
 
 test.py
 classifier/saved_models
-classifier/saved_models_old
-classifier/saved_models_new
 
 results
 
