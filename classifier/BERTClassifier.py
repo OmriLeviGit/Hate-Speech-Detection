@@ -235,61 +235,9 @@ class BERTClassifier(BaseTextClassifier):
         f1 = f1_score(labels, preds, average='weighted')
         return {"accuracy": acc, "f1": f1}
 
-    # def predict(self, text, return_decoded=False, threshold=0.8, output=False):
-    #     """Predict class for a single text with confidence threshold for antisemitic class"""
-    #     single_input = isinstance(text, str)
-    #     text_list = [text] if single_input else text
-
-    #     texts_processed = self.preprocess(text_list)
-    #     inputs = self._tokenize(texts_processed)
-
-    #     if not torch.is_tensor(inputs['input_ids']):
-    #         inputs = {k: torch.tensor(v) for k, v in inputs.items()}
-
-    #     # Get predictions with confidence threshold
-    #     with torch.no_grad():
-    #         outputs = self.best_model(**inputs)
-    #         logits = outputs.logits
-    #         probs = torch.softmax(logits, dim=-1)
-
-    #         # Get max predictions
-    #         max_probs, max_indices = torch.max(probs, dim=-1)
-
-    #         # Get number of labels in model
-    #         num_labels = logits.shape[-1]
-
-    #         # Apply threshold logic
-    #         if num_labels == 2:
-    #             # If antisemitic prediction doesn't meet threshold, change to not_antisemitic
-    #             y_pred = torch.where(
-    #                 (max_indices == 0) & (max_probs < threshold),
-    #                 torch.ones_like(max_indices),  # Change to index 1 (not_antisemitic)
-    #                 max_indices
-    #             )
-    #         else:  # num_labels == 3
-    #             antisemitic = probs[:, 0]
-    #             not_antisemitic = probs[:, 1]
-
-    #             y_pred = torch.full_like(max_indices, 2)  # default to irrelevant
-    #             y_pred = torch.where(antisemitic > threshold, torch.zeros_like(y_pred), y_pred)
-    #             y_pred = torch.where((not_antisemitic > threshold) & (antisemitic <= threshold),
-    #                                  torch.ones_like(y_pred), y_pred)
-
-
-    #         y_pred = y_pred.cpu().numpy()
-    #         probs_np = probs.cpu().numpy()
-
-    #     if output:
-    #         y_pred_decoded = self.label_encoder.inverse_transform(y_pred).tolist()
-    #         print()
-    #         for i, (pred, txt) in enumerate(zip(y_pred_decoded, text_list)):
-    #             conf = probs_np[i][y_pred[i]]  # confidence of final predicted class
-    #             print(f"Text: {txt}")
-    #             print(f"Prediction: {pred} (confidence: {conf:.3f})")
-
-    #     return y_pred[0] if single_input else y_pred
-
     def predict(self, text, return_decoded=False, output=False):
+        self.best_model.eval()  # evaluation mode
+
         single_input = isinstance(text, str)
         text_list = [text] if single_input else text
 

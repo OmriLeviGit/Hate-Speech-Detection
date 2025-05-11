@@ -94,40 +94,6 @@ class SKLearnClassifier(BaseTextClassifier):
 
         self.print_best_model_results(self.best_score, self.best_params, training_duration)
 
-    # def predict(self, text, threshold=0.7, output=False):
-    #     single_input = isinstance(text, str)
-    #     text_list = [text] if single_input else text
-    #
-    #     texts_processed = self.preprocess(text_list)
-    #     texts_vectorized = self.vectorizer.transform(texts_processed)
-    #
-    #     probs = self.best_model.predict_proba(texts_vectorized)
-    #     num_labels = probs.shape[1]
-    #
-    #     if num_labels == 2:
-    #         class0_probs = probs[:, 0]
-    #         y_pred = np.where(class0_probs >= threshold, 0, 1)
-    #
-    #     else:  # 3 labels
-    #         antisemitic_prob = probs[:, 0]
-    #         not_antisemitic_prob = probs[:, 1]
-    #         # Default to "uncertain" (label 2)
-    #         y_pred = np.full(len(text_list), 2)
-    #         # Assign "antisemitic" (label 0) if probability exceeds threshold
-    #         y_pred[antisemitic_prob > threshold] = 0
-    #         # Assign "not_antisemitic" (label 1) if its probability exceeds threshold AND antisemitic doesn't
-    #         y_pred[(not_antisemitic_prob > threshold) & (antisemitic_prob <= threshold)] = 1
-    #
-    #     if output:
-    #         y_pred_decoded = self.label_encoder.inverse_transform(y_pred)
-    #         print()
-    #         for i, (pred, txt) in enumerate(zip(y_pred_decoded, text_list)):
-    #             conf = probs[i][y_pred[i]]
-    #             print(f"Text: {txt}")
-    #             print(f"Prediction: {pred} (confidence: {conf:.3f})")
-    #
-    #     return y_pred[0] if single_input else y_pred
-
     def predict(self, text, output=False):
         single_input = isinstance(text, str)
 
