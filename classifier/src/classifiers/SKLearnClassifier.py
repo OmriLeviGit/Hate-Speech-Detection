@@ -1,13 +1,12 @@
-import time, os, pickle, joblib, copy
+import time, os, pickle, joblib
 
-import numpy as np
 from sklearn.calibration import CalibratedClassifierCV
 from sklearn.frozen import FrozenEstimator
 from sklearn.model_selection import GridSearchCV
 
-from classifier.BaseTextClassifier import BaseTextClassifier
-from classifier.SpacySingleton import SpacyModel
-from classifier.normalization.TextNormalizer import TextNormalizer
+from classifier.src.classifiers.BaseTextClassifier import BaseTextClassifier
+from classifier.src.SpacySingleton import SpacyModel
+from classifier.src.normalization.TextNormalizer import TextNormalizer
 
 
 class SKLearnClassifier(BaseTextClassifier):

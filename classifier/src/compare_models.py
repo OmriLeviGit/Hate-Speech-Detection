@@ -3,9 +3,9 @@ import time
 
 import pandas as pd
 
-from classifier import utils
-from classifier.BaseTextClassifier import BaseTextClassifier
-from classifier.model_generation import generate_models
+from classifier.src import utils
+from classifier.src.classifiers.BaseTextClassifier import BaseTextClassifier
+from classifier.src.model_generation import generate_models
 
 
 

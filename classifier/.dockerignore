@@ -4,8 +4,8 @@ __pycache__/
 .git
 *.md
 
-saved_models
+src/saved_models
 
 # Ignore all CSV files except for results.csv
 *.csv
-!results.csv
+!src/results.csv

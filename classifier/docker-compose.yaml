@@ -2,12 +2,14 @@ services:
   classifier-cpu:
     build:
       context: .
-      dockerfile: classifier/Dockerfile.cpu
+      dockerfile: Dockerfile
       args:
         - BUILDKIT_INLINE_CACHE=1
+        - PYTORCH_URL=https://download.pytorch.org/whl/cpu
+        - TARGET=cpu
     image: model-cpu
     volumes:
-      - ./classifier:/app/classifier
+      - ./:/app/classifier/
       - huggingface_models:/root/.cache/huggingface
     environment:
       - PYTHONUNBUFFERED=1
@@ -16,12 +18,14 @@ services:
   classifier-gpu:
     build:
       context: .
-      dockerfile: classifier/Dockerfile.gpu
+      dockerfile: Dockerfile
       args:
         - BUILDKIT_INLINE_CACHE=1
+        - PYTORCH_URL=https://download.pytorch.org/whl/cu118
+        - TARGET=gpu
     image: model-gpu
     volumes:
-      - ./classifier:/app/classifier
+      - ./:/app/classifier/
       - huggingface_models:/root/.cache/huggingface
       - /mnt/ssd/training:/tmp/training
     environment:

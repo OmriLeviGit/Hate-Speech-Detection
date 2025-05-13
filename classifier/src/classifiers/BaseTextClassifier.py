@@ -11,13 +11,13 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
 from sklearn.utils import shuffle
 
-from classifier.utils import format_duration
+from classifier.src.utils import format_duration
 
 
 class BaseTextClassifier(ABC):
     """Abstract base class for text classifiers"""
 
-    save_models_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "saved_models") # static attribute
+    save_models_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "saved_models")
 
     def __init__(self, labels: list = None, seed = None):
         self.LABELS = labels
@@ -79,7 +79,6 @@ class BaseTextClassifier(ABC):
         Args:
             datasets: Dictionary of label -> list of texts
             test_size: Proportion of data for testing
-            augment_antisemitic: Whether to augment the antisemitic class
             augment_ratio: How much to augment (1.0 = double the size)
             balance_classes: Whether to balance classes in training set
         """
@@ -147,7 +146,7 @@ class BaseTextClassifier(ABC):
         n_aug = (samples_needed + len(target_indices) - 1) // len(target_indices)
 
         primary_aug = naw.SynonymAug(aug_src='wordnet', aug_min=1, aug_max=2)
-        fallback_aug = naw.RandomWordAug(action="insert", aug_min=1, aug_max=2)
+        fallback_aug = naw.RandomWordAug(action="swap", aug_min=1, aug_max=2)
 
         augmented_texts = []
         augmented_labels = []
@@ -338,9 +337,9 @@ class BaseTextClassifier(ABC):
 
         # Load the best model found
         if best_model_type == "bert":
-            from .BERTClassifier import BERTClassifier
+            from .BertClassifier import BertClassifier
             model_path = os.path.join(base_path, "bert", best_subfolder)
-            return BERTClassifier.load_model(model_path)
+            return BertClassifier.load_model(model_path)
         elif best_model_type == "sklearn":
             from .SKLearnClassifier import SKLearnClassifier
             model_path = os.path.join(base_path, "sklearn", best_subfolder)

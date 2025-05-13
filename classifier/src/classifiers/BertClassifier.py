@@ -6,7 +6,7 @@ import optuna
 import torch
 from torch.utils.data import Dataset
 from sklearn.metrics import accuracy_score, f1_score
-from sklearn.model_selection import train_test_split, KFold
+from sklearn.model_selection import KFold
 from transformers import (
     AutoModelForSequenceClassification,
     AutoTokenizer,
@@ -16,12 +16,12 @@ from transformers import (
     TrainingArguments, AutoConfig,
 )
 
-from classifier.BaseTextClassifier import BaseTextClassifier
-from classifier.normalization.TextNormalizer import TextNormalizer
-from classifier.utils import format_duration
+from classifier.src.classifiers.BaseTextClassifier import BaseTextClassifier
+from classifier.src.normalization.TextNormalizer import TextNormalizer
+from classifier.src.utils import format_duration
 
 
-class BERTClassifier(BaseTextClassifier):
+class BertClassifier(BaseTextClassifier):
     def __init__(self, labels: list, normalizer: TextNormalizer(), tokenizer, config, seed: int = 42):
         super().__init__(labels, seed)
 

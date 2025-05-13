@@ -5,10 +5,10 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.svm import LinearSVC
 from transformers import AutoTokenizer
 
-from classifier.BERTClassifier import BERTClassifier
-from classifier.SKLearnClassifier import SKLearnClassifier
-from classifier.normalization.TextNormalizer import TextNormalizer
-from classifier.normalization.TextNormalizerRoBERTa import TextNormalizerRoBERTa
+from classifier.src.classifiers.BertClassifier import BertClassifier
+from classifier.src.classifiers.SKLearnClassifier import SKLearnClassifier
+from classifier.src.normalization.TextNormalizer import TextNormalizer
+from classifier.src.normalization.TextNormalizerRoBERTa import TextNormalizerRoBERTa
 
 debug_sklearn_configs = [
     {
@@ -179,7 +179,7 @@ def ini_bert_models(configs, debug=False):
 
         default_tokenizer = AutoTokenizer.from_pretrained(base_config["model_type"])
 
-        classifier = BERTClassifier(
+        classifier = BertClassifier(
             default_labels,
             default_normalizer,
             default_tokenizer,
@@ -203,7 +203,7 @@ def ini_bert_models(configs, debug=False):
 
             model_config["model_name"] = f"{base_config['model_name']}_{variant.get('variant_name')}"
 
-            classifier = BERTClassifier(labels, normalizer, tokenizer, model_config)
+            classifier = BertClassifier(labels, normalizer, tokenizer, model_config)
             bert_models.append(classifier)
 
     return bert_models

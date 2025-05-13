@@ -3,7 +3,7 @@ import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from classifier.BaseTextClassifier import BaseTextClassifier
+from classifier.src.classifiers.BaseTextClassifier import BaseTextClassifier
 
 app = FastAPI()
 
