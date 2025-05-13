@@ -125,13 +125,13 @@ bert_configs = [
     },
 ]
 
-def ini_sklearn_models(configs, debug=False):
+def ini_sklearn_models(configs, default_labels, debug=False):
     if debug:
         configs = debug_sklearn_configs
+        default_labels.append("irrelevant")
 
     sklearn_models = []
 
-    default_labels = ["antisemitic", "not_antisemitic"]
     default_normalizer = TextNormalizer(emoji='text')
     default_vectorizer = TfidfVectorizer()
 
@@ -154,23 +154,22 @@ def ini_sklearn_models(configs, debug=False):
 
             normalizer = variant.get("normalizer", default_normalizer)
             vectorizer = variant.get("vectorizer", default_vectorizer)
-            labels = variant.get("labels", default_labels)
+            default_labels = variant.get("labels", default_labels)
 
             model_config["model_name"] = f"{base_config['model_name']}_{variant.get('variant_name')}"
 
-            classifier = SKLearnClassifier(labels, normalizer, vectorizer, model_config)
+            classifier = SKLearnClassifier(default_labels, normalizer, vectorizer, model_config)
             sklearn_models.append(classifier)
 
     return sklearn_models
 
 
-def ini_bert_models(configs, debug=False):
+def ini_bert_models(configs, default_labels, debug=False):
     if debug:
         configs = debug_bert_configs
 
     bert_models = []
 
-    default_labels = ["antisemitic", "not_antisemitic"]
     default_normalizer = TextNormalizer(emoji='text')
 
     for config in configs:
@@ -209,9 +208,11 @@ def ini_bert_models(configs, debug=False):
     return bert_models
 
 def generate_models(debug=False):
+    labels = ["antisemitic", "not_antisemitic"]
+
     models = []
-    models.extend(ini_sklearn_models(sklearn_configs, debug=debug))
-    models.extend(ini_bert_models(bert_configs, debug=debug))
+    models.extend(ini_sklearn_models(sklearn_configs, labels, debug=debug))
+    models.extend(ini_bert_models(bert_configs, labels, debug=debug))
 
     model_names = [model.model_name for model in models]
 

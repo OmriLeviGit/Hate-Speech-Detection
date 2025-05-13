@@ -1,5 +1,6 @@
 import os
 import pickle
+import random
 from abc import ABC, abstractmethod
 import nlpaug.augmenter.word as naw
 from collections import Counter
@@ -9,7 +10,6 @@ import pandas as pd
 from sklearn.metrics import f1_score, classification_report, confusion_matrix, accuracy_score
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
-from sklearn.utils import shuffle
 
 from classifier.src.utils import format_duration
 
@@ -27,12 +27,12 @@ class BaseTextClassifier(ABC):
         self.best_model = None
         self.model_name = None
 
-    def load_data(self, irrelevant_ratio=0.33, debug=False) -> dict[str, list]:
+    def load_data(self, file_name='results.csv', debug=False) -> dict[str, list]:
         """
-        Load data based on self.LABELS configuration
+        Load data
 
         Args:
-            irrelevant_ratio: Ratio of irrelevant samples to mix into not_antisemitic for 2-label case
+            file_name: Name of the file under 'src'
             debug: Use test dataset if True
         """
         if debug:
@@ -40,88 +40,423 @@ class BaseTextClassifier(ABC):
             return self._initialize_test_dataset()
 
         # Load data from CSV
-        script_dir = os.path.dirname(os.path.abspath(__file__))
-        df = pd.read_csv(os.path.join(script_dir, 'results.csv'))
+        script_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        df = pd.read_csv(os.path.join(script_dir, file_name))
 
         # Extract raw data
-        antisemitic_data = df[df['sentiment'] == 'Positive']['content'].tolist()
-        not_antisemitic_data = df[df['sentiment'] == 'Negative']['content'].tolist()
-        irrelevant_data = df[df['sentiment'] == 'Irrelevant']['content'].tolist()
-
-        data = {}
-
-        if len(self.LABELS) == 2:
-            # Binary classification: merge irrelevant into not_antisemitic
-            # Calculate how many irrelevant samples to include for desired ratio
-            num_irrelevant_to_add = int(len(not_antisemitic_data) * irrelevant_ratio / (1 - irrelevant_ratio))
-            num_irrelevant_to_add = min(num_irrelevant_to_add, len(irrelevant_data))
-
-            # Combine not_antisemitic with selected irrelevant samples
-            combined_not_antisemitic = not_antisemitic_data + irrelevant_data[:num_irrelevant_to_add]
-            np.random.shuffle(combined_not_antisemitic)
-
-            data['antisemitic'] = antisemitic_data
-            data['not_antisemitic'] = combined_not_antisemitic
-
-        elif len(self.LABELS) == 3:
-            # Three-way classification
-            data['antisemitic'] = antisemitic_data
-            data['not_antisemitic'] = not_antisemitic_data
-            data['irrelevant'] = irrelevant_data
+        data = {
+            'antisemitic': df[df['sentiment'] == 'Positive']['content'].tolist(),
+            'not_antisemitic': df[df['sentiment'] == 'Negative']['content'].tolist(),
+            'irrelevant': df[df['sentiment'] == 'Irrelevant']['content'].tolist()
+        }
 
         return data
 
-    def prepare_dataset(self, datasets: dict[str, list[str]], test_size=0.2, augment_ratio=0, balance_classes=True) \
-            -> tuple[list[str], list[str], list[str], list[str]]:
+    def prepare_dataset(self, raw_data: dict[str, list[str]], test_size=0.2, irrelevant_ratio=0.33,
+                                augment_ratio=0, balance_pct=None, balance_classes=False) -> tuple[
+        list[str], list[str], list[str], list[str]]:
         """
-        Prepare and split into train and test sets
+        Prepare and split into train and test sets based on the number of labels
 
         Args:
-            datasets: Dictionary of label -> list of texts
+            raw_data: Dictionary of label -> list of texts
             test_size: Proportion of data for testing
             augment_ratio: How much to augment (1.0 = double the size)
-            balance_classes: Whether to balance classes in training set
+            balance_pct: Target percentage for not_antisemitic samples (0.5 = equal split) in 2 label classifications
+            balance_classes: Balance the size of the classes to match the size of the minority class in multi-label classification
+            irrelevant_ratio: Ratio of irrelevant samples to mix into not_antisemitic for 2-label case
         """
-        posts = []
-        labels = []
+        if len(self.LABELS) == 2:
+            return self._prepare_binary_dataset(
+                raw_data,
+                test_size=test_size,
+                augment_ratio=augment_ratio,
+                balance_pct=balance_pct,
+                irrelevant_ratio=irrelevant_ratio
+            )
+        else:
+            return self._prepare_multiclass_dataset(
+                raw_data,
+                test_size=test_size,
+                augment_ratio=augment_ratio,
+                balance_classes=balance_classes
+            )
 
-        # Combine all data
-        for label_name, post_list in datasets.items():
-            for post in post_list:
-                posts.append(post)
-                labels.append(label_name)
+    def _prepare_binary_dataset(self, raw_data: dict[str, list[str]], test_size=0.2, irrelevant_ratio=0.33,
+                                augment_ratio=0, balance_pct=None) -> tuple[
+        list[str], list[str], list[str], list[str]]:
+        """
+        Prepare binary classification dataset (antisemitic vs not_antisemitic)
 
-        X = np.array(posts)
-        y = np.array(labels)
+        Args:
+            raw_data: Dictionary of label -> list of texts
+            test_size: Proportion of data for testing
+            augment_ratio: How much to augment antisemitic samples (1.0 = double)
+            balance_pct: Target percentage for not_antisemitic samples (0.5 = equal split)
+            irrelevant_ratio: Target ratio of irrelevant samples within not_antisemitic
+        """
+        # Extract raw data for each category
+        antisemitic_texts = raw_data['antisemitic']
+        not_antisemitic_texts = raw_data['not_antisemitic']
+        irrelevant_texts = raw_data['irrelevant']
 
-        # Shuffle and split
-        X_shuffled, y_shuffled = shuffle(X, y, random_state=self.seed)
-        X_train, X_test, y_train, y_test = train_test_split(
-            X_shuffled, y_shuffled,
+        # First, split each category into train and test sets
+        # This ensures we maintain the ratios in both train and test sets
+        antisemitic_train, antisemitic_test = train_test_split(
+            antisemitic_texts,
             test_size=test_size,
-            stratify=y_shuffled,
             random_state=self.seed
         )
 
-        # Convert to lists
-        X_train_list = X_train.tolist()
-        y_train_list = y_train.tolist()
+        not_antisemitic_train, not_antisemitic_test = train_test_split(
+            not_antisemitic_texts,
+            test_size=test_size,
+            random_state=self.seed
+        )
+
+        irrelevant_train, irrelevant_test = train_test_split(
+            irrelevant_texts,
+            test_size=test_size,
+            random_state=self.seed
+        )
+
+        # Calculate how many irrelevant samples to include in train and test sets
+        # to achieve the desired ratio
+        not_antisemitic_train_count = len(not_antisemitic_train)
+        not_antisemitic_test_count = len(not_antisemitic_test)
+
+        # Calculate irrelevant samples to add for train set
+        train_irrelevant_to_add = int(not_antisemitic_train_count * irrelevant_ratio / (1 - irrelevant_ratio))
+        train_irrelevant_to_add = min(train_irrelevant_to_add, len(irrelevant_train))
+
+        # Calculate irrelevant samples to add for test set
+        test_irrelevant_to_add = int(not_antisemitic_test_count * irrelevant_ratio / (1 - irrelevant_ratio))
+        test_irrelevant_to_add = min(test_irrelevant_to_add, len(irrelevant_test))
+
+        # Create binary train set
+        X_train = antisemitic_train + not_antisemitic_train + irrelevant_train[:train_irrelevant_to_add]
+        y_train = ['antisemitic'] * len(antisemitic_train) + \
+                  ['not_antisemitic'] * (len(not_antisemitic_train) + train_irrelevant_to_add)
+
+        # Keep track of original categories for balancing
+        orig_train = ['antisemitic'] * len(antisemitic_train) + \
+                     ['not_antisemitic'] * len(not_antisemitic_train) + \
+                     ['irrelevant'] * train_irrelevant_to_add
+
+        # Create binary test set
+        X_test = antisemitic_test + not_antisemitic_test + irrelevant_test[:test_irrelevant_to_add]
+        y_test = ['antisemitic'] * len(antisemitic_test) + \
+                 ['not_antisemitic'] * (len(not_antisemitic_test) + test_irrelevant_to_add)
+
+        # Shuffle train and test sets
+        train_indices = list(range(len(X_train)))
+        np.random.shuffle(train_indices)
+        X_train = [X_train[i] for i in train_indices]
+        y_train = [y_train[i] for i in train_indices]
+        orig_train = [orig_train[i] for i in train_indices]
+
+        test_indices = list(range(len(X_test)))
+        np.random.shuffle(test_indices)
+        X_test = [X_test[i] for i in test_indices]
+        y_test = [y_test[i] for i in test_indices]
+
+        # Log dataset composition
+        print(f"Binary train set: {len(antisemitic_train)} antisemitic, "
+              f"{len(not_antisemitic_train)} true not_antisemitic, "
+              f"{train_irrelevant_to_add} irrelevant (as not_antisemitic)")
+
+        print(f"Binary test set: {len(antisemitic_test)} antisemitic, "
+              f"{len(not_antisemitic_test)} true not_antisemitic, "
+              f"{test_irrelevant_to_add} irrelevant (as not_antisemitic)")
+
+        if augment_ratio > 0:
+            augmented_texts, augmented_labels = self.augment_specific_class(
+                X_train,
+                y_train,
+                target_class='antisemitic',
+                augment_ratio=augment_ratio
+            )
+
+            # Add augmented texts to training set
+            X_train.extend(augmented_texts)
+            y_train.extend(augmented_labels)
+            orig_train.extend(['antisemitic'] * len(augmented_texts))
+
+        # Balance classes if requested
+        if balance_pct:
+            X_train, y_train = self.balance_binary_dataset(X_train, y_train, orig_train, balance_pct)
+
+        return X_train, X_test, y_train, y_test
+
+    def balance_binary_dataset(self, texts: list[str], labels: list[str], orig_categories: list[str],
+                               balance_pct=0.5) -> tuple[list[str], list[str]]:
+        """
+        Balance binary classification dataset to achieve desired class distribution
+        while preserving the ratio of original categories within not_antisemitic
+
+        Args:
+            texts: List of text samples
+            labels: List of corresponding labels
+            orig_categories: Original categories before merging
+            balance_pct: Target percentage for not_antisemitic samples (0.5 = equal split)
+
+        Returns:
+            Tuple of (balanced_texts, balanced_labels)
+        """
+        # Get indices for each class and original category
+        antisemitic_indices = [i for i, label in enumerate(labels) if label == 'antisemitic']
+
+        true_not_antisemitic_indices = [
+            i for i, (label, orig) in enumerate(zip(labels, orig_categories))
+            if label == 'not_antisemitic' and orig == 'not_antisemitic'
+        ]
+
+        irrelevant_indices = [
+            i for i, (label, orig) in enumerate(zip(labels, orig_categories))
+            if label == 'not_antisemitic' and orig == 'irrelevant'
+        ]
+
+        # Count of samples
+        antisemitic_count = len(antisemitic_indices)
+        true_not_antisemitic_count = len(true_not_antisemitic_indices)
+        irrelevant_count = len(irrelevant_indices)
+
+        # If there are no antisemitic samples or no not_antisemitic samples, return original data
+        if antisemitic_count == 0 or (true_not_antisemitic_count + irrelevant_count) == 0:
+            print("Cannot balance dataset - missing samples from one of the classes")
+            return texts, labels
+
+        # Calculate target size for not_antisemitic group based on balance_pct
+        if balance_pct >= 1.0:
+            # Edge case: if balance_pct is 1.0, we would keep all not_antisemitic samples
+            not_antisemitic_target = true_not_antisemitic_count + irrelevant_count
+        else:
+            not_antisemitic_target = int(antisemitic_count * balance_pct / (1 - balance_pct))
+            # Ensure we don't exceed the available samples
+            not_antisemitic_target = min(not_antisemitic_target, true_not_antisemitic_count + irrelevant_count)
+
+        # Calculate original ratio of irrelevant to true not_antisemitic
+        total_not_antisemitic = true_not_antisemitic_count + irrelevant_count
+        irrelevant_ratio = irrelevant_count / total_not_antisemitic if total_not_antisemitic > 0 else 0
+
+        # Calculate how many of each to keep to maintain ratio
+        irrelevant_to_keep = int(not_antisemitic_target * irrelevant_ratio)
+        true_not_antisemitic_to_keep = not_antisemitic_target - irrelevant_to_keep
+
+        # Ensure we don't request more than available
+        true_not_antisemitic_to_keep = min(true_not_antisemitic_to_keep, true_not_antisemitic_count)
+        irrelevant_to_keep = min(irrelevant_to_keep, irrelevant_count)
+
+        # If we couldn't meet the target exactly because of available samples, adjust the other category
+        if true_not_antisemitic_to_keep < int(not_antisemitic_target * (1 - irrelevant_ratio)):
+            # Try to add more irrelevant to compensate
+            additional_irrelevant = min(
+                not_antisemitic_target - true_not_antisemitic_to_keep - irrelevant_to_keep,
+                irrelevant_count - irrelevant_to_keep
+            )
+            irrelevant_to_keep += additional_irrelevant
+            print(f"WARNING: Not enough true not_antisemitic samples to maintain ratio. "
+                  f"Added {additional_irrelevant} additional irrelevant samples to compensate.")
+
+        elif irrelevant_to_keep < int(not_antisemitic_target * irrelevant_ratio):
+            # Try to add more true_not_antisemitic to compensate
+            additional_true = min(
+                not_antisemitic_target - true_not_antisemitic_to_keep - irrelevant_to_keep,
+                true_not_antisemitic_count - true_not_antisemitic_to_keep
+            )
+            true_not_antisemitic_to_keep += additional_true
+            print(f"WARNING: Not enough irrelevant samples to maintain ratio. "
+                  f"Added {additional_true} additional true not_antisemitic samples to compensate.")
+
+        # Sample from each original category
+        sampled_true_indices = random.sample(true_not_antisemitic_indices, k=true_not_antisemitic_to_keep)\
+            if true_not_antisemitic_to_keep > 0 else []
+
+        sampled_irrelevant_indices = random.sample(irrelevant_indices, k=irrelevant_to_keep
+        ) if irrelevant_to_keep > 0 else []
+
+        # Combine all indices
+        final_indices = antisemitic_indices + sampled_true_indices + sampled_irrelevant_indices
+
+        # Create balanced dataset
+        balanced_texts = [texts[i] for i in final_indices]
+        balanced_labels = [labels[i] for i in final_indices]
+
+        # Calculate actual achieved balance
+        actual_balance = (true_not_antisemitic_to_keep + irrelevant_to_keep) / len(final_indices)
+
+        print(f"Balanced dataset: {antisemitic_count} antisemitic, "
+              f"{true_not_antisemitic_to_keep + irrelevant_to_keep} not_antisemitic ({true_not_antisemitic_to_keep} are true not_antisemitic, {irrelevant_to_keep} are irrelevant)")
+        print(f"Target balance: {balance_pct:.2f}, Achieved balance: {actual_balance:.2f}")
+
+        return balanced_texts, balanced_labels
+
+    def _prepare_multiclass_dataset(self, raw_data: dict[str, list[str]], test_size=0.2, augment_ratio=0,
+                                    balance_classes=True) -> tuple[list[str], list[str], list[str], list[str]]:
+        """
+        Prepare multi-class classification dataset
+
+        Args:
+            raw_data: Dictionary of label -> list of texts
+            test_size: Proportion of data for testing
+            augment_ratio: How much to augment antisemitic samples (1.0 = double)
+            balance_classes: Whether to balance classes to minority class size
+        """
+        # Filter to only use categories in LABELS
+        datasets = {label: raw_data[label] for label in self.LABELS if label in raw_data}
+
+        # First split each category separately to maintain stratification
+        train_sets = {}
+        test_sets = {}
+
+        for label, texts in datasets.items():
+            if not texts:  # Skip empty categories
+                print(f"Warning: No samples for class '{label}'")
+                continue
+
+            # Split this category
+            train_data, test_data = train_test_split(
+                texts,
+                test_size=test_size,
+                random_state=self.seed
+            )
+
+            train_sets[label] = train_data
+            test_sets[label] = test_data
+
+            print(f"Class '{label}': {len(train_data)} train, {len(test_data)} test samples")
+
+        # Combine into training and test sets
+        X_train = []
+        y_train = []
+        X_test = []
+        y_test = []
+
+        for label, texts in train_sets.items():
+            X_train.extend(texts)
+            y_train.extend([label] * len(texts))
+
+        for label, texts in test_sets.items():
+            X_test.extend(texts)
+            y_test.extend([label] * len(texts))
+
+        # Shuffle the combined datasets
+        train_indices = list(range(len(X_train)))
+        np.random.shuffle(train_indices)
+        X_train = [X_train[i] for i in train_indices]
+        y_train = [y_train[i] for i in train_indices]
+
+        test_indices = list(range(len(X_test)))
+        np.random.shuffle(test_indices)
+        X_test = [X_test[i] for i in test_indices]
+        y_test = [y_test[i] for i in test_indices]
+
+        # Log dataset composition
+        train_counts = Counter(y_train)
+        test_counts = Counter(y_test)
+        print(f"Multi-class train set composition: {dict(train_counts)}")
+        print(f"Multi-class test set composition: {dict(test_counts)}")
+
+        # Track current length to identify augmented samples later
+        original_length = len(X_train)
+        augmented_indices = []
 
         # Augment antisemitic samples if requested
         if augment_ratio > 0 and 'antisemitic' in datasets:
             augmented_texts, augmented_labels = self.augment_specific_class(
-                X_train_list, y_train_list,
+                X_train, y_train,
                 target_class='antisemitic',
                 augment_ratio=augment_ratio
             )
-            X_train_list.extend(augmented_texts)
-            y_train_list.extend(augmented_labels)
 
-        # Balance classes if requested (for 2-label case)
-        if balance_classes and len(self.LABELS) == 2:
-            X_train_list, y_train_list = self.balance_training_set(X_train_list, y_train_list)
+            # Track the indices of augmented samples
+            augmented_indices = list(range(original_length, original_length + len(augmented_texts)))
 
-        return X_train_list, X_test.tolist(), y_train_list, y_test.tolist()
+            X_train.extend(augmented_texts)
+            y_train.extend(augmented_labels)
+
+            print(f"After augmentation - antisemitic samples: {y_train.count('antisemitic')}")
+            print(f"Added {len(augmented_texts)} augmented samples at indices {augmented_indices}")
+
+        # Balance classes if requested
+        if balance_classes:
+            X_train, y_train = self.balance_multiclass_dataset(X_train, y_train, augmented_indices)
+
+        return X_train, X_test, y_train, y_test
+
+    def balance_multiclass_dataset(self, texts: list[str], labels: list[str],
+                                   augmented_indices=None) -> tuple[list[str], list[str]]:
+        """
+        Balance multi-class dataset by downsampling to the minority class,
+        prioritizing original samples over augmented ones
+
+        Args:
+            texts: List of text samples
+            labels: List of corresponding labels
+            augmented_indices: Indices of augmented samples to prioritize removing
+
+        Returns:
+            Tuple of (balanced_texts, balanced_labels)
+        """
+        # Count samples per class
+        label_counts = Counter(labels)
+        print(f"Original class distribution: {dict(label_counts)}")
+
+        # Find the minimum class size (minority class)
+        min_count = min(label_counts.values())
+        print(f"Balancing to minority class size: {min_count}")
+
+        # Sample from each class to match the minority class size
+        final_indices = []
+
+        for label in self.LABELS:
+            if label in label_counts:
+                # Get indices for this class
+                class_indices = [i for i, l in enumerate(labels) if l == label]
+
+                # Special handling for antisemitic class if we have augmented indices
+                if label == 'antisemitic' and augmented_indices is not None and len(class_indices) > min_count:
+                    # Identify which antisemitic samples are augmented
+                    augmented_antisemitic = [i for i in class_indices if i in augmented_indices]
+                    original_antisemitic = [i for i in class_indices if i not in augmented_indices]
+
+                    # First take all original samples we can
+                    original_to_keep = min(len(original_antisemitic), min_count)
+                    original_sampled = original_antisemitic[:original_to_keep]
+
+                    # If we need more, sample from augmented
+                    augmented_needed = min_count - original_to_keep
+                    augmented_sampled = []
+                    if augmented_needed > 0:
+                        augmented_sampled = np.random.choice(
+                            augmented_antisemitic,
+                            size=min(augmented_needed, len(augmented_antisemitic)),
+                            replace=False
+                        ).tolist()
+
+                    sampled_indices = original_sampled + augmented_sampled
+                    print(
+                        f"Class '{label}': kept {len(original_sampled)} original and {len(augmented_sampled)} augmented samples")
+                else:
+                    # Standard sampling for other classes
+                    sampled_indices = np.random.choice(
+                        class_indices,
+                        size=min(min_count, len(class_indices)),
+                        replace=False
+                    ).tolist()
+                    print(f"Class '{label}': sampled {len(sampled_indices)} from {len(class_indices)}")
+
+                final_indices.extend(sampled_indices)
+
+        # Create balanced dataset
+        balanced_texts = [texts[i] for i in final_indices]
+        balanced_labels = [labels[i] for i in final_indices]
+
+        # Final check on balance
+        final_counts = Counter(balanced_labels)
+        print(f"Final class distribution: {dict(final_counts)}")
+
+        return balanced_texts, balanced_labels
 
     def augment_specific_class(self, texts: list[str], labels: list[str],
                                target_class: str, augment_ratio: float = 1.0) -> tuple[list[str], list[str]]:
@@ -186,50 +521,6 @@ class BaseTextClassifier(ABC):
         print(f"Generated {len(augmented_texts)} augmented samples")
 
         return augmented_texts, augmented_labels
-
-    def balance_training_set(self, texts: list[str], labels: list[str]) -> tuple[list[str], list[str]]:
-        """
-        Balance the training set so non_antisemitic matches the size of augmented antisemitic
-
-        Args:
-            texts: List of text samples
-            labels: List of corresponding labels
-        """
-        # Count samples per class
-        label_counts = Counter(labels)
-        antisemitic_count = label_counts.get('antisemitic', 0)
-        not_antisemitic_count = label_counts.get('not_antisemitic', 0)
-
-        # If already balanced or no antisemitic samples, return as is
-        if antisemitic_count == 0 or antisemitic_count == not_antisemitic_count:
-            return texts, labels
-
-        # If non_antisemitic has more samples, downsample to match antisemitic
-        if not_antisemitic_count > antisemitic_count:
-            # Get indices for each class
-            antisemitic_indices = [i for i, label in enumerate(labels) if label == 'antisemitic']
-            not_antisemitic_indices = [i for i, label in enumerate(labels) if label == 'not_antisemitic']
-
-            # Randomly sample from not_antisemitic to match antisemitic count
-            sampled_not_antisemitic_indices = np.random.choice(
-                not_antisemitic_indices,
-                size=antisemitic_count,
-                replace=False
-            )
-
-            # Combine indices
-            final_indices = antisemitic_indices + sampled_not_antisemitic_indices.tolist()
-
-            # Create balanced dataset
-            balanced_texts = [texts[i] for i in final_indices]
-            balanced_labels = [labels[i] for i in final_indices]
-
-            print(f"Balanced training set: {antisemitic_count} antisemitic, {antisemitic_count} not_antisemitic")
-
-            return balanced_texts, balanced_labels
-
-        # If antisemitic has more samples, we don't downsample
-        return texts, labels
 
     @abstractmethod
     def preprocess(self, datasets: list[str]) -> list[str]:

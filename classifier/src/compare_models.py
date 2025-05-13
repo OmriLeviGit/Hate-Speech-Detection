@@ -6,20 +6,24 @@ import pandas as pd
 from classifier.src import utils
 from classifier.src.classifiers.BaseTextClassifier import BaseTextClassifier
 from classifier.src.model_generation import generate_models
-
+from classifier.src.utils import reset_seeds
 
 
 def compare_models(models, debug=False):
+    reset_seeds(models[0].seed)
+
     # load and prepare once
-    data = models[0].load_data(irrelevant_ratio=0.33, debug=debug)
+    data = models[0].load_data(debug=debug)
 
     X_train, X_test, y_train, y_test = models[0].prepare_dataset(
-        data, test_size=0.2, augment_ratio=1.0, balance_classes=True)
+        data, test_size=0.2, irrelevant_ratio=0.33, augment_ratio=1.0, balance_pct=0.6)
 
     results = []
     start_time = time.time()
 
     for model in models:
+        reset_seeds(model.seed)
+
         model.train(X_train, y_train)
 
         cv_score = model.best_score

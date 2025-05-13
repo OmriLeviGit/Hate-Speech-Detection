@@ -1,5 +1,21 @@
+import os
+import random
+
+import numpy as np
 import torch
 
+
+def reset_seeds(seed=42):
+    """Reset all random seeds to ensure reproducibility"""
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed(seed)
+        torch.cuda.manual_seed_all(seed)
+        torch.backends.cudnn.deterministic = True
+        torch.backends.cudnn.benchmark = False
+    os.environ['PYTHONHASHSEED'] = str(seed)
 
 def print_header(model_name, total_length=80):
     name_length = len(model_name)
