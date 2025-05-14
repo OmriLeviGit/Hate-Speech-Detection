@@ -15,8 +15,8 @@ def compare_models(models, debug=False):
     # load and prepare once
     data = models[0].load_data(debug=debug)
 
-    X_train, X_test, y_train, y_test = models[0].prepare_dataset(
-        data, test_size=0.2, irrelevant_ratio=0.33, augment_ratio=1.0, balance_pct=0.6)
+    X_train, X_test, y_train, y_test = models[0].prepare_dataset_old(data)
+    # X_train, X_test, y_train, y_test = models[0].prepare_dataset(data)
 
     results = []
     start_time = time.time()
@@ -25,17 +25,17 @@ def compare_models(models, debug=False):
         reset_seeds(model.seed)
 
         model.train(X_train, y_train)
-
-        cv_score = model.best_score
         evaluation = model.evaluate(X_test, y_test)
-        results.append((model.model_name, cv_score, evaluation, model.best_params))
+        cv_score = model.best_score
+
+        results.append((model.model_name, evaluation, cv_score, model.best_params))
 
         model.save_model()
 
     total_time = utils.format_duration(time.time() - start_time)
     utils.print_header(f"Done comparing | Time: {total_time}")
 
-    sorted_results = sorted(results, key=lambda x: x[2][0], reverse=True)  # sort by evaluation score
+    sorted_results = sorted(results, key=lambda x: x[1][1], reverse=True)  # sort by f1 score
 
     return sorted_results, total_time
 

@@ -29,22 +29,13 @@ class BaseTextClassifier(ABC):
         self.model_name = None
 
     def load_data(self, file_name='results.csv', debug=False) -> dict[str, list]:
-        """
-        Load data
-
-        Args:
-            file_name: Name of the file under 'src'
-            debug: Use test dataset if True
-        """
         if debug:
             print("loading with 'debug' dataset")
             return self._initialize_test_dataset()
 
-        # Load data from CSV
         script_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         df = pd.read_csv(os.path.join(script_dir, file_name))
 
-        # Extract raw data
         data = {
             'antisemitic': df[df['sentiment'] == 'Positive']['content'].tolist(),
             'not_antisemitic': df[df['sentiment'] == 'Negative']['content'].tolist(),
@@ -53,8 +44,35 @@ class BaseTextClassifier(ABC):
 
         return data
 
-    def prepare_dataset(self, raw_data: dict[str, list[str]], test_size=0.2, irrelevant_ratio=0.33,
-                                augment_ratio=0, balance_pct=None, balance_classes=False) -> tuple[
+    def prepare_dataset_old(self, datasets: dict[str, list[str]], test_size = 0.2) -> tuple[list[str], list[str], list[str], list[str]]:
+        """Prepare and split into train and test sets"""
+        posts = []
+        labels = []
+
+        for label_name, post_list in datasets.items():
+            if label_name == 'irrelevant':
+                continue
+
+            for post in post_list:
+                posts.append(post)
+                labels.append(label_name)
+
+        X = np.array(posts)
+        y = np.array(labels)
+
+        X_shuffled, y_shuffled = shuffle(X, y, random_state=self.seed)
+
+        X_train, X_test, y_train, y_test = train_test_split(
+            X_shuffled, y_shuffled,
+            test_size=test_size,
+            stratify=y_shuffled,
+            random_state=self.seed,
+        )
+
+        return X_train.tolist(), X_test.tolist(), y_train.tolist(), y_test.tolist()
+
+    def prepare_dataset(self, raw_data: dict[str, list[str]], test_size=0.2, irrelevant_ratio=0,
+                        augment_ratio=0, balance_pct=None, balance_classes=False) -> tuple[
         list[str], list[str], list[str], list[str]]:
         """
         Prepare and split into train and test sets based on the number of labels
@@ -83,7 +101,7 @@ class BaseTextClassifier(ABC):
                 balance_classes=balance_classes
             )
 
-    def _prepare_binary_dataset(self, raw_data: dict[str, list[str]], test_size=0.2, irrelevant_ratio=0.33,
+    def _prepare_binary_dataset(self, raw_data: dict[str, list[str]], test_size=0.2, irrelevant_ratio=0,
                                 augment_ratio=0, balance_pct=None) -> tuple[
         list[str], list[str], list[str], list[str]]:
         """

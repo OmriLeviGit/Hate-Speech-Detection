@@ -5,7 +5,7 @@ import numpy as np
 import optuna
 import torch
 from torch.utils.data import Dataset
-from sklearn.metrics import accuracy_score, f1_score
+from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score
 from sklearn.model_selection import KFold
 from transformers import (
     AutoModelForSequenceClassification,
@@ -161,8 +161,8 @@ class BertClassifier(BaseTextClassifier):
                 save_strategy="epoch",
                 save_total_limit=1,
                 report_to="none",
+                metric_for_best_model="f1",
                 eval_strategy="epoch",
-                metric_for_best_model="accuracy",
                 load_best_model_at_end=True,    # Best score *per epoch*
             )
 
@@ -178,7 +178,7 @@ class BertClassifier(BaseTextClassifier):
             )
 
             trainer.train()
-            val_score = trainer.evaluate()["eval_accuracy"]
+            val_score = trainer.evaluate()["eval_f1"]
 
         return val_score
 
@@ -229,10 +229,13 @@ class BertClassifier(BaseTextClassifier):
         """Compute metrics for evaluation"""
         logits, labels = eval_pred
         preds = logits.argmax(axis=-1)
-
+        
         acc = accuracy_score(labels, preds)
         f1 = f1_score(labels, preds, average='weighted')
-        return {"accuracy": acc, "f1": f1}
+        precision = precision_score(labels, preds, average='weighted')
+        recall = recall_score(labels, preds, average='weighted')
+        
+        return {"accuracy": acc, "f1": f1, "precision": precision, "recall": recall}
 
     def predict(self, text, return_decoded=False, output=False):
         self.best_model.eval()  # evaluation mode

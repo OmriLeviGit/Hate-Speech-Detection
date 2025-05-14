@@ -125,7 +125,7 @@ bert_configs = [
     },
 ]
 
-def ini_sklearn_models(configs, default_labels, debug=False):
+def ini_sklearn_models(configs, default_labels, seed, debug=False):
     if debug:
         configs = debug_sklearn_configs
         default_labels.append("irrelevant")
@@ -144,7 +144,8 @@ def ini_sklearn_models(configs, default_labels, debug=False):
             default_labels,
             default_normalizer,
             default_vectorizer,
-            base_config
+            base_config,
+            seed
         )
         sklearn_models.append(classifier)
 
@@ -158,13 +159,13 @@ def ini_sklearn_models(configs, default_labels, debug=False):
 
             model_config["model_name"] = f"{base_config['model_name']}_{variant.get('variant_name')}"
 
-            classifier = SKLearnClassifier(default_labels, normalizer, vectorizer, model_config)
+            classifier = SKLearnClassifier(default_labels, normalizer, vectorizer, model_config, seed=seed)
             sklearn_models.append(classifier)
 
     return sklearn_models
 
 
-def ini_bert_models(configs, default_labels, debug=False):
+def ini_bert_models(configs, default_labels, seed, debug=False):
     if debug:
         configs = debug_bert_configs
 
@@ -182,7 +183,8 @@ def ini_bert_models(configs, default_labels, debug=False):
             default_labels,
             default_normalizer,
             default_tokenizer,
-            base_config
+            base_config,
+            seed=seed
         )
         bert_models.append(classifier)
 
@@ -202,17 +204,19 @@ def ini_bert_models(configs, default_labels, debug=False):
 
             model_config["model_name"] = f"{base_config['model_name']}_{variant.get('variant_name')}"
 
-            classifier = BertClassifier(labels, normalizer, tokenizer, model_config)
+            classifier = BertClassifier(labels, normalizer, tokenizer, model_config, seed=seed)
             bert_models.append(classifier)
 
     return bert_models
 
+
 def generate_models(debug=False):
     labels = ["antisemitic", "not_antisemitic"]
+    seed = 1
 
     models = []
-    models.extend(ini_sklearn_models(sklearn_configs, labels, debug=debug))
-    models.extend(ini_bert_models(bert_configs, labels, debug=debug))
+    models.extend(ini_sklearn_models(sklearn_configs, labels, seed=seed, debug=debug))
+    models.extend(ini_bert_models(bert_configs, labels, seed=seed, debug=debug))
 
     model_names = [model.model_name for model in models]
 
