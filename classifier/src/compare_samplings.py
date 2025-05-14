@@ -7,7 +7,7 @@ from transformers import AutoTokenizer
 from classifier.src.classifiers.BaseTextClassifier import BaseTextClassifier
 from classifier.src.classifiers.BertClassifier import BertClassifier
 from classifier.src.normalization.TextNormalizer import TextNormalizer
-from classifier.src.utils import reset_seeds
+from classifier.src import utils
 
 params = {
     "dropout": 0.0078115464911744925,
@@ -45,10 +45,10 @@ values = [
 ]
 
 output_path = os.path.join(BaseTextClassifier.save_models_path, "evaluation_results.txt")
-
+os.makedirs(os.path.dirname(output_path), exist_ok=True)
 
 def run(model, v, params, debug=None):
-    reset_seeds(model.seed)
+    utils.reset_seeds(model.seed)
 
     data = model.load_data(debug=debug)
     _, ir, ar, pct = v
@@ -56,7 +56,7 @@ def run(model, v, params, debug=None):
     X_train, X_test, y_train, y_test = model.prepare_dataset(
         data, test_size=0.2, irrelevant_ratio=ir, augment_ratio=ar, balance_pct=pct)
 
-    reset_seeds(model.seed)
+    utils.reset_seeds(model.seed)
 
     model.train_final_model(X_train, y_train, params)
 

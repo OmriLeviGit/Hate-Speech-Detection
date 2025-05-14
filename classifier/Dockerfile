@@ -27,4 +27,4 @@ FROM python:3.9-slim
 COPY --from=builder /usr/local /usr/local
 COPY --from=builder /app /app
 
-CMD ["python3", "-m", "classifier.src.compare_models"]
+CMD ["python3", "-m", "classifier.src.compare_samplings"]

@@ -8,6 +8,7 @@ from collections import Counter
 import numpy as np
 import pandas as pd
 from sklearn.metrics import f1_score, classification_report, confusion_matrix, accuracy_score
+from sklearn.utils import shuffle
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
 
@@ -148,18 +149,6 @@ class BaseTextClassifier(ABC):
         y_test = ['antisemitic'] * len(antisemitic_test) + \
                  ['not_antisemitic'] * (len(not_antisemitic_test) + test_irrelevant_to_add)
 
-        # Shuffle train and test sets
-        train_indices = list(range(len(X_train)))
-        np.random.shuffle(train_indices)
-        X_train = [X_train[i] for i in train_indices]
-        y_train = [y_train[i] for i in train_indices]
-        orig_train = [orig_train[i] for i in train_indices]
-
-        test_indices = list(range(len(X_test)))
-        np.random.shuffle(test_indices)
-        X_test = [X_test[i] for i in test_indices]
-        y_test = [y_test[i] for i in test_indices]
-
         # Log dataset composition
         print(f"Binary train set: {len(antisemitic_train)} antisemitic, "
               f"{len(not_antisemitic_train)} true not_antisemitic, "
@@ -185,6 +174,9 @@ class BaseTextClassifier(ABC):
         # Balance classes if requested
         if balance_pct:
             X_train, y_train = self.balance_binary_dataset(X_train, y_train, orig_train, balance_pct)
+
+        X_train, y_train = shuffle(X_train, y_train, random_state=self.seed)
+        X_test, y_test = shuffle(X_test, y_test, random_state=self.seed)
 
         return X_train, X_test, y_train, y_test
 
