@@ -34,7 +34,7 @@ class BertClassifier(BaseTextClassifier):
         # torch.set_num_threads(1)
 
         self.hp_ranges = config.get("hyper_parameters")
-        self.n_trials = config.get("n_trials", 1)
+        self.n_trials = config.get("n_trials", 10)
 
         self.best_model = None
         self.best_score = None

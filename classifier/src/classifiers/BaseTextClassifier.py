@@ -705,9 +705,9 @@ class BaseTextClassifier(ABC):
         ]
 
         data = {
-            self.LABELS[0]: class_0,
-            self.LABELS[1]: class_1,
-            self.LABELS[1]: class_2
+            'antisemitic': class_0,
+            'not_antisemitic': class_1,
+            'irrelevant': class_2
         }
 
         return data
