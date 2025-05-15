@@ -51,7 +51,7 @@ def run(model, v, params, debug=None):
     utils.reset_seeds(model.seed)
 
     data = model.load_data(debug=debug)
-    _, ir, ar, pct = v
+    _, ar, ir, pct = v
 
     X_train, X_test, y_train, y_test = model.prepare_dataset(
         data, test_size=0.2, irrelevant_ratio=ir, augment_ratio=ar, balance_pct=pct)
@@ -80,9 +80,11 @@ def main():
     debug = False
     # utils.check_device()
 
+    # change seed, check why the control set performs badly
     results = []
 
     for v in values:
+        print("running ", v[0])
         config = {
             'model_name': v[0],
             'model_type': "distilbert-base-uncased"
