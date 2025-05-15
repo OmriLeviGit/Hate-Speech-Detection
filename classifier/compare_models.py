@@ -1,167 +1,125 @@
-import time
-
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression, SGDClassifier
-from sklearn.metrics import classification_report, confusion_matrix
-from sklearn.model_selection import cross_val_predict
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.svm import LinearSVC
-from sklearn.model_selection import GridSearchCV
-from sklearn.preprocessing import LabelEncoder
 
-from classifier import utils
+from classifier.SKLearnClassifier import SKLearnClassifier
 from classifier.normalization.TextNormalizer import TextNormalizer
-from classifier.SpacyClassifier import SpacyClassifier
-
-# LogisticRegression
-lr_param_grid = {
-    'C': [0.5, 1, 5],
-    'penalty': ['l2'],
-    'solver': ['liblinear', 'lbfgs'],
-    'max_iter': [1000]
-}
-
-# LinearSVC
-svc_param_grid = {
-    'C': [0.1, 1, 10],
-    'max_iter': [1000],
-    'loss': ['squared_hinge'],
-    'dual': [False]
-}
-
-# KNeighborsClassifier
-knn_param_grid = {
-    'n_neighbors': [3, 5, 7, 11],
-    'weights': ['uniform', 'distance'],
-    'metric': ['euclidean']
-}
-
-# RandomForestClassifier
-rf_param_grid = {
-    'n_estimators': [100, 200],
-    'max_depth': [None, 10, 20],
-    'min_samples_split': [2, 5],
-    'min_samples_leaf': [1, 2],
-    'max_features': ['sqrt', 'log2', None]
-}
-
-# SGDClassifier
-sgd_param_grid = {
-    'loss': ['hinge', 'log_loss'],
-    'penalty': ['l2', 'elasticnet'],
-    'alpha': [1e-4, 1e-3],
-    'max_iter': [1000]
-}
-
-models = {
-    "LogisticRegression": (LogisticRegression(), lr_param_grid),
-    "LinearSVC": (LinearSVC(), svc_param_grid),
-    "KNeighborsClassifier": (KNeighborsClassifier(), knn_param_grid),
-    "RandomForestClassifier": (RandomForestClassifier(), rf_param_grid),
-    "SGDClassifier": (SGDClassifier(), sgd_param_grid),
-}
 
 
-def run_model_search(X, y):
-    start_time = time.time()
+configs = [
+    {
+        "model_name": "LogisticRegression",
+        "model_class": LogisticRegression(),
+        "param_grid": {
+            'C': [0.5, 1, 5],
+            'penalty': ['l2'],
+            'solver': ['liblinear', 'lbfgs'],
+            'max_iter': [1000]
+        },
+    },
+    {
+        "model_name": "LinearSVC",
+        "model_class": LinearSVC(),
+        "param_grid": {
+            'C': [0.1, 1, 10],
+            'max_iter': [1000],
+            'loss': ['squared_hinge'],
+            'dual': [False]
+        },
+    },
+    {
+        "model_name": "KNeighborsClassifier",
+        "model_class": KNeighborsClassifier(),
+        "param_grid": {
+            'n_neighbors': [3, 5, 7, 11],
+            'weights': ['uniform', 'distance'],
+            'metric': ['euclidean']
+        },
+    },
+    {
+        "model_name": "RandomForestClassifier",
+        "model_class": RandomForestClassifier(),
+        "param_grid": {
+            'n_estimators': [100, 200],
+            'max_depth': [None, 10, 20],
+            'min_samples_split': [2, 5],
+            'min_samples_leaf': [1, 2],
+            'max_features': ['sqrt', 'log2', None]
+        },
+    },
+    {
+        "model_name": "SGDClassifier",
+        "model_class": SGDClassifier(),
+        "param_grid": {
+            'loss': ['hinge', 'log_loss'],
+            'penalty': ['l2', 'elasticnet'],
+            'alpha': [1e-4, 1e-3],
+            'max_iter': [1000]
+        }
+    }
+]
 
-    vectorizer = TfidfVectorizer()
-    X = vectorizer.fit_transform(X)
+def compare_models(models, X_train, y_train):
+    best_model = None
+    results = []
 
-    model_results = []
+    for model in models:
 
-    for name, (model, param_grid) in models.items():
-        model_start_time = time.time()
+        model.train(X_train, y_train)
 
-        utils.print_model_header(name)
-        grid_search = GridSearchCV(
-            estimator=model,
-            param_grid=param_grid,
-            scoring='f1_weighted',
-            cv=5,
-            verbose=1,
-            n_jobs=1,
-        )
-        grid_search.fit(X, y)
+        score = model.best_score
+        results.append((model.model_name, score, model.best_params))
 
-        y_pred = cross_val_predict(grid_search.best_estimator_, X, y, cv=5)
-        classification = classification_report(y, y_pred)
-        conf_mat = confusion_matrix(y, y_pred)
+        if not best_model or score > best_model.best_score:
+            best_model = model
 
-        model_duration = time.time() - model_start_time
-        total_duration = time.time() - start_time
+    sorted_results = sorted(results, key=lambda x: x[1], reverse=True)
 
-        utils.print_model_results(grid_search, classification, conf_mat, model_duration, total_duration)
+    print("Models sorted by score:")
+    for model_name, score, params in sorted_results:
+        print(f"{model_name}: {score:.2f} | Params: {params}")
 
-        model_results.append((name, grid_search))
+    return best_model
 
-    print("\n\n=== Models sorted by score ===")
-    for name, model in sorted(model_results, key=lambda x: x[1].best_score_, reverse=True):
-        print(f"{name}: {round(model.best_score_, 2)}")
+"""
+core changes:
+- changed the name from run_model_search to compare models, as theres no need to find the best hyper parameters,
+    the grid inside train() does that for us
+- the param_grid is just combined it with the "models" list and renamed to "configs"
+- the predict it part of the sub class, and the evaluate function is part of the base class (and just calls predict())
+- I have a more advanced initialization that supports variants changing labels/normalizers/vectorizers/tokenizers
+    or whatever else you wish to add, so feel free to change the arguments your class requires
 
-    best_name, best_model = max(model_results, key=lambda x: x[1].best_score_)
-    print(f"\n=== Best overall model: '{best_name}' with score: {round(best_model.best_score_, 2)} ===")
-    print("Best params:\n", best_model.best_params_)
+so essentially, if the word2vec works as-is then all we have to change the vectorizer or the grid and the cnn will
+probably require its own classifier
 
-    return best_model, vectorizer
-
-
-def evaluate_model(classifier, model, vectorizer, X_test, y_test):
-    """Evaluate the trained model on test data"""
-    X_processed_test = classifier.preprocess(X_test)
-    X_test_vectorized = vectorizer.transform(X_processed_test)
-    y_pred = model.best_estimator_.predict(X_test_vectorized)
-
-    print("\n=== Final Test Set Evaluation ===")
-    print(classification_report(y_test, y_pred))
-    print("Confusion Matrix:")
-    print(confusion_matrix(y_test, y_pred))
-
-    return y_pred
-
-
-def predict_text(classifier, model, vectorizer, label_encoder, texts):
-    preprocessed_texts = classifier.preprocess(texts)
-    vectorized_texts = vectorizer.transform(preprocessed_texts)
-    predictions = model.best_estimator_.predict(vectorized_texts)
-    decoded_predictions = label_encoder.inverse_transform(predictions).tolist()
-
-    return decoded_predictions
-
+and the bert file here is just a skeleton, very non-functional :^]
+"""
 
 def main():
-    # parameters
-    nlp_model_name = "en_core_web_lg"
-    normalizer = TextNormalizer(emoji='text')
+    debug = False
     labels = ["antisemitic", "not_antisemitic"]
 
-    # load
-    classifier = SpacyClassifier(nlp_model_name, normalizer, labels)
-    data = classifier.load_data(set_to_min=True)
+    # initialization, a note in the string above^
+    models = []
+    for config in configs:
+        normalizer = TextNormalizer(emoji='text')
+        classifier = SKLearnClassifier(labels, normalizer, TfidfVectorizer(), config)   # or any other classifier
+        models.append(classifier)
 
-    # prepare
-    X_train, X_test, y_train, y_test = classifier.prepare_dataset(data)
+    data = models[0].load_data(set_to_min=True, debug=debug)
+    X_train, X_test, y_train, y_test = models[0].prepare_dataset(data)
 
-    # preprocess
-    X_train = classifier.preprocess(X_train)
+    X_train = models[0].preprocess(X_train)
+    X_test = models[0].preprocess(X_test)
 
-    # encode labels
-    label_encoder = LabelEncoder()
-    y_train_encoded = label_encoder.fit_transform(y_train)
-    y_test_encoded = label_encoder.transform(y_test)
+    best_model = compare_models(models, X_train, y_train)
 
-    # train
-    trained_model, vectorizer = run_model_search(X_train, y_train_encoded)
+    accuracy, f1 = best_model.evaluate(X_test, y_test)
 
-    # evaluate
-    evaluate_model(classifier, trained_model, vectorizer, X_test, y_test_encoded)
-
-    # prediction example with X_test as an input
-    predictions = predict_text(classifier, trained_model, vectorizer, label_encoder, X_test)
-
-    for pred in zip(predictions, X_test):
-        print(pred)
+    print(accuracy, f1)
 
 
 if __name__ == "__main__":

@@ -1,26 +1,27 @@
 import os
 from abc import ABC, abstractmethod
-import copy
 
 import numpy as np
 import pandas as pd
+from sklearn.metrics import f1_score, accuracy_score
 from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelEncoder
 from sklearn.utils import shuffle
-
-from classifier.normalization.TextNormalizer import TextNormalizer
 
 
 class BaseTextClassifier(ABC):
     """Abstract base class for text classifiers"""
 
-    def __init__(self, nlp_pipeline: any = None, text_normalizer: TextNormalizer() or None = None, labels: list = None, seed: int = 42):
-        self._nlp = nlp_pipeline
-        self._normalizer = text_normalizer
+    def __init__(self, labels: list = None, seed = None):
         self.LABELS = labels
         self.seed = seed
+        self.label_encoder = LabelEncoder()
 
-    def load_data(self, class_0_count=None, class_1_count=None, class_2_count=None, source=None,
-                  set_to_min=False) -> dict[str, list]:
+        self.best_model = None
+        self.model_name = None
+
+    def load_data(self, class_0_count=None, class_1_count=None, class_2_count=None,set_to_min=False,
+                  debug=False) -> dict[str, list]:
         """Load data from file or use sample data.
 
         This function loads text data for classification either from a csv file, or mock data.
@@ -30,7 +31,7 @@ class BaseTextClassifier(ABC):
             class_0_count: Number of samples to load for class 0 (antisemistic)
             class_1_count: Number of samples to load for class 1 (not_antisemistic)
             class_2_count: Number of samples to load for class 2 (irrelevant), optional
-            source: 'debug' to work with generated data, else to import data from a csv file
+            debug: True to work with debug data, False (default) to import data from a csv file
             set_to_min: If True, sets all class counts to the minimum available across classes for balanced dataset
 
         Returns:
@@ -38,7 +39,7 @@ class BaseTextClassifier(ABC):
         """
         data = {}
 
-        if source == 'debug':
+        if debug:
             print("loading with 'debug' dataset")
             return self._initialize_test_dataset()
 
@@ -87,7 +88,8 @@ class BaseTextClassifier(ABC):
 
         return data
 
-    def prepare_dataset(self, datasets: dict[str, list[str]], test_size = 0.15) -> tuple[list[str], list[str], list[str], list[str]]:
+
+    def prepare_dataset(self, datasets: dict[str, list[str]], test_size = 0.2) -> tuple[list[str], list[str], list[str], list[str]]:
         """Prepare and split into train and test sets"""
         posts = []
         labels = []
@@ -100,15 +102,13 @@ class BaseTextClassifier(ABC):
         X = np.array(posts)
         y = np.array(labels)
 
-        # First shuffle the data
         X_shuffled, y_shuffled = shuffle(X, y, random_state=self.seed)
 
-        # Then split into train and test sets
         X_train, X_test, y_train, y_test = train_test_split(
             X_shuffled, y_shuffled,
             test_size=test_size,
-            random_state=self.seed,
-            stratify=y_shuffled
+            stratify=y_shuffled,
+            random_state=self.seed
         )
 
         return X_train.tolist(), X_test.tolist(), y_train.tolist(), y_test.tolist()
@@ -123,13 +123,30 @@ class BaseTextClassifier(ABC):
         """Train the model"""
         pass
 
-    @abstractmethod
-    def evaluate(self, test_dataset: any) -> dict[str, float]:
-        """Evaluate the model"""
-        pass
+
+    def evaluate(self, X_test: list[str], y_test: list[str]) -> tuple[float, float]:
+        if not self.best_model:
+            raise ValueError("Model not trained yet")
+
+        # Preprocess test data
+        X_processed = self.preprocess(X_test)
+
+        # Encode labels if needed
+        if not np.issubdtype(np.array(y_test).dtype, np.number):
+            y_encoded = self.label_encoder.transform(y_test)
+        else:
+            y_encoded = y_test
+
+        y_pred = self.predict(X_processed)
+
+        # Calculate metrics
+        accuracy = accuracy_score(y_encoded, y_pred)
+        f1 = f1_score(y_encoded, y_pred, average='weighted')
+
+        return accuracy, f1
 
     @abstractmethod
-    def predict(self, text: str) -> dict[str, float]:
+    def predict(self, text):
         """Make prediction on a single text"""
         pass
 
@@ -140,18 +157,6 @@ class BaseTextClassifier(ABC):
     def load_model(self, path: str) -> None:
         """Load a saved model"""
         pass
-
-    def get_text_normalizer(self):
-        """Set text normalizer"""
-        return self._normalizer
-
-    def set_text_normalizer(self, normalizer):
-        """Set text normalizer"""
-        self._normalizer = normalizer
-
-    def get_nlp(self):
-        """Get spacy's nlp object"""
-        return self._nlp
 
     def _initialize_test_dataset(self):
         class_0 = [
