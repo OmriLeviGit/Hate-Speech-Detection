@@ -21,9 +21,15 @@ class BaseTextClassifier(ABC):
     save_models_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "saved_models")
 
     def __init__(self, labels: list = None, seed = None):
+        if 'antisemitic' in labels and len(labels) > 1:
+            # antisemitic needs to be at index [1] in order to be the "positive" class
+            labels.remove('antisemitic')
+            labels.insert(1, 'antisemitic')
+
         self.LABELS = labels
         self.seed = seed
         self.label_encoder = LabelEncoder()
+        self.label_encoder.classes_ = np.array(self.LABELS)
 
         self.best_model = None
         self.model_name = None

@@ -34,7 +34,7 @@ class BertClassifier(BaseTextClassifier):
         # torch.set_num_threads(1)
 
         self.hp_ranges = config.get("hyper_parameters")
-        self.n_trials = config.get("n_trials", 10)
+        self.n_trials = config.get("n_trials", 1)
 
         self.best_model = None
         self.best_score = None
@@ -74,7 +74,7 @@ class BertClassifier(BaseTextClassifier):
 
         # Preprocess texts and encode labels
         X_preprocessed = self.preprocess(X)
-        y_encoded = self.label_encoder.fit_transform(y)
+        y_encoded = self.label_encoder.transform(y)
 
         # Create and run Optuna study
         opt_start_time = time.time()
@@ -187,7 +187,7 @@ class BertClassifier(BaseTextClassifier):
         print("Training final model with best parameters...")
 
         X_preprocessed = self.preprocess(X)
-        y_encoded = self.label_encoder.fit_transform(y)
+        y_encoded = self.label_encoder.transform(y)
 
         X_tokenized = self._tokenize(X_preprocessed)
 

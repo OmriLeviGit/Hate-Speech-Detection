@@ -40,7 +40,7 @@ def compare_models(models, debug=False):
     return sorted_results, total_time
 
 def main():
-    debug = True
+    debug = False
     # utils.check_device()
 
     models = generate_models(debug=debug)
