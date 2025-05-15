@@ -1,0 +1,43 @@
+services:
+  classifier-cpu:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - BUILDKIT_INLINE_CACHE=1
+        - PYTORCH_URL=https://download.pytorch.org/whl/cpu
+        - TARGET=cpu
+    image: model-cpu
+    volumes:
+      - ./:/app/classifier/
+      - huggingface_models:/root/.cache/huggingface
+    environment:
+      - PYTHONUNBUFFERED=1
+      - PYTHONPATH=/app
+
+  classifier-gpu:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - BUILDKIT_INLINE_CACHE=1
+        - PYTORCH_URL=https://download.pytorch.org/whl/cu118
+        - TARGET=gpu
+    image: model-gpu
+    volumes:
+      - ./:/app/classifier/
+      - huggingface_models:/root/.cache/huggingface
+      - /mnt/ssd/training:/tmp/training
+    environment:
+      - PYTHONUNBUFFERED=1
+      - PYTHONPATH=/app
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [ gpu ]
+
+volumes:
+  huggingface_models:

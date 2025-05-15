@@ -1,0 +1,11 @@
+*.pyc
+__pycache__/
+*.ipynb
+.git
+*.md
+
+src/saved_models
+
+# Ignore all CSV files except for results.csv
+*.csv
+!src/results.csv
