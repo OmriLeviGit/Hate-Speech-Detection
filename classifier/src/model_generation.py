@@ -210,9 +210,8 @@ def ini_bert_models(configs, default_labels, seed, debug=False):
     return bert_models
 
 
-def generate_models(debug=False):
+def generate_models(seed=1, debug=False):
     labels = ["antisemitic", "not_antisemitic"]
-    seed = 1
 
     models = []
     models.extend(ini_sklearn_models(sklearn_configs, labels, seed=seed, debug=debug))

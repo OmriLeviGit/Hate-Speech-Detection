@@ -15,8 +15,8 @@ def compare_models(models, debug=False):
     # load and prepare once
     data = models[0].load_data(debug=debug)
 
-    X_train, X_test, y_train, y_test = models[0].prepare_dataset_old(data)
-    # X_train, X_test, y_train, y_test = models[0].prepare_dataset(data)
+    X_train, X_test, y_train, y_test = models[0].prepare_dataset(data, balance_pct=0.5)
+    # X_train, X_test, y_train, y_test = models[0].prepare_dataset_old(data)
 
     results = []
     start_time = time.time()
@@ -41,9 +41,11 @@ def compare_models(models, debug=False):
 
 def main():
     debug = False
+    seed = 1
+    print("@@@@@@@@@@@@@@@@@@@@@@@@@")
     # utils.check_device()
 
-    models = generate_models(debug=debug)
+    models = generate_models(seed=1, debug=debug)
     model_results, total_time = compare_models(models, debug=debug)
 
     # Save results

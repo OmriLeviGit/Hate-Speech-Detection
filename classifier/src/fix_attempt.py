@@ -18,44 +18,43 @@ def main():
     debug = False
     # utils.check_device()
 
-    # config = {
-    #     'model_name': "old",
-    #     'model_type': "distilbert-base-uncased"
-    # }
-    #
-    # model = BertClassifier(
-    #     ["antisemitic", "not_antisemitic"],
-    #     TextNormalizer(emoji='text'),
-    #     AutoTokenizer.from_pretrained(config["model_type"]),
-    #     config
-    # )
-
-    config =  {
-        "model_name": "SGDClassifier",
-        "model_class": SGDClassifier(),
-        "param_grid": {
-            'loss': ['hinge', 'log_loss'],
-            'penalty': ['l2', 'elasticnet'],
-            'alpha': [1e-4, 1e-3],
-            'max_iter': [1000]
-        }
+    config = {
+        'model_name': "new",
+        'model_type': "distilbert-base-uncased"
     }
-
-    model = SKLearnClassifier(
+    
+    model = BertClassifier(
         ["antisemitic", "not_antisemitic"],
         TextNormalizer(emoji='text'),
-        TfidfVectorizer(),
+        AutoTokenizer.from_pretrained(config["model_type"]),
         config
     )
 
+    # config =  {
+    #     "model_name": "SGDClassifier",
+    #     "model_class": SGDClassifier(),
+    #     "param_grid": {
+    #         'loss': ['hinge', 'log_loss'],
+    #         'penalty': ['l2', 'elasticnet'],
+    #         'alpha': [1e-4, 1e-3],
+    #         'max_iter': [1000]
+    #     }
+    # }
+
+    # model = SKLearnClassifier(
+    #     ["antisemitic", "not_antisemitic"],
+    #     TextNormalizer(emoji='text'),
+    #     TfidfVectorizer(),
+    #     config
+    # )
+
     data = model.load_data(debug=debug)
 
-
-    # X_train, X_test, y_train, y_test = model.prepare_dataset(data)
-    X_train, X_test, y_train, y_test = model.prepare_dataset_old(data)
+    X_train, X_test, y_train, y_test = model.prepare_dataset(data)
+    # X_train, X_test, y_train, y_test = model.prepare_dataset_old(data)
 
     # model.train_final_model(X_train, y_train, params)
-    model.train(X_train, y_train)
+    # model.train(X_train, y_train)
 
 
     res = model.evaluate(X_test, y_test)

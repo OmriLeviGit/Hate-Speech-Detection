@@ -7,7 +7,8 @@ from collections import Counter
 
 import numpy as np
 import pandas as pd
-from sklearn.metrics import f1_score, classification_report, confusion_matrix, accuracy_score
+from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score, classification_report, confusion_matrix
+
 from sklearn.utils import shuffle
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
@@ -568,10 +569,12 @@ class BaseTextClassifier(ABC):
         # Calculate metrics
         accuracy = accuracy_score(y_encoded, y_pred)
         f1 = f1_score(y_encoded, y_pred, average='weighted', zero_division=0)
+        precision = precision_score(y_encoded, y_pred, average='weighted', zero_division=0)
+        recall = recall_score(y_encoded, y_pred, average='weighted', zero_division=0)
 
         self.print_evaluation(y_encoded, y_pred, accuracy, f1)
 
-        return accuracy, f1
+        return accuracy, f1, precision, recall
 
     @abstractmethod
     def predict(self, text):
