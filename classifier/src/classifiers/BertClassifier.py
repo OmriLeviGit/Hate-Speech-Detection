@@ -34,7 +34,7 @@ class BertClassifier(BaseTextClassifier):
         # torch.set_num_threads(1)
 
         self.hp_ranges = config.get("hyper_parameters")
-        self.n_trials = config.get("n_trials", 1)
+        self.n_trials = config.get("n_trials", 10)
 
         self.best_model = None
         self.best_score = None
@@ -231,9 +231,9 @@ class BertClassifier(BaseTextClassifier):
         preds = logits.argmax(axis=-1)
         
         acc = accuracy_score(labels, preds)
-        f1 = f1_score(labels, preds, average='weighted')
-        precision = precision_score(labels, preds, average='weighted')
-        recall = recall_score(labels, preds, average='weighted')
+        f1 = f1_score(labels, preds, average='weighted', zero_division=0)
+        precision = precision_score(labels, preds, average='weighted', zero_division=0)
+        recall = recall_score(labels, preds, average='weighted', zero_division=0)
         
         return {"accuracy": acc, "f1": f1, "precision": precision, "recall": recall}
 
