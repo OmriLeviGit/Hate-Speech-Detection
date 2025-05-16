@@ -16,8 +16,9 @@ def compare_models(models, debug=False):
     data = models[0].load_data(debug=debug)
 
     # more complex models can benefit from a bit higher ir and bpct. high bcpt usually performs much worse.
+    ar, ir, bpct = 0, 0, 0.5  # DEFAULT
     # ar, ir, bpct = 0.33, 0.33, 0.5  # classic models best performed on (0.33, 0.33, 0.5)
-    ar, ir, bpct = 0.33, 0.45, 0.6  # bert models best performed on (0.33, 0.45, 0.6)
+    # ar, ir, bpct = 0.33, 0.45, 0.6  # bert models best performed on (0.33, 0.45, 0.6)
 
     X_train, X_test, y_train, y_test = models[0].prepare_dataset(data,
             augment_ratio=ar, irrelevant_ratio=ir, balance_pct=bpct)
