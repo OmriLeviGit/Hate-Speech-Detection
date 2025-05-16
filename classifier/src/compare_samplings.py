@@ -163,8 +163,8 @@ def run(model, v, params, debug=None):
 
     utils.reset_seeds(model.seed)
 
-    # model.train_final_model(X_train, y_train, params)
-    model.train(X_train, y_train)
+    model.train_final_model(X_train, y_train, params)
+    # model.train(X_train, y_train)
 
     captured_output = io.StringIO()
     original_stdout = sys.stdout
@@ -183,7 +183,7 @@ def run(model, v, params, debug=None):
     return model.model_name, res
 
 def main():
-    debug = False
+    debug = True
     # utils.check_device()
 
     # change seed, check why the control set performs badly
@@ -193,34 +193,34 @@ def main():
     for v in validation_values:
         print("running ", v[0])
         # bert
-        # config = {
-        #     'model_name': v[0],
-        #     'model_type': "distilbert-base-uncased"
-        # }
-        #
-        # model = BertClassifier(
-        #     ["antisemitic", "not_antisemitic"],
-        #     TextNormalizer(emoji='text'),
-        #     AutoTokenizer.from_pretrained(config["model_type"]),
-        #     config
-        # )
-
         config = {
-            "model_name": v[0],
-            "model_class": SGDClassifier(),
-            "param_grid": {
-                'loss': ['hinge', 'log_loss'],
-                'penalty': ['l2', 'elasticnet'],
-                'alpha': [1e-4, 1e-3],
-                'max_iter': [1000]
-            }
+            'model_name': v[0],
+            'model_type': "distilbert-base-uncased"
         }
-        model = SKLearnClassifier(
+
+        model = BertClassifier(
             ["antisemitic", "not_antisemitic"],
             TextNormalizer(emoji='text'),
-            TfidfVectorizer(),
+            AutoTokenizer.from_pretrained(config["model_type"]),
             config
         )
+
+        # config = {
+        #     "model_name": v[0],
+        #     "model_class": SGDClassifier(),
+        #     "param_grid": {
+        #         'loss': ['hinge', 'log_loss'],
+        #         'penalty': ['l2', 'elasticnet'],
+        #         'alpha': [1e-4, 1e-3],
+        #         'max_iter': [1000]
+        #     }
+        # }
+        # model = SKLearnClassifier(
+        #     ["antisemitic", "not_antisemitic"],
+        #     TextNormalizer(emoji='text'),
+        #     TfidfVectorizer(),
+        #     config
+        # )
 
         name, res = run(model, v, params, debug=debug)
 

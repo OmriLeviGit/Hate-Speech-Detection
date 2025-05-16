@@ -15,12 +15,17 @@ def compare_models(models, debug=False):
     # load and prepare once
     data = models[0].load_data(debug=debug)
 
-    X_train, X_test, y_train, y_test = models[0].prepare_dataset(
-        data, test_size=0.2, augment_ratio=0.33, irrelevant_ratio=0.33, balance_pct=0.5)
+    # more complex models can benefit from a bit higher ir and bpct. high bcpt usually performs much worse.
+    # ar, ir, bpct = 0.33, 0.33, 0.5  # classic models best performed on (0.33, 0.33, 0.5)
+    ar, ir, bpct = 0.33, 0.45, 0.6  # bert models best performed on (0.33, 0.45, 0.6)
+
+    X_train, X_test, y_train, y_test = models[0].prepare_dataset(data,
+            augment_ratio=ar, irrelevant_ratio=ir, balance_pct=bpct)
 
     results = []
     start_time = time.time()
 
+    print("@@@@@@@@@@@ START @@@@@@@@@@@@@@")
     for model in models:
         reset_seeds(model.seed)
 
@@ -40,10 +45,11 @@ def compare_models(models, debug=False):
     return sorted_results, total_time
 
 def main():
-    debug = False
+    debug = True
+    seed = 1
     # utils.check_device()
 
-    models = generate_models(seed=1, debug=debug)
+    models = generate_models(seed=seed, debug=debug)
     model_results, total_time = compare_models(models, debug=debug)
 
     # Save results
