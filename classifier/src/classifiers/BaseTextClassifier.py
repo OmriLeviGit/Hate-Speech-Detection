@@ -7,7 +7,8 @@ from collections import Counter
 
 import numpy as np
 import pandas as pd
-from sklearn.metrics import f1_score, classification_report, confusion_matrix, accuracy_score
+from sklearn.metrics import f1_score, classification_report, confusion_matrix, accuracy_score, precision_score, \
+    recall_score
 from sklearn.utils import shuffle
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
@@ -50,35 +51,8 @@ class BaseTextClassifier(ABC):
 
         return data
 
-    def prepare_dataset_old(self, datasets: dict[str, list[str]], test_size = 0.2) -> tuple[list[str], list[str], list[str], list[str]]:
-        """Prepare and split into train and test sets"""
-        posts = []
-        labels = []
-
-        for label_name, post_list in datasets.items():
-            if label_name == 'irrelevant':
-                continue
-
-            for post in post_list:
-                posts.append(post)
-                labels.append(label_name)
-
-        X = np.array(posts)
-        y = np.array(labels)
-
-        X_shuffled, y_shuffled = shuffle(X, y, random_state=self.seed)
-
-        X_train, X_test, y_train, y_test = train_test_split(
-            X_shuffled, y_shuffled,
-            test_size=test_size,
-            stratify=y_shuffled,
-            random_state=self.seed,
-        )
-
-        return X_train.tolist(), X_test.tolist(), y_train.tolist(), y_test.tolist()
-
-    def prepare_dataset(self, raw_data: dict[str, list[str]], test_size=0.2, irrelevant_ratio=0,
-                        augment_ratio=0, balance_pct=None, balance_classes=False) -> tuple[
+    def prepare_dataset(self, raw_data: dict[str, list[str]], test_size=0.2, augment_ratio=0, irrelevant_ratio=0,
+                        balance_pct=None, balance_classes=False) -> tuple[
         list[str], list[str], list[str], list[str]]:
         """
         Prepare and split into train and test sets based on the number of labels
@@ -555,7 +529,7 @@ class BaseTextClassifier(ABC):
         """Train the model"""
         pass
 
-    def evaluate(self, X_test: list[str], y_test: list[str]) -> tuple[float, float]:
+    def evaluate(self, X_test: list[str], y_test: list[str]) -> tuple[float, float, float, float]:
         if not self.best_model:
             raise ValueError("Model not trained yet")
 
@@ -568,10 +542,12 @@ class BaseTextClassifier(ABC):
         # Calculate metrics
         accuracy = accuracy_score(y_encoded, y_pred)
         f1 = f1_score(y_encoded, y_pred, average='weighted', zero_division=0)
+        precision = precision_score(y_encoded, y_pred, average='weighted', zero_division=0)
+        recall = recall_score(y_encoded, y_pred, average='weighted', zero_division=0)
 
         self.print_evaluation(y_encoded, y_pred, accuracy, f1)
 
-        return accuracy, f1
+        return accuracy, f1, precision, recall
 
     @abstractmethod
     def predict(self, text):
