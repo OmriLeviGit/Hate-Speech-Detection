@@ -1,3 +1,7 @@
 model_type,params,f1_score,accuracy,avg_training_time_sec,confusion_matrix
-MLP,"{""hidden_units"": 64,""dropout_rate"": 0.3,""learning_rate"": 0.001,""batch_size"": 32,""epochs"": 5}",0.7476,0.7018,6.93,"[[115  51]
- [ 48 118]]"
+MLP,"{""hidden_units"": 32,""dropout_rate"": 0.3,""learning_rate"": 0.001,""batch_size"": 32,""epochs"": 1}",0.6857,0.6747,9.05,"[[ 84  82]
+ [ 26 140]]"
+CNN,"{""embedding_dim"": 100,""num_filters"": 128,""kernel_size"": 5,""dropout_rate"": 0.5,""learning_rate"": 0.0005,""batch_size"": 32,""epochs"": 5,""max_sequence_length"": 120}",0.789,0.753,25.76,"[[125  41]
+ [ 41 125]]"
+LSTM,"{""embedding_dim"": 300,""lstm_units"": 32,""dropout_rate"": 0.2,""learning_rate"": 0.001,""batch_size"": 64,""epochs"": 10,""max_sequence_length"": 60}",0.7691,0.762,186.56,"[[129  37]
+ [ 42 124]]"
