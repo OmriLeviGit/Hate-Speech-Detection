@@ -15,8 +15,8 @@ def compare_models(models, debug=False):
     # load and prepare once
     data = models[0].load_data(debug=debug)
 
-    X_train, X_test, y_train, y_test = models[0].prepare_dataset(data, balance_pct=0.5)
-    # X_train, X_test, y_train, y_test = models[0].prepare_dataset_old(data)
+    X_train, X_test, y_train, y_test = models[0].prepare_dataset(
+        data, test_size=0.2, augment_ratio=0.33, irrelevant_ratio=0.33, balance_pct=0.5)
 
     results = []
     start_time = time.time()

@@ -210,7 +210,7 @@ def ini_bert_models(configs, default_labels, seed, debug=False):
     return bert_models
 
 
-def generate_models(seed=1, debug=False):
+def generate_models(seed, debug=False):
     labels = ["antisemitic", "not_antisemitic"]
 
     models = []
