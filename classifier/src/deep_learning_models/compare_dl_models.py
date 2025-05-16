@@ -80,7 +80,8 @@ mlp_param_grid = {
     'dropout_rate': [0.3],
     'learning_rate': [0.001],
     'batch_size': [32],
-    'epochs': [1]
+    'dense_activation': ['tanh'],
+    'epochs': [1],
 }
 
 lstm_param_grid = {
@@ -89,8 +90,10 @@ lstm_param_grid = {
     'dropout_rate': [0.2],
     'learning_rate': [0.001],
     'batch_size': [64],
-    'epochs': [10],
-    'max_sequence_length': [60]
+    'epochs': [1],
+    'max_sequence_length': [60],
+    'dense_units': [64],
+    'dense_activation': ['relu', 'tanh']
 }
 
 cnn_param_grid = {
@@ -100,8 +103,11 @@ cnn_param_grid = {
     'dropout_rate': [0.5],
     'learning_rate': [0.0005],
     'batch_size': [32],
-    'epochs': [5],
-    'max_sequence_length': [120]
+    'epochs': [1],
+    'max_sequence_length': [120],
+    'dense_units': [64],
+    'dense_activation': ['relu'],
+    'second_conv': [True, False]
 }
 
 

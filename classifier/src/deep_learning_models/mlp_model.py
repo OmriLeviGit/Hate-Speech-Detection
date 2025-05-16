@@ -43,13 +43,14 @@ class MLPModel(BaseDLModel):
         X_processed = self.vectorizer.transform(processed_data).toarray()
         return (X_processed, y) if y is not None else X_processed
 
+
     # Builds and compiles the MLP model using input shape and hyperparameters
     def build(self, input_shape):
 
         model = Sequential()
 
         model.add(Input(shape=(input_shape,)))
-        model.add(Dense(self.params['hidden_units'], activation='relu'))
+        model.add(Dense(self.params['hidden_units'], activation=self.params['dense_activation']))
         model.add(Dropout(self.params['dropout_rate']))
         model.add(Dense(1, activation='sigmoid'))
 
@@ -60,3 +61,4 @@ class MLPModel(BaseDLModel):
         )
 
         return model
+

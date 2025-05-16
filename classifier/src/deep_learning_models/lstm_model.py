@@ -64,12 +64,11 @@ class LSTMModel(BaseDLModel):
 
         return embedding_matrix
 
-
     def build(self, input_shape):
-        model = Sequential()
-        model.add(Input(shape=(input_shape,)))
 
-        # Pre-trained GloVe embeddings, trainable
+        model = Sequential()
+
+        model.add(Input(shape=(input_shape,)))
         model.add(Embedding(
             input_dim=self.vocab_size,
             output_dim=self.params['embedding_dim'],
@@ -77,21 +76,21 @@ class LSTMModel(BaseDLModel):
             trainable=True
         ))
 
-        # Bidirectional LSTM to also "memorize" words from the past
         model.add(Bidirectional(LSTM(
             self.params['lstm_units'],
             dropout=self.params['dropout_rate'],
-            recurrent_dropout = 0.1
+            recurrent_dropout=0.1
         )))
 
-        #  Second Dense layer to improve results
-        model.add(Dense(64, activation='relu'))
-
-        # Final output layer
+        model.add(Dense(self.params['dense_units'], activation=self.params['dense_activation']))
         model.add(Dense(1, activation='sigmoid'))
 
-        model.compile(optimizer=Adam(self.params['learning_rate']),
-                      loss='binary_crossentropy',
-                      metrics=['accuracy'])
+        model.compile(
+            optimizer=Adam(self.params['learning_rate']),
+            loss='binary_crossentropy',
+            metrics=['accuracy']
+        )
         return model
+
+
 

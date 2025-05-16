@@ -42,18 +42,27 @@ class CNNModel(BaseDLModel):
         model.add(Embedding(input_dim=self.vocab_size, output_dim=self.params['embedding_dim']))
 
         # First conv layer
-        model.add(Conv1D(filters=self.params['num_filters'], kernel_size=self.params['kernel_size'],activation='relu'))
+        model.add(Conv1D(
+            filters=self.params['num_filters'],
+            kernel_size=self.params['kernel_size'],
+            activation='relu'
+        ))
 
-        # Second conv layer (optional layer)
-        # model.add(Conv1D(filters=self.params['num_filters'],kernel_size = 3, activation = 'relu'))
+        # Optional second conv layer, controlled as a hyper-parameter
+        if self.params.get('second_conv', False):
+            model.add(Conv1D(filters=self.params['num_filters'], kernel_size=3, activation='relu'))
 
         model.add(GlobalMaxPooling1D())
         model.add(Dropout(self.params['dropout_rate']))
-        model.add(Dense(64, activation='relu'))  # non-linear layer
+        model.add(Dense(self.params['dense_units'], activation=self.params['dense_activation']))
         model.add(Dense(1, activation='sigmoid'))
 
-        model.compile(optimizer=Adam(learning_rate=self.params['learning_rate']),
-                      loss='binary_crossentropy',
-                      metrics=['accuracy'])
+        model.compile(
+            optimizer=Adam(learning_rate=self.params['learning_rate']),
+            loss='binary_crossentropy',
+            metrics=['accuracy']
+        )
+
         return model
+
 
