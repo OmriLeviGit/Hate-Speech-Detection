@@ -163,8 +163,8 @@ def run(model, v, params, debug=None):
 
     utils.reset_seeds(model.seed)
 
-    model.train_final_model(X_train, y_train, params)
-    # model.train(X_train, y_train)
+    # model.train_final_model(X_train, y_train, params)
+    model.train(X_train, y_train)
 
     captured_output = io.StringIO()
     original_stdout = sys.stdout
