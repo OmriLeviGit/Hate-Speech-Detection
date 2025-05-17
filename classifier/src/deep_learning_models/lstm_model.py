@@ -1,3 +1,4 @@
+import os
 import numpy as np
 
 from tensorflow.keras import Input, Sequential
@@ -8,6 +9,12 @@ from tensorflow.keras.preprocessing.sequence import pad_sequences
 from tensorflow.keras.layers import Bidirectional
 
 from .base_dl_model import BaseDLModel
+
+
+# Dynamically resolve the GloVe path relative to this file
+base_dir = os.path.dirname(os.path.abspath(__file__))
+glove_path = os.path.join(base_dir, "..", "GloVe", "glove.6B.300d.txt")
+glove_path = os.path.abspath(glove_path)
 
 
 class LSTMModel(BaseDLModel):
@@ -31,7 +38,6 @@ class LSTMModel(BaseDLModel):
         # Mandatory line as index 0 is reserved by Tokenizer for padding
         self.vocab_size = len(self.tokenizer.word_index) + 1
 
-        glove_path = "classifier/src/GloVe/glove.6B.300d.txt"
         self.embedding_matrix = self._load_glove_embeddings(glove_path, self.params['embedding_dim'])
 
         return padded, y

@@ -6,8 +6,6 @@ import json
 import random
 import numpy as np
 import pandas as pd
-import pprint
-
 import tensorflow as tf
 
 from sklearn.model_selection import train_test_split
@@ -47,39 +45,74 @@ model_registry = {
 
 # Hyperparameter search spaces for each model
 
+# mlp_param_grid = {
+#     'hidden_units': [32, 64],
+#     'dropout_rate': [0.3, 0.5],
+#     'learning_rate': [0.001],
+#     'batch_size': [32, 64],
+#     'dense_activation': ['relu', 'tanh'],
+#     'epochs': [10],
+# }
+#
+# lstm_param_grid = {
+#     'embedding_dim': [300],
+#     'lstm_units': [32, 64],
+#     'dropout_rate': [0.2, 0.5],
+#     'learning_rate': [0.0001, 0.001],
+#     'batch_size': [64],
+#     'epochs': [5, 10],
+#     'max_sequence_length': [60, 120],
+#     'dense_units': [64],
+#     'dense_activation': ['relu', 'tanh']
+# }
+#
+# cnn_param_grid = {
+#     'embedding_dim': [100],
+#     'num_filters': [64, 128],
+#     'kernel_size': [3, 5],
+#     'dropout_rate': [0.3, 0.5],
+#     'learning_rate': [0.0005, 0.001],
+#     'batch_size': [32],
+#     'epochs': [5],
+#     'max_sequence_length': [120],
+#     'dense_units': [64],
+#     'dense_activation': ['relu'],
+#     'second_conv': [True, False]
+# }
+
 mlp_param_grid = {
-    'hidden_units': [32, 64],
-    'dropout_rate': [0.3, 0.5],
+    'hidden_units': [32],
+    'dropout_rate': [0.3],
     'learning_rate': [0.001],
-    'batch_size': [32, 64],
-    'dense_activation': ['relu', 'tanh'],
-    'epochs': [10],
+    'batch_size': [32],
+    'dense_activation': ['relu'],
+    'epochs': [1],
 }
 
 lstm_param_grid = {
     'embedding_dim': [300],
-    'lstm_units': [32, 64],
-    'dropout_rate': [0.2, 0.5],
-    'learning_rate': [0.0001, 0.001],
+    'lstm_units': [32],
+    'dropout_rate': [0.2],
+    'learning_rate': [0.0001],
     'batch_size': [64],
-    'epochs': [5, 10],
-    'max_sequence_length': [60, 120],
+    'epochs': [1],
+    'max_sequence_length': [60],
     'dense_units': [64],
-    'dense_activation': ['relu', 'tanh']
+    'dense_activation': ['relu']
 }
 
 cnn_param_grid = {
     'embedding_dim': [100],
-    'num_filters': [64, 128],
-    'kernel_size': [3, 5],
-    'dropout_rate': [0.3, 0.5],
-    'learning_rate': [0.0005, 0.001],
+    'num_filters': [64],
+    'kernel_size': [3],
+    'dropout_rate': [0.3],
+    'learning_rate': [0.001],
     'batch_size': [32],
-    'epochs': [5],
+    'epochs': [1],
     'max_sequence_length': [120],
     'dense_units': [64],
     'dense_activation': ['relu'],
-    'second_conv': [True, False]
+    'second_conv': [True]
 }
 
 
@@ -114,6 +147,7 @@ def train_and_evaluate(model, X_train, y_train, X_val, y_val, batch_size, epochs
 def run_grid_search(model_type, param_grid, X_raw, y, num_folds = 5):
 
     print_header(model_type)
+    print()
     ModelClass = model_registry[model_type]
 
     results = []
@@ -183,6 +217,7 @@ def run_grid_search(model_type, param_grid, X_raw, y, num_folds = 5):
 
     return results
 
+
 # Returns a unique suffix per data configuration to attach to every csv file exported for results comparison
 def data_config_to_suffix(config):
     return "_".join(f"{key}{str(value).replace('.', '')}" for key, value in config.items())
@@ -195,13 +230,12 @@ def main():
 
     data_configs = [
         {"balance_pct": 0.5, "augment_ratio": 0.0, "irrelevant_ratio": 0.0},
-        {"balance_pct": 0.5, "augment_ratio": 0.2, "irrelevant_ratio": 0.0},
+        # {"balance_pct": 0.5, "augment_ratio": 0.2, "irrelevant_ratio": 0.0},
     ]
 
     for data_config in data_configs:
 
         print_header(f"\nRunning with data config: {data_config}", 80)
-        print("\n")
 
         X_raw, X_test, y_raw, y_test = helper.prepare_dataset(
             raw_data,
@@ -224,7 +258,7 @@ def main():
         # Define models and their grids
         model_grids = [
             ("MLP", mlp_param_grid),
-            ("CNN", cnn_param_grid),
+            # ("CNN", cnn_param_grid),
             # ("LSTM", lstm_param_grid)
         ]
 
@@ -253,6 +287,7 @@ def main():
         val_print = val_summary.drop(columns=["params"])
 
         print_header("Sorted Training Results On Validation set", 80)
+        print()
         print(val_print.to_string(index=False))
 
         # Keep full params in the CSV
@@ -329,12 +364,25 @@ def main():
         test_print = test_summary.drop(columns=["params"])
 
         print_header("Sorted Training Results On Test set", 80)
+        print()
         print(test_print.to_string(index=False))
+        print()
 
         # Export results to csv files
         suffix = data_config_to_suffix(data_config)
-        val_summary.to_csv(f"dl_models_training_summary_{suffix}.csv", index=False)
-        test_summary.to_csv(f"dl_models_test_set_evaluation_summary_{suffix}.csv", index=False)
+
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        results_dir = os.path.join(base_dir, "models_results")
+        os.makedirs(results_dir, exist_ok=True)
+
+        val_csv_path = os.path.join(results_dir, f"dl_models_training_summary_{suffix}.csv")
+        val_summary.to_csv(val_csv_path, index=False)
+        print("K-fold Cross Validation results exported to CSV")
+
+        test_csv_path = os.path.join(results_dir, f"dl_models_test_set_evaluation_summary_{suffix}.csv")
+        test_summary.to_csv(test_csv_path, index=False)
+        print("Test set results exported to CSV")
+
 
 if __name__ == "__main__":
     main()
