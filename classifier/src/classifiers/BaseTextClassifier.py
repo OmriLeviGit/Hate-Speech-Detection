@@ -7,7 +7,8 @@ from collections import Counter
 
 import numpy as np
 import pandas as pd
-from sklearn.metrics import f1_score, classification_report, confusion_matrix, accuracy_score
+from sklearn.metrics import f1_score, classification_report, confusion_matrix, accuracy_score, precision_score, \
+    recall_score
 from sklearn.utils import shuffle
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
@@ -21,9 +22,15 @@ class BaseTextClassifier(ABC):
     save_models_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "saved_models")
 
     def __init__(self, labels: list = None, seed = None):
+        if 'antisemitic' in labels and len(labels) > 1:
+            # antisemitic needs to be at index [1] in order to be the "positive" class
+            labels.remove('antisemitic')
+            labels.insert(1, 'antisemitic')
+
         self.LABELS = labels
         self.seed = seed
         self.label_encoder = LabelEncoder()
+        self.label_encoder.classes_ = np.array(self.LABELS)
 
         self.best_model = None
         self.model_name = None
@@ -44,35 +51,8 @@ class BaseTextClassifier(ABC):
 
         return data
 
-    def prepare_dataset_old(self, datasets: dict[str, list[str]], test_size = 0.2) -> tuple[list[str], list[str], list[str], list[str]]:
-        """Prepare and split into train and test sets"""
-        posts = []
-        labels = []
-
-        for label_name, post_list in datasets.items():
-            if label_name == 'irrelevant':
-                continue
-
-            for post in post_list:
-                posts.append(post)
-                labels.append(label_name)
-
-        X = np.array(posts)
-        y = np.array(labels)
-
-        X_shuffled, y_shuffled = shuffle(X, y, random_state=self.seed)
-
-        X_train, X_test, y_train, y_test = train_test_split(
-            X_shuffled, y_shuffled,
-            test_size=test_size,
-            stratify=y_shuffled,
-            random_state=self.seed,
-        )
-
-        return X_train.tolist(), X_test.tolist(), y_train.tolist(), y_test.tolist()
-
-    def prepare_dataset(self, raw_data: dict[str, list[str]], test_size=0.2, irrelevant_ratio=0,
-                        augment_ratio=0, balance_pct=None, balance_classes=False) -> tuple[
+    def prepare_dataset(self, raw_data: dict[str, list[str]], test_size=0.2, augment_ratio=0, irrelevant_ratio=0,
+                        balance_pct=None, balance_classes=False) -> tuple[
         list[str], list[str], list[str], list[str]]:
         """
         Prepare and split into train and test sets based on the number of labels
@@ -167,15 +147,7 @@ class BaseTextClassifier(ABC):
         y_test = ['antisemitic'] * len(antisemitic_test) + \
                  ['not_antisemitic'] * (len(not_antisemitic_test) + test_irrelevant_to_add)
 
-        # Log dataset composition
-        print(f"Binary train set: {len(antisemitic_train)} antisemitic, "
-              f"{len(not_antisemitic_train)} true not_antisemitic, "
-              f"{train_irrelevant_to_add} irrelevant (as not_antisemitic)")
-
-        print(f"Binary test set: {len(antisemitic_test)} antisemitic, "
-              f"{len(not_antisemitic_test)} true not_antisemitic, "
-              f"{test_irrelevant_to_add} irrelevant (as not_antisemitic)")
-
+        augmented_count = 0
         if augment_ratio > 0:
             augmented_texts, augmented_labels = self.augment_specific_class(
                 X_train,
@@ -188,10 +160,25 @@ class BaseTextClassifier(ABC):
             X_train.extend(augmented_texts)
             y_train.extend(augmented_labels)
             orig_train.extend(['antisemitic'] * len(augmented_texts))
+            augmented_count = len(augmented_texts)
 
         # Balance classes if requested
         if balance_pct:
+            orig_test = ['antisemitic'] * len(antisemitic_test) + \
+                        ['not_antisemitic'] * len(not_antisemitic_test) + \
+                        ['irrelevant'] * test_irrelevant_to_add
+
             X_train, y_train = self.balance_binary_dataset(X_train, y_train, orig_train, balance_pct)
+            X_test, y_test = self.balance_binary_dataset(X_test, y_test, orig_test, balance_pct)
+
+        train_counts = Counter(y_train)
+        test_counts = Counter(y_test)
+
+        print(f"\nFinal *train* set: {train_counts['antisemitic']} antisemitic "
+              f"({augmented_count} augmented), {train_counts['not_antisemitic']} not_antisemitic")
+
+        print(f"Final *test* set: {test_counts['antisemitic']} antisemitic, "
+              f"{test_counts['not_antisemitic']} not_antisemitic\n")
 
         X_train, y_train = shuffle(X_train, y_train, random_state=self.seed)
         X_test, y_test = shuffle(X_test, y_test, random_state=self.seed)
@@ -199,7 +186,7 @@ class BaseTextClassifier(ABC):
         return X_train, X_test, y_train, y_test
 
     def balance_binary_dataset(self, texts: list[str], labels: list[str], orig_categories: list[str],
-                               balance_pct=0.5) -> tuple[list[str], list[str]]:
+                               balance_pct) -> tuple[list[str], list[str]]:
         """
         Balance binary classification dataset to achieve desired class distribution
         while preserving the ratio of original categories within not_antisemitic
@@ -295,7 +282,7 @@ class BaseTextClassifier(ABC):
         # Calculate actual achieved balance
         actual_balance = (true_not_antisemitic_to_keep + irrelevant_to_keep) / len(final_indices)
 
-        print(f"Balanced dataset: {antisemitic_count} antisemitic, "
+        print(f"\nBalanced dataset: {antisemitic_count} antisemitic, "
               f"{true_not_antisemitic_to_keep + irrelevant_to_keep} not_antisemitic ({true_not_antisemitic_to_keep} are true not_antisemitic, {irrelevant_to_keep} are irrelevant)")
         print(f"Target balance: {balance_pct:.2f}, Achieved balance: {actual_balance:.2f}")
 
@@ -542,7 +529,7 @@ class BaseTextClassifier(ABC):
         """Train the model"""
         pass
 
-    def evaluate(self, X_test: list[str], y_test: list[str]) -> tuple[float, float]:
+    def evaluate(self, X_test: list[str], y_test: list[str]) -> tuple[float, float, float, float]:
         if not self.best_model:
             raise ValueError("Model not trained yet")
 
@@ -555,10 +542,12 @@ class BaseTextClassifier(ABC):
         # Calculate metrics
         accuracy = accuracy_score(y_encoded, y_pred)
         f1 = f1_score(y_encoded, y_pred, average='weighted', zero_division=0)
+        precision = precision_score(y_encoded, y_pred, average='weighted', zero_division=0)
+        recall = recall_score(y_encoded, y_pred, average='weighted', zero_division=0)
 
         self.print_evaluation(y_encoded, y_pred, accuracy, f1)
 
-        return accuracy, f1
+        return accuracy, f1, precision, recall
 
     @abstractmethod
     def predict(self, text):

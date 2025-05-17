@@ -1,5 +1,5 @@
 #!/bin/bash
-echo "CHECK DEBUG FLAG"
+echo "DONT FORGET TO CHECK DEBUG FLAG"
 
 docker-compose up -d classifier-gpu
 docker-compose wait classifier-gpu

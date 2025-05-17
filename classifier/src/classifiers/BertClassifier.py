@@ -74,7 +74,7 @@ class BertClassifier(BaseTextClassifier):
 
         # Preprocess texts and encode labels
         X_preprocessed = self.preprocess(X)
-        y_encoded = self.label_encoder.fit_transform(y)
+        y_encoded = self.label_encoder.transform(y)
 
         # Create and run Optuna study
         opt_start_time = time.time()
@@ -187,7 +187,7 @@ class BertClassifier(BaseTextClassifier):
         print("Training final model with best parameters...")
 
         X_preprocessed = self.preprocess(X)
-        y_encoded = self.label_encoder.fit_transform(y)
+        y_encoded = self.label_encoder.transform(y)
 
         X_tokenized = self._tokenize(X_preprocessed)
 
@@ -231,9 +231,9 @@ class BertClassifier(BaseTextClassifier):
         preds = logits.argmax(axis=-1)
         
         acc = accuracy_score(labels, preds)
-        f1 = f1_score(labels, preds, average='weighted')
-        precision = precision_score(labels, preds, average='weighted')
-        recall = recall_score(labels, preds, average='weighted')
+        f1 = f1_score(labels, preds, average='weighted', zero_division=0)
+        precision = precision_score(labels, preds, average='weighted', zero_division=0)
+        recall = recall_score(labels, preds, average='weighted', zero_division=0)
         
         return {"accuracy": acc, "f1": f1, "precision": precision, "recall": recall}
 
