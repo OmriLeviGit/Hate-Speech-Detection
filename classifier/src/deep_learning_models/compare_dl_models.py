@@ -48,34 +48,34 @@ model_registry = {
 # Hyperparameter search spaces for each model
 
 mlp_param_grid = {
-    'hidden_units': [32],
-    'dropout_rate': [0.3],
+    'hidden_units': [32, 64],
+    'dropout_rate': [0.3, 0.5],
     'learning_rate': [0.001],
     'batch_size': [32, 64],
-    'dense_activation': ['tanh'],
-    'epochs': [1],
+    'dense_activation': ['relu', 'tanh'],
+    'epochs': [10],
 }
 
 lstm_param_grid = {
     'embedding_dim': [300],
-    'lstm_units': [32],
-    'dropout_rate': [0.2],
-    'learning_rate': [0.001],
+    'lstm_units': [32, 64],
+    'dropout_rate': [0.2, 0.5],
+    'learning_rate': [0.0001, 0.001],
     'batch_size': [64],
-    'epochs': [1],
-    'max_sequence_length': [60],
+    'epochs': [5, 10],
+    'max_sequence_length': [60, 120],
     'dense_units': [64],
     'dense_activation': ['relu', 'tanh']
 }
 
 cnn_param_grid = {
     'embedding_dim': [100],
-    'num_filters': [128],
-    'kernel_size': [5],
-    'dropout_rate': [0.5],
-    'learning_rate': [0.0005],
+    'num_filters': [64, 128],
+    'kernel_size': [3, 5],
+    'dropout_rate': [0.3, 0.5],
+    'learning_rate': [0.0005, 0.001],
     'batch_size': [32],
-    'epochs': [1],
+    'epochs': [5],
     'max_sequence_length': [120],
     'dense_units': [64],
     'dense_activation': ['relu'],
