@@ -31,7 +31,7 @@ def compare_models(models, debug=False):
         reset_seeds(model.seed)
 
         model.train(X_train, y_train)
-        evaluation = model.evaluate(X_test, y_test)
+        evaluation = model.evaluate(X_test, y_test, "evaluation_results")
         cv_score = model.best_score
 
         results.append((model.model_name, evaluation, cv_score, model.best_params))

@@ -1,6 +1,8 @@
+import io
 import os
 import pickle
 import random
+import sys
 from abc import ABC, abstractmethod
 import nlpaug.augmenter.word as naw
 from collections import Counter
@@ -13,7 +15,7 @@ from sklearn.utils import shuffle
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
 
-from classifier.src.utils import format_duration
+from classifier.src.utils import format_duration, capture_output
 
 
 class BaseTextClassifier(ABC):
@@ -529,7 +531,7 @@ class BaseTextClassifier(ABC):
         """Train the model"""
         pass
 
-    def evaluate(self, X_test: list[str], y_test: list[str]) -> tuple[float, float, float, float]:
+    def evaluate(self, X_test: list[str], y_test: list[str], file_name=None) -> tuple[float, float, float, float]:
         if not self.best_model:
             raise ValueError("Model not trained yet")
 
@@ -545,9 +547,17 @@ class BaseTextClassifier(ABC):
         precision = precision_score(y_encoded, y_pred, average='weighted', zero_division=0)
         recall = recall_score(y_encoded, y_pred, average='weighted', zero_division=0)
 
-        self.print_evaluation(y_encoded, y_pred, accuracy, f1)
+        if file_name:
+            output = capture_output(self.print_evaluation, y_encoded, y_pred, accuracy, f1)
+            path = os.path.join(BaseTextClassifier.save_models_path, file_name)
+            with open(path, 'a') as f:
+                f.write(output)
+        else:
+            self.print_evaluation(y_encoded, y_pred, accuracy, f1)
 
         return accuracy, f1, precision, recall
+
+
 
     @abstractmethod
     def predict(self, text):
