@@ -1,3 +1,11 @@
 model_type,params,f1_score,accuracy,avg_training_time_sec,confusion_matrix
-MLP,"{""hidden_units"": 64,""dropout_rate"": 0.3,""learning_rate"": 0.001,""batch_size"": 32,""epochs"": 5}",0.7762,0.7801,15.84,"[[137  29]
- [ 44 122]]"
+MLP,"{""hidden_units"": 32,""dropout_rate"": 0.3,""learning_rate"": 0.001,""batch_size"": 32,""dense_activation"": ""tanh"",""epochs"": 1}",0.6843,0.6988,11.98,"[[118  48]
+ [ 52 114]]"
+CNN,"{""embedding_dim"": 100,""num_filters"": 128,""kernel_size"": 5,""dropout_rate"": 0.5,""learning_rate"": 0.0005,""batch_size"": 32,""epochs"": 1,""max_sequence_length"": 120,""dense_units"": 64,""dense_activation"": ""relu"",""second_conv"": true}",0.296,0.506,9.5,"[[  2 164]
+ [  0 166]]"
+CNN,"{""embedding_dim"": 100,""num_filters"": 128,""kernel_size"": 5,""dropout_rate"": 0.5,""learning_rate"": 0.0005,""batch_size"": 32,""epochs"": 1,""max_sequence_length"": 120,""dense_units"": 64,""dense_activation"": ""relu"",""second_conv"": false}",0.4475,0.6054,8.01,"[[113  53]
+ [ 78  88]]"
+LSTM,"{""embedding_dim"": 300,""lstm_units"": 32,""dropout_rate"": 0.2,""learning_rate"": 0.001,""batch_size"": 64,""epochs"": 1,""max_sequence_length"": 60,""dense_units"": 64,""dense_activation"": ""relu""}",0.6562,0.6084,29.41,"[[ 55 111]
+ [ 19 147]]"
+LSTM,"{""embedding_dim"": 300,""lstm_units"": 32,""dropout_rate"": 0.2,""learning_rate"": 0.001,""batch_size"": 64,""epochs"": 1,""max_sequence_length"": 60,""dense_units"": 64,""dense_activation"": ""tanh""}",0.6825,0.6566,32.89,"[[ 86  80]
+ [ 34 132]]"
