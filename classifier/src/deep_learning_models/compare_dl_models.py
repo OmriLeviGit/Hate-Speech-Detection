@@ -6,6 +6,7 @@ import json
 import random
 import numpy as np
 import pandas as pd
+import pprint
 
 import tensorflow as tf
 
@@ -46,40 +47,11 @@ model_registry = {
 
 # Hyperparameter search spaces for each model
 
-# mlp_param_grid = {
-#     'hidden_units': [64, 128, 256],
-#     'dropout_rate': [0.3, 0.5, 0.6],
-#     'learning_rate': [0.01, 0.001, 0.0005],
-#     'batch_size': [32, 64],
-#     'epochs': [5, 10]
-# }
-#
-# lstm_param_grid = {
-#     'embedding_dim': [100, 200],
-#     'lstm_units': [64, 128],
-#     'dropout_rate': [0.3, 0.5],
-#     'learning_rate': [0.001, 0.0005],
-#     'batch_size': [32],
-#     'epochs': [5, 10],
-#     'max_sequence_length': [100]
-# }
-#
-# cnn_param_grid = {
-#     'embedding_dim': [100, 200],
-#     'num_filters': [128, 256],
-#     'kernel_size': [3, 5],
-#     'dropout_rate': [0.3, 0.5],
-#     'learning_rate': [0.001, 0.0005],
-#     'batch_size': [32],
-#     'epochs': [5, 10],
-#     'max_sequence_length': [100]
-# }
-
 mlp_param_grid = {
     'hidden_units': [32],
     'dropout_rate': [0.3],
     'learning_rate': [0.001],
-    'batch_size': [32],
+    'batch_size': [32, 64],
     'dense_activation': ['tanh'],
     'epochs': [1],
 }
@@ -156,12 +128,15 @@ def run_grid_search(model_type, param_grid, X_raw, y, num_folds = 5):
         model_wrapper = ModelClass(params)
         X_proc, y_proc = model_wrapper.preprocess(X_raw, y)
 
+        # Stratified - each fold maintains the same class distribution as the full dataset
         skf = StratifiedKFold(n_splits = num_folds, shuffle = True, random_state = 42)
         fold_scores = []
         fold_times = []
         last_report = None
         last_matrix = None
 
+        # train_idx: indices of the training subset for of a fold
+        # val_idx: indices of the validation subset for of a fold
         for fold, (train_idx, val_idx) in enumerate(skf.split(X_proc, y_proc)):
             X_train, X_val = X_proc[train_idx], X_proc[val_idx]
             y_train, y_val = y_proc[train_idx], y_proc[val_idx]
@@ -179,9 +154,10 @@ def run_grid_search(model_type, param_grid, X_raw, y, num_folds = 5):
             last_report = report
             last_matrix = matrix
 
-        avg_f1 = round(np.mean(fold_scores), 4)
+        avg_f1 = round(np.mean(fold_scores), 3)
         total_time = round(sum(fold_times), 2)
-        accuracy = round(last_matrix.trace() / last_matrix.sum(), 4)
+        # Trace gives us the correct predictions, as accuracy = (TP + TN) / (TP + TN + FP + FN)
+        accuracy = round(last_matrix.trace() / last_matrix.sum(), 3)
         total_model_time += total_time
 
         result = {
@@ -200,16 +176,16 @@ def run_grid_search(model_type, param_grid, X_raw, y, num_folds = 5):
 
     print(f"\n------- Summary for {model_type} Training -------")
     print(f"\nTotal training time: {format_duration(total_model_time)}")
-    print(f"\nBest F1 Score: {best_result['f1_score']}")
+    print(f"\nBest average F1 Score: {best_result['f1_score']}")
     print("\nBest Params:")
     for key, value in best_result["params"].items():
         print(f"  {key}: {value}")
-    print("\nClassification Report (best config):")
-    print(best_result["report"])
-    print("Confusion Matrix (best config):")
-    print(best_result["confusion_matrix"])
 
     return results
+
+# Returns a unique suffix per data configuration to attach to every csv file exported for results comparison
+def data_config_to_suffix(config):
+    return "_".join(f"{key}{str(value).replace('.', '')}" for key, value in config.items())
 
 
 def main():
@@ -217,103 +193,148 @@ def main():
     helper = DataHelper()
     raw_data = helper.load_data()
 
-    X_raw, X_test, y_raw, y_test = helper.prepare_dataset(
-        raw_data,
-        test_size=0.2,
-        balance_pct=0.5,
-        augment_ratio=0.0,
-        irrelevant_ratio=0
-    )
-
-    # Convert string labels into numbers
-    label_encoder = LabelEncoder()
-    y_trainval = label_encoder.fit_transform(y_raw)
-    y_test = label_encoder.transform(y_test)
-
-    # Apply common normalization for all models: lowercasing, emoji to text, removing user mention and links
-    normalizer = TextNormalizer(emoji="text")
-    X_normalized = normalizer.normalize_texts(X_raw)
-    X_test_normalized = normalizer.normalize_texts(X_test)
-
-    # Define models and their grids
-    model_grids = [
-        ("MLP", mlp_param_grid),
-        ("CNN", cnn_param_grid),
-        ("LSTM", lstm_param_grid)
+    data_configs = [
+        {"balance_pct": 0.5, "augment_ratio": 0.0, "irrelevant_ratio": 0.0},
+        {"balance_pct": 0.5, "augment_ratio": 0.2, "irrelevant_ratio": 0.0},
     ]
 
-    all_results = []
+    for data_config in data_configs:
 
-    # Run grid search for each model on train+val only
-    for model_type, param_grid in model_grids:
-        model_results = run_grid_search(model_type, param_grid, X_normalized, y_trainval)
-        all_results.extend(model_results)
-
-    # Convert params, currently in dicts, to compact string format to fit inside the csv we export later
-    for result in all_results:
-        result['params'] = json.dumps(result['params'], separators=(',', ': '))
-
-    # Remove report before saving (but it keeps accuracy and confusion_matrix)
-    df = pd.DataFrame(all_results)
-    df.drop(columns=["report"], inplace=True)
-    df.to_csv("dl_model_results_summary.csv", index=False)
-
-    # Print summary of all models, showing the best combination of hyper-paramters (config) of each one
-    print_header("Final Results", 80)
-    summary = df[["model_type", "f1_score", "accuracy"]].sort_values(by="f1_score", ascending=False)
-    print(summary.to_string(index=False))
-
-    # Group by model_type and get best result per model
-    best_per_model = {}
-
-    for result in all_results:
-        model_type = result["model_type"]
-        if model_type not in best_per_model or result["f1_score"] > best_per_model[model_type]["f1_score"]:
-            best_per_model[model_type] = result
-
-    # Evaluate each model's best config on the same test set
-    for model_type, best_result in best_per_model.items():
-
-        print_header(f"Final Evaluation on Test Set: {model_type}")
-        print("\nBest Params:", best_result["params"])
+        print_header(f"\nRunning with data config: {data_config}", 80)
         print("\n")
 
-        best_params = json.loads(best_result["params"])
-        ModelClass = model_registry[model_type]
-        model_wrapper = ModelClass(best_params)
-
-        X_trainval_proc, y_trainval_proc = model_wrapper.preprocess(X_normalized, y_trainval)
-        X_test_proc, y_test_proc = model_wrapper.transform(X_test_normalized, y_test)
-
-        model = model_wrapper.build(input_shape=X_trainval_proc.shape[1])
-        model.fit(
-            X_trainval_proc, y_trainval_proc,
-            epochs=best_params["epochs"],
-            batch_size=best_params["batch_size"],
-            verbose=0
+        X_raw, X_test, y_raw, y_test = helper.prepare_dataset(
+            raw_data,
+            test_size=0.2,
+            balance_pct=0.5,
+            augment_ratio=0.0,
+            irrelevant_ratio=0
         )
 
-        y_pred = (model.predict(X_test_proc) > 0.5).astype(int)
-        test_f1 = f1_score(y_test_proc, y_pred)
+        # Convert string labels into numbers
+        label_encoder = LabelEncoder()
+        y_trainval = label_encoder.fit_transform(y_raw)
+        y_test = label_encoder.transform(y_test)
 
-        y_pred = y_pred.flatten()
-        y_test_proc = np.array(y_test_proc).flatten()
+        # Apply common normalization for all models: lowercasing, emoji to text, removing user mention and links
+        normalizer = TextNormalizer(emoji="text")
+        X_normalized = normalizer.normalize_texts(X_raw)
+        X_test_normalized = normalizer.normalize_texts(X_test)
 
-        correct_predictions = (y_pred == y_test_proc).sum()
-        test_accuracy = round(correct_predictions / len(y_test_proc), 4)
+        # Define models and their grids
+        model_grids = [
+            ("MLP", mlp_param_grid),
+            ("CNN", cnn_param_grid),
+            # ("LSTM", lstm_param_grid)
+        ]
 
-        test_report = classification_report(y_test_proc, y_pred)
-        test_matrix = confusion_matrix(y_test_proc, y_pred)
+        all_results = []
 
-        print("\nTest Classification Report:")
-        print(test_report)
+        # Run grid search for each model on train+val only
+        for model_type, param_grid in model_grids:
+            model_results = run_grid_search(model_type, param_grid, X_normalized, y_trainval)
+            all_results.extend(model_results)
 
-        print(f"\nTest F1 Score: {test_f1}")
-        print(f"Test Accuracy: {test_accuracy}")
+        # Convert params, currently in dicts, to compact string format to fit inside the csv we export later
+        for result in all_results:
+            result['params'] = json.dumps(result['params'], separators=(',', ': '))
 
-        print("\nTest Confusion Matrix:")
-        print(test_matrix)
+        # Remove report before saving (but it keeps accuracy and confusion_matrix)
+        df = pd.DataFrame(all_results)
+        df.drop(columns=["report"], inplace=True)
+        df.to_csv("dl_model_results_summary.csv", index=False)
 
+        # Print summary of all models on validation set
+        # Showing the best combination of hyperparameters (config) of each one
+
+        val_summary = df[["model_type", "f1_score", "accuracy", "params"]]
+        val_summary = val_summary.sort_values(by="f1_score", ascending=False)
+
+        val_print = val_summary.drop(columns=["params"])
+
+        print_header("Sorted Training Results On Validation set", 80)
+        print(val_print.to_string(index=False))
+
+        # Keep full params in the CSV
+        val_summary.to_csv("dl_model_validation_results_summary.csv", index=False)
+
+        # Group by model_type and get best result per model
+        best_per_model = {}
+
+        for result in all_results:
+            model_type = result["model_type"]
+            if model_type not in best_per_model or result["f1_score"] > best_per_model[model_type]["f1_score"]:
+                best_per_model[model_type] = result
+
+        test_results = []
+
+        # Evaluate each model's best config on the same test set
+        for model_type, best_result in best_per_model.items():
+
+            print_header(f"Final Evaluation on Test Set: {model_type}")
+            print("\nBest Params:", best_result["params"])
+            print("\n")
+
+            best_params = json.loads(best_result["params"])
+            ModelClass = model_registry[model_type]
+            model_wrapper = ModelClass(best_params)
+
+            X_trainval_proc, y_trainval_proc = model_wrapper.preprocess(X_normalized, y_trainval)
+            X_test_proc, y_test_proc = model_wrapper.transform(X_test_normalized, y_test)
+
+            model = model_wrapper.build(input_shape=X_trainval_proc.shape[1])
+            model.fit(
+                X_trainval_proc, y_trainval_proc,
+                epochs=best_params["epochs"],
+                batch_size=best_params["batch_size"],
+                verbose=0
+            )
+
+            y_pred = (model.predict(X_test_proc) > 0.5).astype(int)
+            test_f1 = f1_score(y_test_proc, y_pred)
+
+            y_pred = y_pred.flatten()
+            y_test_proc = np.array(y_test_proc).flatten()
+
+            correct_predictions = (y_pred == y_test_proc).sum()
+            test_accuracy = round(correct_predictions / len(y_test_proc), 3)
+
+            test_report = classification_report(y_test_proc, y_pred)
+            test_matrix = confusion_matrix(y_test_proc, y_pred)
+
+            test_results.append({
+                "model_type": model_type,
+                "data_config": json.dumps(data_config),
+                "params": best_result["params"],
+                "test_f1": round(test_f1, 3),
+                "test_accuracy": round(test_accuracy, 3),
+                "cv_f1": round(best_result["f1_score"], 3),
+                "cv_accuracy": round(best_result["accuracy"], 3)
+            })
+
+            print("\nTest Classification Report:")
+            print(test_report)
+
+            print(f"\nTest F1 Score: {round(test_f1, 3)}")
+            print(f"Test Accuracy: {test_accuracy}")
+
+            print("\nTest Confusion Matrix:")
+            print(test_matrix)
+
+        # Print and export to csv test results
+        df_test = pd.DataFrame(test_results)
+        df_test = df_test.sort_values(by="test_f1", ascending=False)
+        test_summary = df_test[["model_type", "test_f1", "test_accuracy", "cv_f1", "cv_accuracy", "params"]]
+
+        test_print = test_summary.drop(columns=["params"])
+
+        print_header("Sorted Training Results On Test set", 80)
+        print(test_print.to_string(index=False))
+
+        # Export results to csv files
+        suffix = data_config_to_suffix(data_config)
+        val_summary.to_csv(f"dl_models_training_summary_{suffix}.csv", index=False)
+        test_summary.to_csv(f"dl_models_test_set_evaluation_summary_{suffix}.csv", index=False)
 
 if __name__ == "__main__":
     main()
