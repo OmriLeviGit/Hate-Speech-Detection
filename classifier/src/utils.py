@@ -1,9 +1,21 @@
+import io
 import os
 import random
+import sys
 
 import numpy as np
 import torch
 
+
+def capture_output(func, *args, **kwargs):
+    buffer = io.StringIO()
+    original_stdout = sys.stdout
+    try:
+        sys.stdout = buffer
+        func(*args, **kwargs)
+    finally:
+        sys.stdout = original_stdout
+    return buffer.getvalue()
 
 def reset_seeds(seed=42):
     """Reset all random seeds to ensure reproducibility"""

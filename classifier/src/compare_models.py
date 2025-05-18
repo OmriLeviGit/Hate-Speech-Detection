@@ -9,19 +9,24 @@ from classifier.src.model_generation import generate_models
 from classifier.src.utils import reset_seeds
 
 
+"""
+(augment_ratio, irrelevant_ratio, balance_pct)
+complex models can benefit from higher ir and b_pct, but high b_pct usually performs much worse.
+
+Best sampling parameters:
+    default_sampling = (0.33, 0.45, 0.6) # models best performance for bert (ar, ir, b_pct)
+    sklearn_sampling = (0.33, 0.33, 0.5) # best performance for sklearn (ar, ir, b_pct)
+    bert_sampling = (0.33, 0.45, 0.6) # models best performance for bert (ar, ir, b_pct)
+"""
 def compare_models(models, debug=False):
     reset_seeds(models[0].seed)
 
-    # load and prepare once
     data = models[0].load_data(debug=debug)
 
-    # more complex models can benefit from a bit higher ir and bpct. high bcpt usually performs much worse.
-    ar, ir, bpct = 0, 0, 0.5  # DEFAULT
-    # ar, ir, bpct = 0.33, 0.33, 0.5  # classic models best performed on (0.33, 0.33, 0.5)
-    # ar, ir, bpct = 0.33, 0.45, 0.6  # bert models best performed on (0.33, 0.45, 0.6)
+    ar, ir, b_pct = (0.33, 0.45, 0.6)
 
     X_train, X_test, y_train, y_test = models[0].prepare_dataset(data,
-            augment_ratio=ar, irrelevant_ratio=ir, balance_pct=bpct)
+            augment_ratio=ar, irrelevant_ratio=ir, balance_pct=b_pct)
 
     results = []
     start_time = time.time()
@@ -31,7 +36,7 @@ def compare_models(models, debug=False):
         reset_seeds(model.seed)
 
         model.train(X_train, y_train)
-        evaluation = model.evaluate(X_test, y_test)
+        evaluation = model.evaluate(X_test, y_test, "evaluation_results")
         cv_score = model.best_score
 
         results.append((model.model_name, evaluation, cv_score, model.best_params))
@@ -45,20 +50,22 @@ def compare_models(models, debug=False):
 
     return sorted_results, total_time
 
-def main():
-    debug = True
-    seed = 1
-    # utils.check_device()
-
-    models = generate_models(seed=seed, debug=debug)
-    model_results, total_time = compare_models(models, debug=debug)
-
-    # Save results
+def save_results(model_results, total_time):
     df = pd.DataFrame(model_results, columns=["Model name", "CV Score", "Evaluation", "Params"])
     df.loc[len(df)] = ['Total Time: ', '', total_time, '']
 
     output_path = os.path.join(BaseTextClassifier.save_models_path, "comparison_result.csv")
     df.to_csv(output_path, index=False)
+
+
+def main():
+    debug = False
+    seed = 1
+    # utils.check_device()
+
+    models = generate_models(seed=seed, debug=debug)
+    model_results, total_time = compare_models(models, debug=debug)
+    save_results(model_results, total_time)
 
     print(f"Finished running in {total_time}, best model: {model_results[0]}")
 

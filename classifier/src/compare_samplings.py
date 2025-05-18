@@ -149,7 +149,7 @@ validation_values = [
     ('(0.3, 0.3, 0.7)', 0.3, 0.3, 0.7),  # Higher imbalance
 ]
 
-output_path = os.path.join(BaseTextClassifier.save_models_path, "evaluation_results.txt")
+output_path = os.path.join(BaseTextClassifier.save_models_path, "samplings_results.txt")
 os.makedirs(os.path.dirname(output_path), exist_ok=True)
 
 def run(model, v, params, debug=None):
