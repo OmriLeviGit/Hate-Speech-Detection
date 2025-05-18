@@ -19,11 +19,10 @@ Best sampling parameters:
     bert_sampling = (0.33, 0.45, 0.6) # models best performance for bert (ar, ir, b_pct)
 """
 def compare_models(models, debug=False):
-    reset_seeds(models[0].seed)
-
     data = models[0].load_data(debug=debug)
 
-    ar, ir, b_pct = (0.33, 0.45, 0.6)
+    reset_seeds(models[0].seed)
+    ar, ir, b_pct = (0.33, 0.45, 0.6)   # bert sampling
 
     X_train, X_test, y_train, y_test = models[0].prepare_dataset(data,
             augment_ratio=ar, irrelevant_ratio=ir, balance_pct=b_pct)
@@ -31,15 +30,13 @@ def compare_models(models, debug=False):
     results = []
     start_time = time.time()
 
-    print("@@@@@@@@@@@ START @@@@@@@@@@@@@@")
     for model in models:
         reset_seeds(model.seed)
 
         model.train(X_train, y_train)
-        evaluation = model.evaluate(X_test, y_test, "evaluation_results")
-        cv_score = model.best_score
+        evaluation = model.evaluate(X_test, y_test, output_file="evaluation_results")
 
-        results.append((model.model_name, evaluation, cv_score, model.best_params))
+        results.append((model.model_name, evaluation, model.cv_score, model.best_params))
 
         model.save_model()
 
@@ -51,8 +48,8 @@ def compare_models(models, debug=False):
     return sorted_results, total_time
 
 def save_results(model_results, total_time):
-    df = pd.DataFrame(model_results, columns=["Model name", "CV Score", "Evaluation", "Params"])
-    df.loc[len(df)] = ['Total Time: ', '', total_time, '']
+    df = pd.DataFrame(model_results, columns=["Model name", "Evaluation", "CV Score", "Params"])
+    df.loc[len(df)] = ['Total Time: ', total_time, '', '']
 
     output_path = os.path.join(BaseTextClassifier.save_models_path, "comparison_result.csv")
     df.to_csv(output_path, index=False)

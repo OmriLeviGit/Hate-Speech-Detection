@@ -24,7 +24,7 @@ class SKLearnClassifier(BaseTextClassifier):
         self.nlp = SpacyModel.get_instance()
 
         self.best_model = None
-        self.best_score = None
+        self.cv_score = None
         self.best_params = None
 
     def preprocess(self, text_list: list[str], output=False) -> list[str]:
@@ -81,7 +81,7 @@ class SKLearnClassifier(BaseTextClassifier):
         training_duration = time.time() - start_time
 
         self.best_model = grid_search.best_estimator_
-        self.best_score = round(float(grid_search.best_score_), 2)
+        self.cv_score = round(float(grid_search.best_score_), 2)
         self.best_params = grid_search.best_params_
 
         # Calibrate models after training if they don't support probability estimation
@@ -91,7 +91,7 @@ class SKLearnClassifier(BaseTextClassifier):
             calibrated.fit(X_vectorized, y_encoded)
             self.best_model = calibrated
 
-        self.print_best_model_results(self.best_score, self.best_params, training_duration)
+        self.print_best_model_results(self.cv_score, self.best_params, training_duration)
 
     def predict(self, text, output=False):
         single_input = isinstance(text, str)

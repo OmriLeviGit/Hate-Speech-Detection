@@ -37,7 +37,7 @@ class BertClassifier(BaseTextClassifier):
         self.n_trials = config.get("n_trials", 10)
 
         self.best_model = None
-        self.best_score = None
+        self.cv_score = None
         self.best_params = None
 
     def preprocess(self, texts: list[str]) -> list[str]:
@@ -85,10 +85,10 @@ class BertClassifier(BaseTextClassifier):
         )
         training_duration = time.time() - opt_start_time
 
-        self.best_score = study.best_value
+        self.cv_score = study.best_value
         self.best_params = study.best_trial.params
 
-        self.print_best_model_results(self.best_score, self.best_params, training_duration)
+        self.print_best_model_results(self.cv_score, self.best_params, training_duration)
 
     def _objective_function(self, trial, X_preprocessed, y_encoded):
         """Optuna objective function for a single trial"""
@@ -196,6 +196,7 @@ class BertClassifier(BaseTextClassifier):
         model = self._create_model(num_labels=len(self.LABELS), dropout=params["dropout"])
 
         start_time = time.time()
+
         # Create temporary directory for checkpoints
         with tempfile.TemporaryDirectory() as tmp_dir:
             training_args = TrainingArguments(

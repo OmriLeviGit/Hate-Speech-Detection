@@ -151,7 +151,7 @@ class BaseTextClassifier(ABC):
 
         augmented_count = 0
         if augment_ratio > 0:
-            augmented_texts, augmented_labels = self.augment_specific_class(
+            augmented_texts, augmented_labels = self._augment_specific_class(
                 X_train,
                 y_train,
                 target_class='antisemitic',
@@ -170,8 +170,8 @@ class BaseTextClassifier(ABC):
                         ['not_antisemitic'] * len(not_antisemitic_test) + \
                         ['irrelevant'] * test_irrelevant_to_add
 
-            X_train, y_train = self.balance_binary_dataset(X_train, y_train, orig_train, balance_pct)
-            X_test, y_test = self.balance_binary_dataset(X_test, y_test, orig_test, balance_pct)
+            X_train, y_train = self._balance_binary_dataset(X_train, y_train, orig_train, balance_pct)
+            X_test, y_test = self._balance_binary_dataset(X_test, y_test, orig_test, balance_pct)
 
         train_counts = Counter(y_train)
         test_counts = Counter(y_test)
@@ -187,8 +187,8 @@ class BaseTextClassifier(ABC):
 
         return X_train, X_test, y_train, y_test
 
-    def balance_binary_dataset(self, texts: list[str], labels: list[str], orig_categories: list[str],
-                               balance_pct) -> tuple[list[str], list[str]]:
+    def _balance_binary_dataset(self, texts: list[str], labels: list[str], orig_categories: list[str],
+                                balance_pct) -> tuple[list[str], list[str]]:
         """
         Balance binary classification dataset to achieve desired class distribution
         while preserving the ratio of original categories within not_antisemitic
@@ -362,7 +362,7 @@ class BaseTextClassifier(ABC):
 
         # Augment antisemitic samples if requested
         if augment_ratio > 0 and 'antisemitic' in datasets:
-            augmented_texts, augmented_labels = self.augment_specific_class(
+            augmented_texts, augmented_labels = self._augment_specific_class(
                 X_train, y_train,
                 target_class='antisemitic',
                 augment_ratio=augment_ratio
@@ -379,12 +379,12 @@ class BaseTextClassifier(ABC):
 
         # Balance classes if requested
         if balance_classes:
-            X_train, y_train = self.balance_multiclass_dataset(X_train, y_train, augmented_indices)
+            X_train, y_train = self._balance_multiclass_dataset(X_train, y_train, augmented_indices)
 
         return X_train, X_test, y_train, y_test
 
-    def balance_multiclass_dataset(self, texts: list[str], labels: list[str],
-                                   augmented_indices=None) -> tuple[list[str], list[str]]:
+    def _balance_multiclass_dataset(self, texts: list[str], labels: list[str],
+                                    augmented_indices=None) -> tuple[list[str], list[str]]:
         """
         Balance multi-class dataset by downsampling to the minority class,
         prioritizing original samples over augmented ones
@@ -457,8 +457,8 @@ class BaseTextClassifier(ABC):
 
         return balanced_texts, balanced_labels
 
-    def augment_specific_class(self, texts: list[str], labels: list[str],
-                               target_class: str, augment_ratio: float = 1.0) -> tuple[list[str], list[str]]:
+    def _augment_specific_class(self, texts: list[str], labels: list[str],
+                                target_class: str, augment_ratio: float = 1.0) -> tuple[list[str], list[str]]:
         """
         Augment only the specified class
 
@@ -531,7 +531,7 @@ class BaseTextClassifier(ABC):
         """Train the model"""
         pass
 
-    def evaluate(self, X_test: list[str], y_test: list[str], file_name=None) -> tuple[float, float, float, float]:
+    def evaluate(self, X_test: list[str], y_test: list[str], output_file=None) -> tuple[float, float, float, float]:
         if not self.best_model:
             raise ValueError("Model not trained yet")
 
@@ -547,9 +547,9 @@ class BaseTextClassifier(ABC):
         precision = precision_score(y_encoded, y_pred, average='weighted', zero_division=0)
         recall = recall_score(y_encoded, y_pred, average='weighted', zero_division=0)
 
-        if file_name:
+        if output_file:
             output = capture_output(self.print_evaluation, y_encoded, y_pred, accuracy, f1)
-            path = os.path.join(BaseTextClassifier.save_models_path, file_name)
+            path = os.path.join(BaseTextClassifier.save_models_path, output_file)
             with open(path, 'a') as f:
                 f.write(output)
         else:
@@ -562,9 +562,9 @@ class BaseTextClassifier(ABC):
         """Make prediction on a single text"""
         pass
 
-    def print_best_model_results(self, best_score, best_param, training_duration=None):
+    def print_best_model_results(self, cv_score, best_param, training_duration=None):
         print(f"\n=== Training result - Model: {self.model_name} ===")
-        print("Best Cross-validated Score:", round(best_score, 2))
+        print("Best Cross-validated Score:", round(cv_score, 2))
         print("Best Params:", best_param)
         if training_duration > 30:
             print(f"\nActual Training time: {format_duration(training_duration)}")
@@ -591,7 +591,7 @@ class BaseTextClassifier(ABC):
     def load_best_model():
         """Load the best model from all subfolders under BERT and SKlearn directories"""
         base_path = BaseTextClassifier.save_models_path
-        best_score = float('-inf')
+        cv_score = float('-inf')
         best_model_type = None
         best_subfolder = None
 
@@ -607,8 +607,8 @@ class BaseTextClassifier(ABC):
                         with open(classifier_path, "rb") as f:
                             classifier = pickle.load(f)
 
-                        if hasattr(classifier, 'best_score') and classifier.best_score > best_score:
-                            best_score = classifier.best_score
+                        if hasattr(classifier, 'cv_score') and classifier.cv_score > cv_score:
+                            cv_score = classifier.cv_score
                             best_model_type = "bert"
                             best_subfolder = subfolder
                     except:
@@ -626,8 +626,8 @@ class BaseTextClassifier(ABC):
                         with open(classifier_path, "rb") as f:
                             classifier = pickle.load(f)
 
-                        if hasattr(classifier, 'best_score') and classifier.best_score > best_score:
-                            best_score = classifier.best_score
+                        if hasattr(classifier, 'cv_score') and classifier.cv_score > cv_score:
+                            cv_score = classifier.cv_score
                             best_model_type = "sklearn"
                             best_subfolder = subfolder
                     except:
