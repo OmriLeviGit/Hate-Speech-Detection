@@ -550,6 +550,8 @@ class BaseTextClassifier(ABC):
         if output_file:
             output = capture_output(self.print_evaluation, y_encoded, y_pred, accuracy, f1)
             path = os.path.join(BaseTextClassifier.save_models_path, output_file)
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+
             with open(path, 'a') as f:
                 f.write(output)
         else:
