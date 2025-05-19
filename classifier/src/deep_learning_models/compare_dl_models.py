@@ -60,7 +60,7 @@ lstm_param_grid = {
     'dropout_rate': [0.2, 0.5],
     'learning_rate': [0.0001, 0.001],
     'batch_size': [64],
-    'epochs': [5, 10],
+    'epochs': [10],
     'max_sequence_length': [60, 120],
     'dense_units': [64],
     'dense_activation': ['relu', 'tanh']
@@ -73,7 +73,7 @@ cnn_param_grid = {
     'dropout_rate': [0.3, 0.5],
     'learning_rate': [0.0005, 0.001],
     'batch_size': [32],
-    'epochs': [5],
+    'epochs': [10],
     'max_sequence_length': [120],
     'dense_units': [64],
     'dense_activation': ['relu'],
@@ -233,8 +233,8 @@ def main():
         # Define models and their grids
         model_grids = [
             ("MLP", mlp_param_grid),
-            # ("CNN", cnn_param_grid),
-            # ("LSTM", lstm_param_grid)
+            ("CNN", cnn_param_grid),
+            ("LSTM", lstm_param_grid)
         ]
 
         all_results = []
