@@ -45,74 +45,39 @@ model_registry = {
 
 # Hyperparameter search spaces for each model
 
-# mlp_param_grid = {
-#     'hidden_units': [32, 64],
-#     'dropout_rate': [0.3, 0.5],
-#     'learning_rate': [0.001],
-#     'batch_size': [32, 64],
-#     'dense_activation': ['relu', 'tanh'],
-#     'epochs': [10],
-# }
-#
-# lstm_param_grid = {
-#     'embedding_dim': [300],
-#     'lstm_units': [32, 64],
-#     'dropout_rate': [0.2, 0.5],
-#     'learning_rate': [0.0001, 0.001],
-#     'batch_size': [64],
-#     'epochs': [5, 10],
-#     'max_sequence_length': [60, 120],
-#     'dense_units': [64],
-#     'dense_activation': ['relu', 'tanh']
-# }
-#
-# cnn_param_grid = {
-#     'embedding_dim': [100],
-#     'num_filters': [64, 128],
-#     'kernel_size': [3, 5],
-#     'dropout_rate': [0.3, 0.5],
-#     'learning_rate': [0.0005, 0.001],
-#     'batch_size': [32],
-#     'epochs': [5],
-#     'max_sequence_length': [120],
-#     'dense_units': [64],
-#     'dense_activation': ['relu'],
-#     'second_conv': [True, False]
-# }
-
 mlp_param_grid = {
-    'hidden_units': [32],
-    'dropout_rate': [0.3],
+    'hidden_units': [32, 64],
+    'dropout_rate': [0.3, 0.5],
     'learning_rate': [0.001],
-    'batch_size': [32],
-    'dense_activation': ['relu'],
-    'epochs': [1],
+    'batch_size': [32, 64],
+    'dense_activation': ['relu', 'tanh'],
+    'epochs': [10],
 }
 
 lstm_param_grid = {
     'embedding_dim': [300],
-    'lstm_units': [32],
-    'dropout_rate': [0.2],
-    'learning_rate': [0.0001],
+    'lstm_units': [32, 64],
+    'dropout_rate': [0.2, 0.5],
+    'learning_rate': [0.0001, 0.001],
     'batch_size': [64],
-    'epochs': [1],
-    'max_sequence_length': [60],
+    'epochs': [5, 10],
+    'max_sequence_length': [60, 120],
     'dense_units': [64],
-    'dense_activation': ['relu']
+    'dense_activation': ['relu', 'tanh']
 }
 
 cnn_param_grid = {
     'embedding_dim': [100],
-    'num_filters': [64],
-    'kernel_size': [3],
-    'dropout_rate': [0.3],
-    'learning_rate': [0.001],
+    'num_filters': [64, 128],
+    'kernel_size': [3, 5],
+    'dropout_rate': [0.3, 0.5],
+    'learning_rate': [0.0005, 0.001],
     'batch_size': [32],
-    'epochs': [1],
+    'epochs': [5],
     'max_sequence_length': [120],
     'dense_units': [64],
     'dense_activation': ['relu'],
-    'second_conv': [True]
+    'second_conv': [True, False]
 }
 
 
@@ -229,8 +194,18 @@ def main():
     raw_data = helper.load_data()
 
     data_configs = [
+        {"balance_pct": 0.3, "augment_ratio": 0.0, "irrelevant_ratio": 0.0},
+        {"balance_pct": 0.3, "augment_ratio": 0.3, "irrelevant_ratio": 0.0},
+        {"balance_pct": 0.3, "augment_ratio": 0.0, "irrelevant_ratio": 0.25},
+        {"balance_pct": 0.3, "augment_ratio": 0.3, "irrelevant_ratio": 0.25},
         {"balance_pct": 0.5, "augment_ratio": 0.0, "irrelevant_ratio": 0.0},
-        # {"balance_pct": 0.5, "augment_ratio": 0.2, "irrelevant_ratio": 0.0},
+        {"balance_pct": 0.5, "augment_ratio": 0.3, "irrelevant_ratio": 0.0},
+        {"balance_pct": 0.5, "augment_ratio": 0.0, "irrelevant_ratio": 0.25},
+        {"balance_pct": 0.5, "augment_ratio": 0.3, "irrelevant_ratio": 0.25},
+        {"balance_pct": 0.7, "augment_ratio": 0.0, "irrelevant_ratio": 0.0},
+        {"balance_pct": 0.7, "augment_ratio": 0.3, "irrelevant_ratio": 0.0},
+        {"balance_pct": 0.7, "augment_ratio": 0.0, "irrelevant_ratio": 0.25},
+        {"balance_pct": 0.7, "augment_ratio": 0.3, "irrelevant_ratio": 0.25},
     ]
 
     for data_config in data_configs:
@@ -240,9 +215,9 @@ def main():
         X_raw, X_test, y_raw, y_test = helper.prepare_dataset(
             raw_data,
             test_size=0.2,
-            balance_pct=0.5,
-            augment_ratio=0.0,
-            irrelevant_ratio=0
+            balance_pct=data_config["balance_pct"],
+            augment_ratio=data_config["augment_ratio"],
+            irrelevant_ratio=data_config["irrelevant_ratio"]
         )
 
         # Convert string labels into numbers
