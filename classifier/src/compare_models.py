@@ -58,7 +58,7 @@ def save_results(model_results, total_time):
 
 
 def main():
-    debug = False
+    debug = True
     seed = 1
     # utils.check_device()
 
