@@ -4,7 +4,8 @@ __pycache__/
 .git
 *.md
 
-src/saved_models
+classifier/src/saved_models/
+classifier/src/glove/
 
 # Ignore all CSV files except for results.csv
 *.csv

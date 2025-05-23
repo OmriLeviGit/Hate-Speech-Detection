@@ -1,0 +1,2 @@
+model_type,test_f1,test_accuracy,cv_f1,cv_accuracy,params
+MLP,0.765,0.767,0.745,0.745,"{""hidden_units"": 64,""dropout_rate"": 0.5,""learning_rate"": 0.1,""batch_size"": 32,""dense_activation"": ""relu"",""epochs"": 1}"

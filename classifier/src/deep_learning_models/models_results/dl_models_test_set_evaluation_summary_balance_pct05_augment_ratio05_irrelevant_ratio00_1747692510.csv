@@ -1,0 +1,4 @@
+model_type,test_f1,test_accuracy,cv_f1,cv_accuracy,params
+CNN,0.791,0.767,0.749,0.749,"{""embedding_dim"": 100,""num_filters"": 64,""kernel_size"": 3,""dropout_rate"": 0.3,""learning_rate"": 0.001,""batch_size"": 32,""epochs"": 1,""max_sequence_length"": 120,""dense_units"": 64,""dense_activation"": ""relu"",""second_conv"": true}"
+MLP,0.775,0.765,0.773,0.786,"{""hidden_units"": 64,""dropout_rate"": 0.5,""learning_rate"": 0.1,""batch_size"": 32,""dense_activation"": ""relu"",""epochs"": 1}"
+LSTM,0.751,0.713,0.697,0.71,"{""embedding_dim"": 300,""lstm_units"": 32,""dropout_rate"": 0.2,""learning_rate"": 0.001,""batch_size"": 64,""epochs"": 1,""max_sequence_length"": 60,""dense_units"": 64,""dense_activation"": ""relu""}"
