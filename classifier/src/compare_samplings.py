@@ -13,11 +13,11 @@ from classifier.src.normalization.TextNormalizer import TextNormalizer
 from classifier.src import utils
 
 params = {
-    "dropout": 0.0078115464911744925,
-    "learning_rate": 2.3597575095971233e-05,
+    "dropout": 0.0073115464911744925,
+    "learning_rate": 6.3597575095971233e-05,
     "batch_size": 16,
-    "epochs": 2,
-    "weight_decay": 0.06700262172627848
+    "epochs": 5,
+    "weight_decay": 0.02700262172627848
 }
 
 # large search ranges
@@ -127,26 +127,26 @@ values3 = [
 # chosen parameters to validate the search across models
 validation_values = [
     # Baseline/control (for comparison)
-    ('control group (0, 0, 0.5)', 0, 0, 0.5),  # Original baseline
+    # ('control group (0, 0, 0.5)', 0, 0, 0.5),  # Original baseline
 
     # Top performers
     ('(0.3, 0.4, 0.5)', 0.3, 0.4, 0.5),  # Best overall performance
-    ('(0.3, 0.3, 0.5)', 0.3, 0.3, 0.5),  # Best class 0 recall with high accuracy
-    ('(0.3, 0.45, 0.6)', 0.3, 0.45, 0.6),  # Best imbalanced configuration
-
-    # Critical data points showing impact of each parameter
-
-    # Augmentation effect (keeping other params constant)
-    ('(0, 0.3, 0.5)', 0, 0.3, 0.5),  # No augmentation
-    ('(0.7, 0.3, 0.5)', 0.7, 0.3, 0.5),  # Excessive augmentation
-
-    # Type B ratio effect (keeping other params constant)
-    ('(0.3, 0.2, 0.5)', 0.3, 0.2, 0.5),  # Lower diversity
-    ('(0.3, 0.5, 0.5)', 0.3, 0.5, 0.5),  # Higher diversity
-
-    # Balance effect (keeping other params constant)
-    ('(0.3, 0.3, 0.6)', 0.3, 0.3, 0.6),  # Moderate imbalance
-    ('(0.3, 0.3, 0.7)', 0.3, 0.3, 0.7),  # Higher imbalance
+    # ('(0.3, 0.3, 0.5)', 0.3, 0.3, 0.5),  # Best class 0 recall with high accuracy
+    # ('(0.3, 0.45, 0.6)', 0.3, 0.45, 0.6),  # Best imbalanced configuration
+    #
+    # # Critical data points showing impact of each parameter
+    #
+    # # Augmentation effect (keeping other params constant)
+    # ('(0, 0.3, 0.5)', 0, 0.3, 0.5),  # No augmentation
+    # ('(0.7, 0.3, 0.5)', 0.7, 0.3, 0.5),  # Excessive augmentation
+    #
+    # # Type B ratio effect (keeping other params constant)
+    # ('(0.3, 0.2, 0.5)', 0.3, 0.2, 0.5),  # Lower diversity
+    # ('(0.3, 0.5, 0.5)', 0.3, 0.5, 0.5),  # Higher diversity
+    #
+    # # Balance effect (keeping other params constant)
+    # ('(0.3, 0.3, 0.6)', 0.3, 0.3, 0.6),  # Moderate imbalance
+    # ('(0.3, 0.3, 0.7)', 0.3, 0.3, 0.7),  # Higher imbalance
 ]
 
 output_path = os.path.join(BaseTextClassifier.save_models_path, "samplings_results.txt")
@@ -163,8 +163,8 @@ def run(model, v, params, debug=None):
 
     utils.reset_seeds(model.seed)
 
-    # model.train_final_model(X_train, y_train, params)
-    model.train(X_train, y_train)
+    model.train_final_model(X_train, y_train, params)
+    # model.train(X_train, y_train)
 
     captured_output = io.StringIO()
     original_stdout = sys.stdout
@@ -183,7 +183,7 @@ def run(model, v, params, debug=None):
     return model.model_name, res
 
 def main():
-    debug = True
+    debug = False
     # utils.check_device()
 
     # change seed, check why the control set performs badly
@@ -204,23 +204,6 @@ def main():
             AutoTokenizer.from_pretrained(config["model_type"]),
             config
         )
-
-        # config = {
-        #     "model_name": v[0],
-        #     "model_class": SGDClassifier(),
-        #     "param_grid": {
-        #         'loss': ['hinge', 'log_loss'],
-        #         'penalty': ['l2', 'elasticnet'],
-        #         'alpha': [1e-4, 1e-3],
-        #         'max_iter': [1000]
-        #     }
-        # }
-        # model = SKLearnClassifier(
-        #     ["antisemitic", "not_antisemitic"],
-        #     TextNormalizer(emoji='text'),
-        #     TfidfVectorizer(),
-        #     config
-        # )
 
         name, res = run(model, v, params, debug=debug)
 

@@ -14,7 +14,7 @@ from classifier.src.utils import reset_seeds
 complex models can benefit from higher ir and b_pct, but high b_pct usually performs much worse.
 
 Best sampling parameters:
-    default_sampling = (0.33, 0.45, 0.6) # models best performance for bert (ar, ir, b_pct)
+    default_sampling = (0, 0, 0.5) # default
     sklearn_sampling = (0.33, 0.33, 0.5) # best performance for sklearn (ar, ir, b_pct)
     bert_sampling = (0.33, 0.45, 0.6) # models best performance for bert (ar, ir, b_pct)
 """
@@ -34,7 +34,7 @@ def compare_models(models, debug=False):
         reset_seeds(model.seed)
 
         model.train(X_train, y_train)
-        evaluation = model.evaluate(X_test, y_test, output_file="evaluation_results")
+        evaluation = model.evaluate(X_test, y_test, output_file="evaluation_results.txt")
 
         results.append((model.model_name, evaluation, model.cv_score, model.best_params))
 
