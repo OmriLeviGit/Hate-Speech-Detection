@@ -8,6 +8,7 @@ initiate_job.sh
 test.py
 classifier/src/saved_models
 classifier/src/GloVe/glove.6B.300d.txt
+classifier/src/final_model/bert
 
 results
 
