@@ -1,0 +1,52 @@
+=== Model evaluation - (0, 0, 0.5) ===
+Accuracy score: 0.82 | f1 score: 0.82
+
+Classification Report:
+               precision    recall  f1-score   support
+
+           0       0.83      0.81      0.83       230
+           1       0.82      0.83      0.83       230
+
+    accuracy                           0.82       460
+   macro avg       0.83      0.82      0.83       460
+weighted avg       0.83      0.82      0.83       460
+
+Confusion Matrix:
+ [[187  43]
+ [ 37 193]]
+
+
+=== Model evaluation - (0.3, 0.4, 0.5) ===
+Accuracy score: 0.87 | f1 score: 0.87
+
+Classification Report:
+               precision    recall  f1-score   support
+
+           0       0.87      0.87      0.87       230
+           1       0.87      0.87      0.87       230
+
+    accuracy                           0.87       460
+   macro avg       0.87      0.87      0.87       460
+weighted avg       0.87      0.87      0.87       460
+
+Confusion Matrix:
+  [[200  30]
+  [ 30 200]]
+
+
+=== Model evaluation - (0.3, 0.45, 0.6) ===
+Accuracy score: 0.87 | f1 score: 0.86
+
+Classification Report:
+               precision    recall  f1-score   support
+
+           0       0.88      0.90      0.89       345
+           1       0.84      0.82      0.83       230
+
+    accuracy                           0.87       575
+   macro avg       0.86      0.86      0.86       575
+weighted avg       0.87      0.87      0.87       575
+
+Confusion Matrix:
+  [[309  36]
+  [ 42 188]]

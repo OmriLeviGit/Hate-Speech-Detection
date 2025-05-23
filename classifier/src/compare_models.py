@@ -11,18 +11,16 @@ from classifier.src.utils import reset_seeds
 
 """
 (augment_ratio, irrelevant_ratio, balance_pct)
-complex models can benefit from higher ir and b_pct, but high b_pct usually performs much worse.
+default sampling = (0, 0, 0.5)
+best found = (0.33, 0.4, 0.5) # best sampling, pretty consistent across model types
 
-Best sampling parameters:
-    default_sampling = (0, 0, 0.5) # default
-    sklearn_sampling = (0.33, 0.33, 0.5) # best performance for sklearn (ar, ir, b_pct)
-    bert_sampling = (0.33, 0.45, 0.6) # models best performance for bert (ar, ir, b_pct)
+complex models can benefit from higher ir and b_pct, but though increasing b_pct quickly drops off.
 """
 def compare_models(models, debug=False):
     data = models[0].load_data(debug=debug)
 
     reset_seeds(models[0].seed)
-    ar, ir, b_pct = (0.33, 0.45, 0.6)   # bert sampling
+    ar, ir, b_pct = (0.33, 0.4, 0.5)
 
     X_train, X_test, y_train, y_test = models[0].prepare_dataset(data,
             augment_ratio=ar, irrelevant_ratio=ir, balance_pct=b_pct)
