@@ -34,7 +34,7 @@ class BertClassifier(BaseTextClassifier):
         # torch.set_num_threads(1)
 
         self.hp_ranges = config.get("hyper_parameters")
-        self.n_trials = config.get("n_trials", 100)
+        self.n_trials = config.get("n_trials", 40)
 
         self.best_model = None
         self.cv_score = None
@@ -81,8 +81,8 @@ class BertClassifier(BaseTextClassifier):
         study = optuna.create_study(
             direction="maximize",
             pruner=optuna.pruners.MedianPruner(
-                n_startup_trials=1,
-                n_warmup_steps=1,
+                n_startup_trials=5,
+                n_warmup_steps=2,
                 interval_steps=1
             )
         )
