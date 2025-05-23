@@ -34,7 +34,7 @@ class BertClassifier(BaseTextClassifier):
         # torch.set_num_threads(1)
 
         self.hp_ranges = config.get("hyper_parameters")
-        self.n_trials = config.get("n_trials", 10)
+        self.n_trials = config.get("n_trials", 100)
 
         self.best_model = None
         self.cv_score = None
@@ -78,7 +78,14 @@ class BertClassifier(BaseTextClassifier):
 
         # Create and run Optuna study
         opt_start_time = time.time()
-        study = optuna.create_study(direction="maximize")
+        study = optuna.create_study(
+            direction="maximize",
+            pruner=optuna.pruners.MedianPruner(
+                n_startup_trials=1,
+                n_warmup_steps=1,
+                interval_steps=1
+            )
+        )
         study.optimize(
             lambda trial: self._objective_function(trial, X_preprocessed, y_encoded),
             n_trials=self.n_trials
@@ -102,9 +109,9 @@ class BertClassifier(BaseTextClassifier):
             "dropout": trial.suggest_float("dropout", *self.hp_ranges["dropout_range"]),
         }
 
-        return self._perform_cross_validation(X_preprocessed, y_encoded, trial_config)
+        return self._perform_cross_validation(X_preprocessed, y_encoded, trial_config, trial=trial)
 
-    def _perform_cross_validation(self, X, y_encoded, params, n_splits=5) -> float:
+    def _perform_cross_validation(self, X, y_encoded, params, trial=None, n_splits=5) -> float:
         """Perform k-fold cross-validation with given hyperparameters"""
         print("\n=== Start cross validation ===")
         cv_scores = []
@@ -113,7 +120,8 @@ class BertClassifier(BaseTextClassifier):
         start_time = time.time()
 
         for fold_idx, (train_idx, val_idx) in enumerate(kf.split(X)):
-            print(f"\nFOLD {fold_idx + 1}/{n_splits}")
+            print(f"\nTrial {trial.number if trial else 'N/A'} - FOLD {fold_idx + 1}/{n_splits}")
+
 
             X_train_fold = [X[i] for i in train_idx]
             X_val_fold = [X[i] for i in val_idx]
@@ -131,7 +139,14 @@ class BertClassifier(BaseTextClassifier):
                 y_val_fold,
                 params
             )
+
             cv_scores.append(val_score)
+
+            if trial is not None:
+                trial.report(np.mean(cv_scores), fold_idx)
+                if trial.should_prune():
+                    print(f"Pruned - fold: {fold_idx}, trial: {trial}")
+                    raise optuna.TrialPruned()
 
         training_duration = time.time() - start_time
 

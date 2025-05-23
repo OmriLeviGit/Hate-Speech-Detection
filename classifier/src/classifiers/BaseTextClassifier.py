@@ -284,9 +284,9 @@ class BaseTextClassifier(ABC):
         # Calculate actual achieved balance
         actual_balance = (true_not_antisemitic_to_keep + irrelevant_to_keep) / len(final_indices)
 
-        print(f"\nBalanced dataset: {antisemitic_count} antisemitic, "
-              f"{true_not_antisemitic_to_keep + irrelevant_to_keep} not_antisemitic ({true_not_antisemitic_to_keep} are true not_antisemitic, {irrelevant_to_keep} are irrelevant)")
-        print(f"Target balance: {balance_pct:.2f}, Achieved balance: {actual_balance:.2f}")
+        # print(f"\nBalanced dataset: {antisemitic_count} antisemitic, "
+        #       f"{true_not_antisemitic_to_keep + irrelevant_to_keep} not_antisemitic ({true_not_antisemitic_to_keep} are true not_antisemitic, {irrelevant_to_keep} are irrelevant)")
+        # print(f"Target balance: {balance_pct:.2f}, Achieved balance: {actual_balance:.2f}")
 
         return balanced_texts, balanced_labels
 
@@ -515,9 +515,8 @@ class BaseTextClassifier(ABC):
                 else:
                     break
 
-        print(f"Original '{target_class}': {original_count} samples")
+        print(f"Class '{target_class}': {original_count} samples, generated {len(augmented_texts)} augmented samples")
         print(f"Augment ratio: {augment_ratio} (target: {samples_needed} new samples)")
-        print(f"Generated {len(augmented_texts)} augmented samples")
 
         return augmented_texts, augmented_labels
 

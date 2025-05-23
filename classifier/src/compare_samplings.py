@@ -125,32 +125,47 @@ values3 = [
 ]
 
 # chosen parameters to validate the search across models
+# validation_values = [
+#     # # Control
+#     # ('control group (0, 0, 0.5)', 0, 0, 0.5),
+#
+#     # Top performers
+#     ('(0.3, 0.4, 0.5)', 0.3, 0.4, 0.5),
+#     # ('(0.3, 0.45, 0.6)', 0.3, 0.45, 0.6),
+#     #    #
+#     # # Augmentation effect
+#     # ('(0.2, 0.4, 0.5)', 0, 0.3, 0.5),
+#     # ('(0.4, 0.4, 0.5)', 0.7, 0.3, 0.5),
+#     #
+#     # # Mix with irrelevant effect
+#     # ('(0.3, 0.2, 0.5)', 0.3, 0.2, 0.5),
+#     # ('(0.3, 0.5, 0.5)', 0.3, 0.5, 0.5),
+#     #
+#     # # Balance percent effect
+#     # ('(0.3, 0.3, 0.7)', 0.3, 0.3, 0.7),
+# ]
+
 validation_values = [
-    # Baseline/control (for comparison)
-    # ('control group (0, 0, 0.5)', 0, 0, 0.5),  # Original baseline
+    # Control
+    ('(0, 0, 0.5)', 0, 0, 0.5),
 
     # Top performers
-    ('(0.3, 0.4, 0.5)', 0.3, 0.4, 0.5),  # Best overall performance
-    # ('(0.3, 0.3, 0.5)', 0.3, 0.3, 0.5),  # Best class 0 recall with high accuracy
-    # ('(0.3, 0.45, 0.6)', 0.3, 0.45, 0.6),  # Best imbalanced configuration
-    #
-    # # Critical data points showing impact of each parameter
-    #
-    # # Augmentation effect (keeping other params constant)
-    # ('(0, 0.3, 0.5)', 0, 0.3, 0.5),  # No augmentation
-    # ('(0.7, 0.3, 0.5)', 0.7, 0.3, 0.5),  # Excessive augmentation
-    #
-    # # Type B ratio effect (keeping other params constant)
-    # ('(0.3, 0.2, 0.5)', 0.3, 0.2, 0.5),  # Lower diversity
-    # ('(0.3, 0.5, 0.5)', 0.3, 0.5, 0.5),  # Higher diversity
-    #
-    # # Balance effect (keeping other params constant)
-    # ('(0.3, 0.3, 0.6)', 0.3, 0.3, 0.6),  # Moderate imbalance
-    # ('(0.3, 0.3, 0.7)', 0.3, 0.3, 0.7),  # Higher imbalance
+    ('(0.3, 0.4, 0.5)', 0.3, 0.4, 0.5),
+    ('(0.3, 0.45, 0.6)', 0.3, 0.45, 0.6),
+
+    # Augmentation effect
+    ('(0.2, 0.4, 0.5)', 0, 0.3, 0.5),
+    ('(0.4, 0.4, 0.5)', 0.7, 0.3, 0.5),
+
+    # Mix with irrelevant effect
+    ('(0.3, 0.5, 0.6)', 0.3, 0.5, 0.5),
+
+    # Balance percent effect
+    ('(0.3, 0.3, 0.7)', 0.3, 0.3, 0.7),
 ]
 
-output_path = os.path.join(BaseTextClassifier.save_models_path, "samplings_results.txt")
-os.makedirs(os.path.dirname(output_path), exist_ok=True)
+
+file_name = "sampling_results.txt"
 
 def run(model, v, params, debug=None):
     utils.reset_seeds(model.seed)
@@ -163,54 +178,46 @@ def run(model, v, params, debug=None):
 
     utils.reset_seeds(model.seed)
 
-    model.train_final_model(X_train, y_train, params)
-    # model.train(X_train, y_train)
+    model.train_final_model(X_train, y_train, params)   # bert
+    # model.train(X_train, y_train) # sklearn
 
-    captured_output = io.StringIO()
-    original_stdout = sys.stdout
-
-    try:
-        sys.stdout = captured_output
-        res = model.evaluate(X_test, y_test)
-        output_string = captured_output.getvalue()
-    finally:
-        sys.stdout = original_stdout
-
-
-    with open(output_path, 'a') as f:
-        f.write(output_string)
+    res = model.evaluate(X_test, y_test, output_file=(model.model_name + " " + file_name))
 
     return model.model_name, res
 
 def main():
     debug = False
+
     # utils.check_device()
 
-    # change seed, check why the control set performs badly
     results = []
 
-
     for v in validation_values:
-        print("running ", v[0])
-        # bert
-        config = {
-            'model_name': v[0],
-            'model_type': "distilbert-base-uncased"
-        }
+        for seed in range(10):
 
-        model = BertClassifier(
-            ["antisemitic", "not_antisemitic"],
-            TextNormalizer(emoji='text'),
-            AutoTokenizer.from_pretrained(config["model_type"]),
-            config
-        )
+            print(f"running {v[0]}, seed {seed}")
+            # bert
+            config = {
+                'model_name': v[0],
+                'model_type': "distilbert-base-uncased"
+            }
 
-        name, res = run(model, v, params, debug=debug)
+            model = BertClassifier(
+                ["antisemitic", "not_antisemitic"],
+                TextNormalizer(emoji='text'),
+                AutoTokenizer.from_pretrained(config["model_type"]),
+                config,
+                seed=seed
+            )
 
-        results.append((name, res))
+            name, res = run(model, v, params, debug=debug)
+
+            results.append((name, res))
 
     sorted_results = sorted(results, key=lambda x: x[1][1], reverse=True)
 
+    output_path = os.path.join(BaseTextClassifier.save_models_path, file_name)
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
     with open(output_path, 'a') as f:
         for item in sorted_results:
             f.write(str(item) + '\n')
