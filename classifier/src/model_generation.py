@@ -214,10 +214,9 @@ def generate_models(seed, debug=False):
     labels = ["antisemitic", "not_antisemitic"]
 
     models = []
-    # models.extend(ini_sklearn_models(sklearn_configs, labels, seed=seed, debug=debug))
+    models.extend(ini_sklearn_models(sklearn_configs, labels, seed=seed, debug=debug))
     models.extend(ini_bert_models(bert_configs, labels, seed=seed, debug=debug))
 
-    models = [models[0]]
     model_names = [model.model_name for model in models]
 
     print(f"Generated {len(models)} model objects: \n{model_names}")

@@ -7,11 +7,13 @@ from collections import Counter
 
 import numpy as np
 import pandas as pd
+from huggingface_hub.errors import RepositoryNotFoundError
 from sklearn.metrics import f1_score, classification_report, confusion_matrix, accuracy_score, precision_score, \
     recall_score
 from sklearn.utils import shuffle
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
+from huggingface_hub import snapshot_download
 
 from classifier.src.utils import format_duration, capture_output
 
@@ -20,6 +22,7 @@ class BaseTextClassifier(ABC):
     """Abstract base class for text classifiers"""
 
     save_models_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "saved_models")
+    final_model_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "final_model")
 
     def __init__(self, labels: list = None, seed = None):
         if 'antisemitic' in labels and len(labels) > 1:
@@ -590,11 +593,21 @@ class BaseTextClassifier(ABC):
 
     @staticmethod
     def load_best_model():
-        """Load the best model from all subfolders under BERT and SKlearn directories"""
+        """Load the best model inside the local folder saved_models"""
         base_path = BaseTextClassifier.save_models_path
         cv_score = float('-inf')
         best_model_type = None
         best_subfolder = None
+
+        try:
+            snapshot_download(
+                repo_id="olmervii/hatespeech-bert-uncased",
+                local_dir=base_path,
+            )
+        except RepositoryNotFoundError:
+            print("Model not found on Hugging Face Hub")
+        except Exception as e:
+            print(f"Error downloading model: {e}")
 
         # Check BERT models
         bert_path = os.path.join(base_path, "bert")
