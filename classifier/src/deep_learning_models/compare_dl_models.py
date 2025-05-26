@@ -54,40 +54,40 @@ model_registry = {
 
 # Hyperparameters grids for the different models
 mlp_param_grid = {
-    'hidden_units': [128],
-    'dropout_rate': [0.7],
-    'learning_rate': [0.001],
-    'batch_size': [32],
+    'hidden_units': [64, 128, 256],
+    'dropout_rate': [0.5, 0.7],
+    'learning_rate': [0.001, 0.001],
+    'batch_size': [16, 32],
     'dense_activation': ['relu'],
-    'epochs': [10],
+    'epochs': [10]
 }
 
 cnn_param_grid = {
     'embedding_dim': [100],
-    'num_filters': [64],
-    'kernel_size': [3],
-    'dropout_rate': [0.7],
-    'learning_rate': [0.001],
+    'num_filters': [64, 128],
+    'kernel_size': [3, 5],
+    'dropout_rate': [0.5],
+    'learning_rate': [0.001, 0.0001],
     'batch_size': [32],
     'epochs': [10],
     'max_sequence_length': [120],
     'dense_units': [64],
     'dense_activation': ['relu'],
-    'second_conv': [True]
+    'second_conv': [False, True]
 }
-
 
 lstm_param_grid = {
     'embedding_dim': [300],
-    'lstm_units': [128],
-    'dropout_rate': [0.2],
-    'learning_rate': [0.001],
+    'lstm_units': [64, 128],
+    'dropout_rate': [0.2, 0.5],
+    'learning_rate': [0.0001, 0.0005, 0.001],
     'batch_size': [32],
-    'epochs': [5],
+    'epochs': [10],
     'max_sequence_length': [120],
     'dense_units': [64],
     'dense_activation': ['relu']
 }
+
 
 
 # Trains the given Keras model and evaluates it on the validation set
