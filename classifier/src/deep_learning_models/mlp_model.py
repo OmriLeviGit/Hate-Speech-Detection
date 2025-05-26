@@ -40,6 +40,10 @@ class MLPModel(BaseDLModel):
         )
         return model
 
+    @property
+    def input_dtype(self):
+        return torch.float32
+
 
 class MLPNetwork(nn.Module):
     def __init__(self, input_dim, hidden_units, dropout_rate):

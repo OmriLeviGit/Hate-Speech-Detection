@@ -1,7 +1,6 @@
 import os
 import time
 import itertools
-import warnings
 import json
 import random
 import numpy as np
@@ -30,11 +29,8 @@ from classifier.src.utils import print_header, format_duration
 SEED = 42
 random.seed(SEED)
 np.random.seed(SEED)
+torch.manual_seed(SEED)
 os.environ['PYTHONHASHSEED'] = str(SEED)
-
-# Prevents printing TensorFlow and sklearn warnings
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-warnings.filterwarnings("ignore", category=UndefinedMetricWarning)
 
 
 # Mapping model type strings to their corresponding classes
@@ -83,46 +79,65 @@ mlp_param_grid = {
     'epochs': [10],
 }
 
-
-lstm_param_grid = {
-    'embedding_dim': [300],
-    'lstm_units': [32, 64],
-    'dropout_rate': [0.2, 0.5],
-    'learning_rate': [0.0001, 0.001],
-    'batch_size': [64],
-    'epochs': [10],
-    'max_sequence_length': [60, 120],
-    'dense_units': [64],
-    'dense_activation': ['relu', 'tanh']
-}
-
 cnn_param_grid = {
     'embedding_dim': [100],
-    'num_filters': [64, 128],
-    'kernel_size': [3, 5],
-    'dropout_rate': [0.3, 0.5],
-    'learning_rate': [0.0005, 0.001],
+    'num_filters': [64],
+    'kernel_size': [3],
+    'dropout_rate': [0.7],
+    'learning_rate': [0.001],
     'batch_size': [32],
     'epochs': [10],
     'max_sequence_length': [120],
     'dense_units': [64],
     'dense_activation': ['relu'],
-    'second_conv': [True, False]
+    'second_conv': [True]
 }
+
+
+lstm_param_grid = {
+    'embedding_dim': [300],
+    'lstm_units': [128],
+    'dropout_rate': [0.2],
+    'learning_rate': [0.001],
+    'batch_size': [32],
+    'epochs': [5],
+    'max_sequence_length': [120],
+    'dense_units': [64],
+    'dense_activation': ['relu']
+}
+
+
+# cnn_param_grid = {
+#     'embedding_dim': [100],
+#     'num_filters': [64, 128],
+#     'kernel_size': [3, 5],
+#     'dropout_rate': [0.3, 0.5],
+#     'learning_rate': [0.0005, 0.001],
+#     'batch_size': [32],
+#     'epochs': [10],
+#     'max_sequence_length': [120],
+#     'dense_units': [64],
+#     'dense_activation': ['relu'],
+#     'second_conv': [True, False]
+# }
 
 
 # Trains the given Keras model and evaluates it on the validation set
 # Returns F1 score, classification report, confusion matrix, and training duration
-def train_and_evaluate(model, X_train, y_train, X_val, y_val, batch_size, epochs, learning_rate=0.001):
+def train_and_evaluate(model, X_train, y_train, X_val, y_val, batch_size, epochs, input_dtype, learning_rate=0.001):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = model.to(device)
     model.train()
 
     # Convert data to torch tensors
-    X_train_tensor = torch.tensor(X_train, dtype=torch.float32)
+    X_train_tensor = torch.tensor(X_train, dtype=input_dtype)
     y_train_tensor = torch.tensor(y_train, dtype=torch.float32).unsqueeze(1)
-    X_val_tensor = torch.tensor(X_val, dtype=torch.float32)
+
+    X_val_tensor = torch.tensor(X_val, dtype=input_dtype)
     y_val_tensor = torch.tensor(y_val, dtype=torch.float32).unsqueeze(1)
+
+    print("X_train_tensor dtype:", X_train_tensor.dtype)
+    print("model expects dtype: ", input_dtype)
 
     train_loader = DataLoader(TensorDataset(X_train_tensor, y_train_tensor), batch_size=batch_size, shuffle=True)
 
@@ -194,7 +209,8 @@ def run_grid_search(model_type, param_grid, X_raw, y, num_folds = 5):
             f1, report, matrix, duration = train_and_evaluate(
                 model, X_train, y_train, X_val, y_val,
                 batch_size=params['batch_size'],
-                epochs=params['epochs']
+                epochs=params['epochs'],
+                input_dtype=model_wrapper.input_dtype
             )
 
             fold_scores.append(f1)
@@ -250,6 +266,7 @@ def main():
         # {"balance_pct": 0.5, "augment_ratio": 0.0, "irrelevant_ratio": 0.0},
         # {"balance_pct": 0.5, "augment_ratio": 0.3, "irrelevant_ratio": 0.25},
         {"balance_pct": 0.5, "augment_ratio": 0.0, "irrelevant_ratio": 0.7},
+        # {"balance_pct": 0.5, "augment_ratio": 0.0, "irrelevant_ratio": 0.0},
         # {"balance_pct": 0.5, "augment_ratio": 0.3, "irrelevant_ratio": 0.25},
         # {"balance_pct": 0.7, "augment_ratio": 0.0, "irrelevant_ratio": 0.0},
         # {"balance_pct": 0.7, "augment_ratio": 0.3, "irrelevant_ratio": 0.0},
@@ -281,9 +298,9 @@ def main():
 
         # Define models and their grids
         model_grids = [
-            ("MLP", mlp_param_grid),
+            # ("MLP", mlp_param_grid),
             # ("CNN", cnn_param_grid),
-            # ("LSTM", lstm_param_grid)
+            ("LSTM", lstm_param_grid)
         ]
 
         all_results = []
@@ -347,7 +364,7 @@ def main():
             model = model.to(device)
             model.train()
 
-            X_tensor = torch.tensor(X_trainval_proc, dtype=torch.float32)
+            X_tensor = torch.tensor(X_trainval_proc, dtype=model_wrapper.input_dtype)
             y_tensor = torch.tensor(y_trainval_proc, dtype=torch.float32).unsqueeze(1)
             train_loader = DataLoader(TensorDataset(X_tensor, y_tensor), batch_size=best_params["batch_size"],
                                       shuffle=True)
@@ -367,7 +384,7 @@ def main():
             # Predict
             model.eval()
             with torch.no_grad():
-                test_preds = model(torch.tensor(X_test_proc, dtype=torch.float32).to(device)).cpu().numpy()
+                test_preds = model(torch.tensor(X_test_proc, dtype=model_wrapper.input_dtype).to(device)).cpu().numpy()
             y_pred = (test_preds > 0.5).astype(int)
 
 
