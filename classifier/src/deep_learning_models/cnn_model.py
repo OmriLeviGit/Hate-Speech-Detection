@@ -13,6 +13,7 @@ class CNNModel(BaseDLModel):
     # Converts raw text into padded sequences using a tokenizer
     # Returns padded X and unchanged y
     def preprocess(self, X_raw, y):
+
         self.max_len = self.params["max_sequence_length"]
         max_vocab_size = 5000
 
@@ -84,6 +85,7 @@ class CNNNetwork(nn.Module):
 
         self.conv1 = nn.Conv1d(in_channels=embedding_dim, out_channels=num_filters, kernel_size=kernel_size)
         self.second_conv = second_conv
+
         if second_conv:
             self.conv2 = nn.Conv1d(in_channels=num_filters, out_channels=num_filters, kernel_size=3)
 
@@ -95,18 +97,18 @@ class CNNNetwork(nn.Module):
         self.activation_fn = nn.ReLU() if dense_activation == 'relu' else nn.Tanh()
 
     def forward(self, x):
-        # x: [batch_size, seq_len]
-        x = self.embedding(x)                     # [batch, seq_len, emb_dim]
-        x = x.permute(0, 2, 1)                    # [batch, emb_dim, seq_len] for Conv1d
+        x = self.embedding(x)
+        x = x.permute(0, 2, 1)
 
-        x = F.relu(self.conv1(x))                 # [batch, num_filters, L]
+        x = F.relu(self.conv1(x))
         if self.second_conv:
-            x = F.relu(self.conv2(x))             # deeper conv layer
+            x = F.relu(self.conv2(x))
 
-        x = self.pool(x).squeeze(2)               # [batch, num_filters]
+        x = self.pool(x).squeeze(2)
         x = self.dropout(x)
-        x = self.activation_fn(self.dense(x))     # [batch, dense_units]
-        x = torch.sigmoid(self.output(x))         # [batch, 1]
+        x = self.activation_fn(self.dense(x))
+        x = torch.sigmoid(self.output(x))
+
         return x
 
 
