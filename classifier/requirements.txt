@@ -12,6 +12,5 @@ optuna~=4.3.0
 accelerate==0.26.0
 nlpaug==1.1.11
 nltk==3.8.1
-tensorflow==2.15.0
 scikit-learn~=1.6.1
 huggingface_hub==0.30.2

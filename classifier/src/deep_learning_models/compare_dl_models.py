@@ -368,24 +368,18 @@ def main():
 
     # Set all configurations to be tested
     data_configs = [
-        # {"balance_pct": 0.3, "augment_ratio": 0.0, "irrelevant_ratio": 0.0},
-        # {"balance_pct": 0.3, "augment_ratio": 0.3, "irrelevant_ratio": 0.0},
-        # {"balance_pct": 0.3, "augment_ratio": 0.0, "irrelevant_ratio": 0.25},
-        # {"balance_pct": 0.3, "augment_ratio": 0.3, "irrelevant_ratio": 0.25},
-        # {"balance_pct": 0.5, "augment_ratio": 0.0, "irrelevant_ratio": 0.0},
-        # {"balance_pct": 0.5, "augment_ratio": 0.5, "irrelevant_ratio": 0.7},
-        {"balance_pct": 0.5, "augment_ratio": 0.0, "irrelevant_ratio": 0.7},
         {"balance_pct": 0.5, "augment_ratio": 0.0, "irrelevant_ratio": 0.0},
-        # {"balance_pct": 0.5, "augment_ratio": 0.3, "irrelevant_ratio": 0.25},
-        # {"balance_pct": 0.7, "augment_ratio": 0.0, "irrelevant_ratio": 0.0},
-        # {"balance_pct": 0.7, "augment_ratio": 0.3, "irrelevant_ratio": 0.0},
-        # {"balance_pct": 0.7, "augment_ratio": 0.0, "irrelevant_ratio": 0.25},
-        # {"balance_pct": 0.7, "augment_ratio": 0.3, "irrelevant_ratio": 0.25},
+        {"balance_pct": 0.5, "augment_ratio": 0.0, "irrelevant_ratio": 0.5},
+        {"balance_pct": 0.5, "augment_ratio": 0.0, "irrelevant_ratio": 0.7},
+        {"balance_pct": 0.5, "augment_ratio": 0.5, "irrelevant_ratio": 0.0},
+        {"balance_pct": 0.5, "augment_ratio": 0.5, "irrelevant_ratio": 0.5},
+        {"balance_pct": 0.5, "augment_ratio": 0.5, "irrelevant_ratio": 0.7},
     ]
 
     model_grids = [
         ("MLP", mlp_param_grid),
-        # ("CNN", cnn_param_grid),
+        ("CNN", cnn_param_grid),
+        ("LSTM", lstm_param_grid),
     ]
 
     # Run experiments
