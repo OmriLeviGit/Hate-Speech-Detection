@@ -1,2 +1,0 @@
-model_type,f1_score,accuracy,params
-MLP,0.776,0.778,"{""hidden_units"": 64,""dropout_rate"": 0.5,""learning_rate"": 0.1,""batch_size"": 32,""dense_activation"": ""relu"",""epochs"": 1}"

@@ -38,7 +38,7 @@
       },
       {
         "baseTerm": "jew",
-        "staticReplacement": ["j$"],
+        "staticReplacement": ["j$", "j*w", "je*"],
         "substitutable": [],
         "substitutablePlural": ["jew","joo", "zjoo"]
       },

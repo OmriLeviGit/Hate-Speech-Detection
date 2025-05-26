@@ -6,7 +6,9 @@ import json
 import random
 import numpy as np
 import pandas as pd
-import tensorflow as tf
+
+import torch
+from torch.utils.data import TensorDataset, DataLoader
 
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
@@ -29,7 +31,6 @@ SEED = 42
 random.seed(SEED)
 np.random.seed(SEED)
 os.environ['PYTHONHASHSEED'] = str(SEED)
-tf.random.set_seed(SEED)
 
 # Prevents printing TensorFlow and sklearn warnings
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
@@ -45,14 +46,43 @@ model_registry = {
 
 # Hyperparameter search spaces for each model
 
+# mlp_param_grid = {
+#     'hidden_units': [32, 64],
+#     'dropout_rate': [0.3, 0.5],
+#     'learning_rate': [0.001],
+#     'batch_size': [32, 64],
+#     'dense_activation': ['relu', 'tanh'],
+#     'epochs': [10],
+# }
+
+# Gave 0.86 accuracy with 0.5 irrelevant
+# mlp_param_grid = {
+#     'hidden_units': [64],
+#     'dropout_rate': [0.7],
+#     'learning_rate': [0.001],
+#     'batch_size': [8],
+#     'dense_activation': ['relu'],
+#     'epochs': [7],
+# }
+
+# mlp_param_grid = {
+#     'hidden_units': [64, 128, 256],
+#     'dropout_rate': [0.5, 0.7],
+#     'learning_rate': [0.0005, 0.001],
+#     'batch_size': [8, 16, 32],
+#     'dense_activation': ['relu'],
+#     'epochs': [5, 10],
+# }
+
 mlp_param_grid = {
-    'hidden_units': [32, 64],
-    'dropout_rate': [0.3, 0.5],
+    'hidden_units': [128],
+    'dropout_rate': [0.5, 0.7],
     'learning_rate': [0.001],
-    'batch_size': [32, 64],
-    'dense_activation': ['relu', 'tanh'],
+    'batch_size': [32],
+    'dense_activation': ['relu'],
     'epochs': [10],
 }
+
 
 lstm_param_grid = {
     'embedding_dim': [300],
@@ -83,28 +113,47 @@ cnn_param_grid = {
 
 # Trains the given Keras model and evaluates it on the validation set
 # Returns F1 score, classification report, confusion matrix, and training duration
-def train_and_evaluate(model, X_train, y_train, X_val, y_val, batch_size, epochs):
+def train_and_evaluate(model, X_train, y_train, X_val, y_val, batch_size, epochs, learning_rate=0.001):
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    model = model.to(device)
+    model.train()
+
+    # Convert data to torch tensors
+    X_train_tensor = torch.tensor(X_train, dtype=torch.float32)
+    y_train_tensor = torch.tensor(y_train, dtype=torch.float32).unsqueeze(1)
+    X_val_tensor = torch.tensor(X_val, dtype=torch.float32)
+    y_val_tensor = torch.tensor(y_val, dtype=torch.float32).unsqueeze(1)
+
+    train_loader = DataLoader(TensorDataset(X_train_tensor, y_train_tensor), batch_size=batch_size, shuffle=True)
+
+    optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
+    loss_fn = torch.nn.BCELoss()
 
     start_time = time.time()
 
-    model.fit(
-        X_train, y_train,
-        validation_data = (X_val, y_val),
-        epochs = epochs,
-        batch_size = batch_size,
-        verbose = 0  # suppress Keras logs
-    )
+    for epoch in range(epochs):
+        for X_batch, y_batch in train_loader:
+            X_batch, y_batch = X_batch.to(device), y_batch.to(device)
+            optimizer.zero_grad()
+            preds = model(X_batch)
+            loss = loss_fn(preds, y_batch)
+            loss.backward()
+            optimizer.step()
 
     duration = time.time() - start_time
 
-    # Predict on validation set — outputs probabilities between 0 and 1
-    y_pred = (model.predict(X_val) > 0.5).astype(int)
+    # Evaluation
+    model.eval()
+    with torch.no_grad():
+        preds = model(X_val_tensor.to(device)).cpu().numpy()
+    y_pred = (preds > 0.5).astype(int)
 
     f1 = f1_score(y_val, y_pred)
     report = classification_report(y_val, y_pred)
     matrix = confusion_matrix(y_val, y_pred)
 
     return f1, report, matrix, duration
+
 
 
 # Runs k-fold cross-validation over all combinations of parameters for a given model type
@@ -194,18 +243,18 @@ def main():
     raw_data = helper.load_data()
 
     data_configs = [
-        {"balance_pct": 0.3, "augment_ratio": 0.0, "irrelevant_ratio": 0.0},
-        {"balance_pct": 0.3, "augment_ratio": 0.3, "irrelevant_ratio": 0.0},
-        {"balance_pct": 0.3, "augment_ratio": 0.0, "irrelevant_ratio": 0.25},
-        {"balance_pct": 0.3, "augment_ratio": 0.3, "irrelevant_ratio": 0.25},
-        {"balance_pct": 0.5, "augment_ratio": 0.0, "irrelevant_ratio": 0.0},
-        {"balance_pct": 0.5, "augment_ratio": 0.3, "irrelevant_ratio": 0.0},
-        {"balance_pct": 0.5, "augment_ratio": 0.0, "irrelevant_ratio": 0.25},
-        {"balance_pct": 0.5, "augment_ratio": 0.3, "irrelevant_ratio": 0.25},
-        {"balance_pct": 0.7, "augment_ratio": 0.0, "irrelevant_ratio": 0.0},
-        {"balance_pct": 0.7, "augment_ratio": 0.3, "irrelevant_ratio": 0.0},
-        {"balance_pct": 0.7, "augment_ratio": 0.0, "irrelevant_ratio": 0.25},
-        {"balance_pct": 0.7, "augment_ratio": 0.3, "irrelevant_ratio": 0.25},
+        # {"balance_pct": 0.3, "augment_ratio": 0.0, "irrelevant_ratio": 0.0},
+        # {"balance_pct": 0.3, "augment_ratio": 0.3, "irrelevant_ratio": 0.0},
+        # {"balance_pct": 0.3, "augment_ratio": 0.0, "irrelevant_ratio": 0.25},
+        # {"balance_pct": 0.3, "augment_ratio": 0.3, "irrelevant_ratio": 0.25},
+        # {"balance_pct": 0.5, "augment_ratio": 0.0, "irrelevant_ratio": 0.0},
+        # {"balance_pct": 0.5, "augment_ratio": 0.3, "irrelevant_ratio": 0.25},
+        {"balance_pct": 0.5, "augment_ratio": 0.0, "irrelevant_ratio": 0.7},
+        # {"balance_pct": 0.5, "augment_ratio": 0.3, "irrelevant_ratio": 0.25},
+        # {"balance_pct": 0.7, "augment_ratio": 0.0, "irrelevant_ratio": 0.0},
+        # {"balance_pct": 0.7, "augment_ratio": 0.3, "irrelevant_ratio": 0.0},
+        # {"balance_pct": 0.7, "augment_ratio": 0.0, "irrelevant_ratio": 0.25},
+        # {"balance_pct": 0.7, "augment_ratio": 0.3, "irrelevant_ratio": 0.25},
     ]
 
     for data_config in data_configs:
@@ -233,8 +282,8 @@ def main():
         # Define models and their grids
         model_grids = [
             ("MLP", mlp_param_grid),
-            ("CNN", cnn_param_grid),
-            ("LSTM", lstm_param_grid)
+            # ("CNN", cnn_param_grid),
+            # ("LSTM", lstm_param_grid)
         ]
 
         all_results = []
@@ -293,14 +342,36 @@ def main():
             X_test_proc, y_test_proc = model_wrapper.transform(X_test_normalized, y_test)
 
             model = model_wrapper.build(input_shape=X_trainval_proc.shape[1])
-            model.fit(
-                X_trainval_proc, y_trainval_proc,
-                epochs=best_params["epochs"],
-                batch_size=best_params["batch_size"],
-                verbose=0
-            )
 
-            y_pred = (model.predict(X_test_proc) > 0.5).astype(int)
+            device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+            model = model.to(device)
+            model.train()
+
+            X_tensor = torch.tensor(X_trainval_proc, dtype=torch.float32)
+            y_tensor = torch.tensor(y_trainval_proc, dtype=torch.float32).unsqueeze(1)
+            train_loader = DataLoader(TensorDataset(X_tensor, y_tensor), batch_size=best_params["batch_size"],
+                                      shuffle=True)
+
+            optimizer = torch.optim.Adam(model.parameters(), lr=best_params["learning_rate"])
+            loss_fn = torch.nn.BCELoss()
+
+            for epoch in range(best_params["epochs"]):
+                for X_batch, y_batch in train_loader:
+                    X_batch, y_batch = X_batch.to(device), y_batch.to(device)
+                    optimizer.zero_grad()
+                    preds = model(X_batch)
+                    loss = loss_fn(preds, y_batch)
+                    loss.backward()
+                    optimizer.step()
+
+            # Predict
+            model.eval()
+            with torch.no_grad():
+                test_preds = model(torch.tensor(X_test_proc, dtype=torch.float32).to(device)).cpu().numpy()
+            y_pred = (test_preds > 0.5).astype(int)
+
+
+
             test_f1 = f1_score(y_test_proc, y_pred)
 
             y_pred = y_pred.flatten()
