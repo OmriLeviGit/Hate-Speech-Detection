@@ -40,16 +40,6 @@ debug_bert_configs = [
 
 sklearn_configs = [
     {
-        "model_name": "LogisticRegression",
-        "model_class": LogisticRegression(),
-        "param_grid": {
-            'C': [0.5, 1, 5],
-            'penalty': ['l2'],
-            'solver': ['liblinear', 'lbfgs'],
-            'max_iter': [1000]
-        },
-    },
-    {
         "model_name": "LinearSVC",
         "model_class": LinearSVC(),
         "param_grid": {
@@ -57,6 +47,16 @@ sklearn_configs = [
             'max_iter': [1000],
             'loss': ['squared_hinge'],
             'dual': [False]
+        },
+    },
+    {
+        "model_name": "LogisticRegression",
+        "model_class": LogisticRegression(),
+        "param_grid": {
+            'C': [0.5, 1, 5],
+            'penalty': ['l2'],
+            'solver': ['liblinear', 'lbfgs'],
+            'max_iter': [1000]
         },
     },
     {
@@ -86,7 +86,8 @@ sklearn_configs = [
             'max_depth': [None, 10, 20],
             'min_samples_split': [2, 5],
             'min_samples_leaf': [1, 2],
-            'max_features': ['sqrt', 'log2', None]
+            'max_features': ['sqrt', 'log2', None],
+            'class_weight': [None, 'balanced', {0: 2, 1: 1}, {0: 3, 1: 1}]
         },
     }
 ]

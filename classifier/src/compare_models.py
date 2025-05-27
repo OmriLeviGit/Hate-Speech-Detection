@@ -11,19 +11,18 @@ from classifier.src.utils import reset_seeds
 
 """
 (augment_ratio, irrelevant_ratio, balance_pct)
-default sampling = (0, 0, 0.5)
-best found = (0.33, 0.4, 0.5) # best sampling, pretty consistent across model types
+default sampling = (0, 0, None)
+best sampling = (0.33, 0.4, None) # best found, pretty consistent across model types
 
-complex models can benefit from higher ir and b_pct, but though increasing b_pct quickly drops off.
+balance_pct = 0.5 gives the best results, but in practice against real data, the negative class is undertrained
 """
 def compare_models(models, debug=False):
     data = models[0].load_data(debug=debug)
 
     reset_seeds(models[0].seed)
-    ar, ir, b_pct = (0.33, 0.4, 0.5)
 
     X_train, X_test, y_train, y_test = models[0].prepare_dataset(data,
-            augment_ratio=ar, irrelevant_ratio=ir, balance_pct=b_pct)
+            augment_ratio=0.33, irrelevant_ratio=0.4)
 
     results = []
     start_time = time.time()

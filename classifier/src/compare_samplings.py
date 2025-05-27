@@ -9,6 +9,7 @@ from transformers import AutoTokenizer
 from classifier.src.classifiers.BaseTextClassifier import BaseTextClassifier
 from classifier.src.classifiers.BertClassifier import BertClassifier
 from classifier.src.classifiers.SKLearnClassifier import SKLearnClassifier
+from classifier.src.model_generation import generate_models
 from classifier.src.normalization.TextNormalizer import TextNormalizer
 from classifier.src import utils
 
@@ -124,27 +125,6 @@ values3 = [
     ('(0.4, 0.5, 0.6)', 0.4, 0.5, 0.6)
 ]
 
-# chosen parameters to validate the search across models
-# validation_values = [
-#     # # Control
-#     # ('control group (0, 0, 0.5)', 0, 0, 0.5),
-#
-#     # Top performers
-#     ('(0.3, 0.4, 0.5)', 0.3, 0.4, 0.5),
-#     # ('(0.3, 0.45, 0.6)', 0.3, 0.45, 0.6),
-#     #    #
-#     # # Augmentation effect
-#     # ('(0.2, 0.4, 0.5)', 0, 0.3, 0.5),
-#     # ('(0.4, 0.4, 0.5)', 0.7, 0.3, 0.5),
-#     #
-#     # # Mix with irrelevant effect
-#     # ('(0.3, 0.2, 0.5)', 0.3, 0.2, 0.5),
-#     # ('(0.3, 0.5, 0.5)', 0.3, 0.5, 0.5),
-#     #
-#     # # Balance percent effect
-#     # ('(0.3, 0.3, 0.7)', 0.3, 0.3, 0.7),
-# ]
-
 validation_values = [
     # Control
     ('(0, 0, 0.5)', 0, 0, 0.5),
@@ -164,6 +144,14 @@ validation_values = [
     ('(0.3, 0.3, 0.7)', 0.3, 0.3, 0.7),
 ]
 
+# large search ranges
+values4 = [
+    # Data Augmentation = 0
+    ('(0.33, 0, None)', 0.33, 0, None),
+    ('(0.33, 0.33, None)', 0.33, 0.33, None),
+    ('(0.33, 0.5, None)', 0.33, 0.5, None),
+]
+
 
 file_name = "sampling_results.txt"
 
@@ -174,14 +162,14 @@ def run(model, v, params, debug=None):
     _, ar, ir, pct = v
 
     X_train, X_test, y_train, y_test = model.prepare_dataset(
-        data, test_size=0.2, augment_ratio=ar, irrelevant_ratio=ir, balance_pct=pct)
+        data, augment_ratio=ar, irrelevant_ratio=ir)
 
     utils.reset_seeds(model.seed)
 
-    model.train_final_model(X_train, y_train, params)   # bert
-    # model.train(X_train, y_train) # sklearn
+    # model.train_final_model(X_train, y_train, params)   # bert
+    model.train(X_train, y_train) # sklearn
 
-    res = model.evaluate(X_test, y_test, output_file=(model.model_name + " " + file_name))
+    res = model.evaluate(X_test, y_test)
 
     return model.model_name, res
 
@@ -190,25 +178,16 @@ def main():
 
     # utils.check_device()
 
+    model = generate_models(1)[0]
+    original_name = model.model_name
+
     results = []
 
-    for v in validation_values:
+    for v in values4:
         for seed in range(10):
-
             print(f"running {v[0]}, seed {seed}")
-            # bert
-            config = {
-                'model_name': v[0],
-                'model_type': "distilbert-base-uncased"
-            }
 
-            model = BertClassifier(
-                ["antisemitic", "not_antisemitic"],
-                TextNormalizer(emoji='text'),
-                AutoTokenizer.from_pretrained(config["model_type"]),
-                config,
-                seed=seed
-            )
+            model.model_name = original_name + v[0]
 
             name, res = run(model, v, params, debug=debug)
 

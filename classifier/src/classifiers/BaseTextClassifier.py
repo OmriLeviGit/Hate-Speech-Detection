@@ -25,10 +25,10 @@ class BaseTextClassifier(ABC):
     final_model_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "final_model")
 
     def __init__(self, labels: list = None, seed = None):
-        if 'antisemitic' in labels and len(labels) > 1:
-            # antisemitic needs to be at index [1] in order to be the "positive" class
-            labels.remove('antisemitic')
-            labels.insert(1, 'antisemitic')
+        # if 'antisemitic' in labels and len(labels) > 1:
+        #     # antisemitic needs to be at index [1] in order to be the "positive" class
+        #     labels.remove('antisemitic')
+        #     labels.insert(1, 'antisemitic')
 
         self.LABELS = labels
         self.seed = seed
@@ -479,30 +479,30 @@ class BaseTextClassifier(ABC):
         if samples_needed <= 0:
             return [], []
 
-        # Calculate augmentations per sample
-        n_aug = (samples_needed + len(target_indices) - 1) // len(target_indices)
-
         primary_aug = naw.SynonymAug(aug_src='wordnet', aug_min=1, aug_max=2)
         fallback_aug = naw.RandomWordAug(action="swap", aug_min=1, aug_max=2)
 
         augmented_texts = []
         augmented_labels = []
 
-        # Generate augmentations
-        for idx in target_indices:
-            if len(augmented_texts) >= samples_needed:
-                break
+        # Generate augmentations - remove failed entries
+        remaining_indices = target_indices.copy()
 
-            text = texts[idx]
-            current_augmentations = 0
+        while len(augmented_texts) < samples_needed and remaining_indices:
+            indices_to_remove = []
 
-            while current_augmentations < n_aug and len(augmented_texts) < samples_needed:
+            for idx in remaining_indices:
+                if len(augmented_texts) >= samples_needed:
+                    break
+
+                text = texts[idx]
+
                 # Try primary augmentation
                 aug_text_list = primary_aug.augment(text)
                 if isinstance(aug_text_list, list) and len(aug_text_list) > 0:
-                    aug_text = aug_text_list[0]  # Take the first augmentation
+                    aug_text = aug_text_list[0]
                 else:
-                    aug_text = aug_text_list  # Fallback if not a list
+                    aug_text = aug_text_list
 
                 if aug_text == text:  # Fallback if no change
                     fallback_text_list = fallback_aug.augment(text)
@@ -511,12 +511,17 @@ class BaseTextClassifier(ABC):
                     else:
                         aug_text = fallback_text_list
 
+                # Check if augmentation was successful
                 if aug_text != text and aug_text not in augmented_texts:
                     augmented_texts.append(aug_text)
                     augmented_labels.append(target_class)
-                    current_augmentations += 1
                 else:
-                    break
+                    # Mark this index for removal since it failed
+                    indices_to_remove.append(idx)
+
+            # Remove failed indices
+            for idx in indices_to_remove:
+                remaining_indices.remove(idx)
 
         print(f"Class '{target_class}': {original_count} samples, generated {len(augmented_texts)} augmented samples")
         print(f"Augment ratio: {augment_ratio} (target: {samples_needed} new samples)")
@@ -528,19 +533,45 @@ class BaseTextClassifier(ABC):
         """Apply preprocessing to datasets."""
         pass
 
+    def compute_all_metrics(self, y_true, y_pred):
+        """Compute all standard metrics"""
+        return {
+            "accuracy": accuracy_score(y_true, y_pred),
+            "f1": f1_score(y_true, y_pred, average='weighted', zero_division=0),
+            "precision": precision_score(y_true, y_pred, average='weighted', zero_division=0),
+            "recall": recall_score(y_true, y_pred, average='weighted', zero_division=0)
+        }
+
+    def compute_custom_f1(self, y_true, y_pred):
+        """Core custom F1 logic - shared by all subclasses"""
+        f1 = f1_score(y_true, y_pred, average='weighted', zero_division=0)
+
+        f1_per_class = f1_score(y_true, y_pred, average=None, zero_division=0)
+        if len(f1_per_class) >= 2:
+            f1_class_0, f1_class_1 = f1_per_class[0], f1_per_class[1]
+            difference = abs(f1_class_0 - f1_class_1)
+            soft_threshold = 0.01
+            excess_difference = max(0, difference - soft_threshold)
+            penalty = excess_difference ** 2
+            alpha = 50
+            custom_weighted_f1 = f1 - alpha * penalty
+        else:
+            custom_weighted_f1 = f1
+
+        return custom_weighted_f1
+
     @abstractmethod
     def train(self, *args) -> None:
         """Train the model"""
         pass
 
-    def evaluate(self, X_test: list[str], y_test: list[str], output_file=None) -> tuple[float, float, float, float]:
+    def evaluate(self, X_test: list[str], y_test: list[str], output_file=None, print_evaluation=False) -> tuple[float, float, float, float]:
         if not self.best_model:
             raise ValueError("Model not trained yet")
 
         # Preprocess test data
         X_processed = self.preprocess(X_test)
         y_encoded = self.label_encoder.transform(y_test)
-
         y_pred = self.predict(X_processed)
 
         # Calculate metrics
@@ -548,6 +579,27 @@ class BaseTextClassifier(ABC):
         f1 = f1_score(y_encoded, y_pred, average='weighted', zero_division=0)
         precision = precision_score(y_encoded, y_pred, average='weighted', zero_division=0)
         recall = recall_score(y_encoded, y_pred, average='weighted', zero_division=0)
+
+        if print_evaluation:
+            import pandas as pd
+
+            y_pred_decoded = self.label_encoder.inverse_transform(y_pred).tolist()
+
+            # Clean tweets by replacing newlines with spaces
+            cleaned_tweets = [text.replace('\n', ' ').replace('\r', ' ') for text in X_test]
+
+            comparison_results = list(zip(y_test, y_pred_decoded, cleaned_tweets))
+            sorted_results = sorted(comparison_results, key=lambda x: (x[0], x[1]))
+
+            # Create DataFrame
+            df = pd.DataFrame(sorted_results, columns=['Expected (user tagged)', 'Actual (model predicted)', 'Tweet'])
+
+            # Copy to clipboard for Excel
+            df.to_clipboard(index=False, sep='\t')
+            print("Data copied to clipboard! You can now paste it directly into Excel.")
+
+            # Optionally also display the DataFrame
+            print(df)
 
         if output_file:
             output = capture_output(self.print_evaluation, y_encoded, y_pred, accuracy, f1)

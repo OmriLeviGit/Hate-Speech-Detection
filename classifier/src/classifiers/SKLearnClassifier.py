@@ -1,7 +1,9 @@
 import time, os, pickle, joblib
 
+import numpy as np
 from sklearn.calibration import CalibratedClassifierCV
 from sklearn.frozen import FrozenEstimator
+from sklearn.metrics import make_scorer
 from sklearn.model_selection import GridSearchCV
 
 from classifier.src.classifiers.BaseTextClassifier import BaseTextClassifier
@@ -60,14 +62,14 @@ class SKLearnClassifier(BaseTextClassifier):
         if param_grid:
             self.param_grid = param_grid
 
-        # Vectorize and encode
         X_preprocessed = self.preprocess(X)
         X_vectorized = self.vectorizer.fit_transform(X_preprocessed)
         y_encoded = self.label_encoder.fit_transform(y)
 
         start_time = time.time()
 
-        # Run grid search
+        # scoring=make_scorer(self.compute_custom_f1, greater_is_better=True),
+
         grid_search = GridSearchCV(
             estimator=self.model_class,
             param_grid=self.param_grid,
@@ -93,24 +95,31 @@ class SKLearnClassifier(BaseTextClassifier):
 
         self.print_best_model_results(self.cv_score, self.best_params, training_duration)
 
-    def predict(self, text, output=False):
+    def predict(self, text, threshold=0.5, output=False):
         single_input = isinstance(text, str)
-
         text_list = [text] if single_input else text
 
         texts_processed = self.preprocess(text_list)
         texts_vectorized = self.vectorizer.transform(texts_processed)
 
-        y_pred = self.best_model.predict(texts_vectorized)
+        if threshold == 0.5:
+            y_pred = self.best_model.predict(texts_vectorized)
+        else:
+            y_pred_proba = self.best_model.predict_proba(texts_vectorized)
+
+            antisemitic_class = 0
+            antisemitic_idx = list(self.best_model.classes_).index(antisemitic_class)
+            antisemitic_proba = y_pred_proba[:, antisemitic_idx]
+
+            y_pred = np.where(antisemitic_proba >= threshold, antisemitic_class, 1 - antisemitic_class)
 
         if output:
             y_pred_decoded = self.label_encoder.inverse_transform(y_pred).tolist()
 
-            print()
-            for pred in zip(y_pred_decoded, text):
+            sorted_results = sorted(zip(y_pred_decoded, text_list), key=lambda x: x[0])
+            for pred in sorted_results:
                 print(pred)
 
-        # Return single item or full list based on input type
         return y_pred[0] if single_input else y_pred
 
     def save_model(self):

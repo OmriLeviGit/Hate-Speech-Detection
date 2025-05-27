@@ -245,25 +245,8 @@ class BertClassifier(BaseTextClassifier):
         """Compute metrics for evaluation"""
         logits, labels = eval_pred
         preds = logits.argmax(axis=-1)
-        
-        acc = accuracy_score(labels, preds)
-        f1 = f1_score(labels, preds, average='weighted', zero_division=0)
-        precision = precision_score(labels, preds, average='weighted', zero_division=0)
-        recall = recall_score(labels, preds, average='weighted', zero_division=0)
 
-        f1_per_class = f1_score(labels, preds, average=None, zero_division=0)
-        if len(f1_per_class) >= 2:
-            f1_class_0, f1_class_1 = f1_per_class[0], f1_per_class[1]
-            difference = abs(f1_class_0 - f1_class_1)
-            soft_threshold = 0.01  # Allow 1% difference without penalty
-            excess_difference = max(0, difference - soft_threshold)
-            penalty = excess_difference ** 2
-            alpha = 50  # Start with this, adjust as needed
-            custom_weighted_f1 = f1 - alpha * penalty
-        else:
-            custom_weighted_f1 = f1
-
-        return {"accuracy": acc, "f1": custom_weighted_f1, "precision": precision, "recall": recall}
+        return self.compute_all_metrics(labels, preds)
 
     def predict(self, text, return_decoded=False, output=False):
         self.best_model.eval()  # evaluation mode
