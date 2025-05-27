@@ -53,36 +53,63 @@ model_registry = {
 }
 
 # Hyperparameters grids for the different models
-mlp_param_grid = {
-    'hidden_units': [64, 128, 256],
-    'dropout_rate': [0.5, 0.7],
-    'learning_rate': [0.0001, 0.001],
-    'batch_size': [16, 32],
-    'dense_activation': ['relu'],
-    'epochs': [10]
-}
+# mlp_param_grid = {
+#     'hidden_units': [64, 128, 256],
+#     'dropout_rate': [0.5, 0.7],
+#     'learning_rate': [0.0001, 0.001],
+#     'batch_size': [16, 32],
+#     'dense_activation': ['relu'],
+#     'epochs': [10]
+# }
+
+
+# cnn_param_grid = {
+#     'embedding_dim': [100],
+#     'num_filters': [64, 128],
+#     'kernel_size': [3, 5],
+#     'dropout_rate': [0.5],
+#     'learning_rate': [0.001, 0.0001],
+#     'batch_size': [32],
+#     'epochs': [10],
+#     'max_sequence_length': [120],
+#     'dense_units': [64],
+#     'dense_activation': ['relu'],
+#     'second_conv': [False, True]
+# }
 
 cnn_param_grid = {
     'embedding_dim': [100],
-    'num_filters': [64, 128],
-    'kernel_size': [3, 5],
+    'num_filters': [32, 64],
+    'kernel_size': [4, 6],
     'dropout_rate': [0.5],
-    'learning_rate': [0.001, 0.0001],
+    'learning_rate': [0.005],
     'batch_size': [32],
     'epochs': [10],
     'max_sequence_length': [120],
     'dense_units': [64],
     'dense_activation': ['relu'],
-    'second_conv': [False, True]
+    'second_conv': [False]
 }
+
+# lstm_param_grid = {
+#     'embedding_dim': [300],
+#     'lstm_units': [64, 128],
+#     'dropout_rate': [0.2, 0.5],
+#     'learning_rate': [0.0001, 0.0005, 0.001],
+#     'batch_size': [32],
+#     'epochs': [10],
+#     'max_sequence_length': [120],
+#     'dense_units': [64],
+#     'dense_activation': ['relu']
+# }
 
 lstm_param_grid = {
     'embedding_dim': [300],
-    'lstm_units': [64, 128],
-    'dropout_rate': [0.2, 0.5],
-    'learning_rate': [0.0001, 0.0005, 0.001],
+    'lstm_units': [128],
+    'dropout_rate': [0.5],
+    'learning_rate': [0.0001],
     'batch_size': [32],
-    'epochs': [10],
+    'epochs': [50],
     'max_sequence_length': [120],
     'dense_units': [64],
     'dense_activation': ['relu']
@@ -370,13 +397,14 @@ def main():
         # {"balance_pct": 0.5, "augment_ratio": 0.0, "irrelevant_ratio": 0.7},
         # {"balance_pct": 0.5, "augment_ratio": 0.5, "irrelevant_ratio": 0.0},
         # {"balance_pct": 0.5, "augment_ratio": 0.5, "irrelevant_ratio": 0.5},
-        {"balance_pct": 0.7, "augment_ratio": 0.5, "irrelevant_ratio": 0.0},
+        # {"balance_pct": 0.5, "augment_ratio": 0.0, "irrelevant_ratio": 0.33},
+        {"balance_pct": 0.5, "augment_ratio": 0.0, "irrelevant_ratio": 0.5},
     ]
 
     model_grids = [
-        ("MLP", mlp_param_grid),
+        # ("MLP", mlp_param_grid),
         # ("CNN", cnn_param_grid),
-        # ("LSTM", lstm_param_grid),
+        ("LSTM", lstm_param_grid),
     ]
 
     # Run experiments

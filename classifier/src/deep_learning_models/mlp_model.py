@@ -32,12 +32,24 @@ class MLPModel(BaseDLModel):
         X_processed = self.vectorizer.transform(processed_data).toarray()
         return (X_processed, y) if y is not None else X_processed
 
+
     def build(self, input_shape):
+        
+        activation_map = {
+            'relu': F.relu,
+            'tanh': torch.tanh,
+            'sigmoid': torch.sigmoid
+        }
+
+        activation_fn = activation_map.get(self.params.get('dense_activation', 'relu'), F.relu)
+
         model = MLPNetwork(
             input_dim=input_shape,
             hidden_units=self.params['hidden_units'],
-            dropout_rate=self.params['dropout_rate']
+            dropout_rate=self.params['dropout_rate'],
+            activation_fn=activation_fn
         )
+
         return model
 
     @property
@@ -46,14 +58,16 @@ class MLPModel(BaseDLModel):
 
 
 class MLPNetwork(nn.Module):
-    def __init__(self, input_dim, hidden_units, dropout_rate):
-        super(MLPNetwork, self).__init__()
+    def __init__(self, input_dim, hidden_units, dropout_rate, activation_fn):
+        super().__init__()
         self.fc1 = nn.Linear(input_dim, hidden_units)
         self.dropout = nn.Dropout(dropout_rate)
         self.fc2 = nn.Linear(hidden_units, 1)
+        self.activation_fn = activation_fn
 
     def forward(self, x):
-        x = F.relu(self.fc1(x))
+        x = self.activation_fn(self.fc1(x))
         x = self.dropout(x)
         x = torch.sigmoid(self.fc2(x))
         return x
+
