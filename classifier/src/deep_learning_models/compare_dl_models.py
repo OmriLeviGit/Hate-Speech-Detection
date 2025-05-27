@@ -56,7 +56,7 @@ model_registry = {
 mlp_param_grid = {
     'hidden_units': [64, 128, 256],
     'dropout_rate': [0.5, 0.7],
-    'learning_rate': [0.001, 0.001],
+    'learning_rate': [0.0001, 0.001],
     'batch_size': [16, 32],
     'dense_activation': ['relu'],
     'epochs': [10]
@@ -88,55 +88,63 @@ lstm_param_grid = {
     'dense_activation': ['relu']
 }
 
+# Takes the raw data, splits it to training/test sets and normalizes it
+def prepare_data(helper, data_config, raw_data):
+    X_raw, X_test, y_raw, y_test = helper.prepare_dataset(
+        raw_data,
+        test_size=0.2,
+        balance_pct=data_config["balance_pct"],
+        augment_ratio=data_config["augment_ratio"],
+        irrelevant_ratio=data_config["irrelevant_ratio"]
+    )
+
+    print("LabelEncoder.classes_ BEFORE encoding:", helper.label_encoder.classes_)
+
+    # helper.label_encoder.fit(y_raw)
+
+    y_trainval = helper.label_encoder.transform(y_raw)
+    y_test = helper.label_encoder.transform(y_test)
+
+    normalizer = TextNormalizer(emoji="text")
+    X_trainval = normalizer.normalize_texts(X_raw)
+    X_test = normalizer.normalize_texts(X_test)
+
+    print("First 5 y_raw:", y_raw[:5])
+    print("First 5 y_trainval encoded:", y_trainval[:5])
+    print("LabelEncoder.classes_:", helper.label_encoder.classes_)
+
+    return X_trainval, X_test, y_trainval, y_test
 
 
-# Trains the given Keras model and evaluates it on the validation set
-# Returns F1 score, classification report, confusion matrix, and training duration
-def train_and_evaluate(model, X_train, y_train, X_val, y_val, batch_size, epochs, input_dtype, learning_rate=0.001):
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model = model.to(device)
-    model.train()
+# Runs every combination in the hyperparameter grid for a model type
+def run_model_type(model_grids, X_trainval, X_test, y_trainval, y_test, data_config):
+    all_results = []
 
-    # Convert data to torch tensors
-    X_train_tensor = torch.tensor(X_train, dtype=input_dtype)
-    y_train_tensor = torch.tensor(y_train, dtype=torch.float32).unsqueeze(1)
+    for model_type, param_grid in model_grids:
+        model_results = run_grid_search(model_type, param_grid, X_trainval, y_trainval)
+        all_results.extend(model_results)
 
-    X_val_tensor = torch.tensor(X_val, dtype=input_dtype)
-    y_val_tensor = torch.tensor(y_val, dtype=torch.float32).unsqueeze(1)
+    for result in all_results:
+        result['params'] = json.dumps(result['params'], separators=(',', ': '))
 
-    train_loader = DataLoader(TensorDataset(X_train_tensor, y_train_tensor), batch_size=batch_size, shuffle=True)
+    df = pd.DataFrame(all_results)
+    val_summary = df[["model_type", "f1_score", "accuracy", "params"]].sort_values(by="f1_score", ascending=False)
 
-    optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
-    loss_fn = torch.nn.BCELoss()
+    print_header("Sorted Training Results On Validation set", 80)
+    print(val_summary.drop(columns=["params"]).to_string(index=False))
+    print("\nSee full params for each results in the CSV file")
 
-    start_time = time.time()
+    best_per_model = {}
+    for result in all_results:
+        mtype = result["model_type"]
+        if mtype not in best_per_model or result["f1_score"] > best_per_model[mtype]["f1_score"]:
+            best_per_model[mtype] = result
 
-    for epoch in range(epochs):
-        for X_batch, y_batch in train_loader:
-            X_batch, y_batch = X_batch.to(device), y_batch.to(device)
-            optimizer.zero_grad()
-            preds = model(X_batch)
-            loss = loss_fn(preds, y_batch)
-            loss.backward()
-            optimizer.step()
-
-    duration = time.time() - start_time
-
-    # Evaluation
-    model.eval()
-    with torch.no_grad():
-        preds = model(X_val_tensor.to(device)).cpu().numpy()
-    y_pred = (preds > 0.5).astype(int)
-
-    f1 = f1_score(y_val, y_pred)
-    report = classification_report(y_val, y_pred)
-    matrix = confusion_matrix(y_val, y_pred)
-
-    return f1, report, matrix, duration
+    test_results = evaluate_on_test_set(best_per_model, X_trainval, X_test, y_trainval, y_test, data_config)
+    return df, val_summary, test_results
 
 
-
-# Runs k-fold cross-validation for a given model type and its hyperparameters combination
+# Runs k-fold cross-validation for a given model and its hyperparameters combination
 # Returns a list of result dictionaries where each row is a hyperparameter combination
 def run_grid_search(model_type, param_grid, X_raw, y, num_folds = 5):
 
@@ -212,56 +220,53 @@ def run_grid_search(model_type, param_grid, X_raw, y, num_folds = 5):
     return results
 
 
-# Takes the raw data, splits it to training/test sets and normalizes it
-def prepare_data(helper, data_config, raw_data):
-    X_raw, X_test, y_raw, y_test = helper.prepare_dataset(
-        raw_data,
-        test_size=0.2,
-        balance_pct=data_config["balance_pct"],
-        augment_ratio=data_config["augment_ratio"],
-        irrelevant_ratio=data_config["irrelevant_ratio"]
-    )
+# Trains a given (single) model and evaluates it on the validation set
+# Returns F1 score, classification report, confusion matrix, and training duration
+def train_and_evaluate(model, X_train, y_train, X_val, y_val, batch_size, epochs, input_dtype, learning_rate=0.001):
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    model = model.to(device)
+    model.train()
 
-    label_encoder = LabelEncoder()
-    y_trainval = label_encoder.fit_transform(y_raw)
-    y_test = label_encoder.transform(y_test)
+    # Convert data to torch tensors
+    X_train_tensor = torch.tensor(X_train, dtype=input_dtype)
+    y_train_tensor = torch.tensor(y_train, dtype=torch.float32).unsqueeze(1)
 
-    normalizer = TextNormalizer(emoji="text")
-    X_trainval = normalizer.normalize_texts(X_raw)
-    X_test = normalizer.normalize_texts(X_test)
+    X_val_tensor = torch.tensor(X_val, dtype=input_dtype)
+    y_val_tensor = torch.tensor(y_val, dtype=torch.float32).unsqueeze(1)
 
-    return X_trainval, X_test, y_trainval, y_test
+    train_loader = DataLoader(TensorDataset(X_train_tensor, y_train_tensor), batch_size=batch_size, shuffle=True)
 
+    optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
+    loss_fn = torch.nn.BCELoss()
 
-# Runs every combination in the hyperparameter grid for each model type
-def test_model_combinations(model_grids, X_trainval, X_test, y_trainval, y_test, data_config):
-    all_results = []
+    start_time = time.time()
 
-    for model_type, param_grid in model_grids:
-        model_results = run_grid_search(model_type, param_grid, X_trainval, y_trainval)
-        all_results.extend(model_results)
+    for epoch in range(epochs):
+        for X_batch, y_batch in train_loader:
+            X_batch, y_batch = X_batch.to(device), y_batch.to(device)
+            optimizer.zero_grad()
+            preds = model(X_batch)
+            loss = loss_fn(preds, y_batch)
+            loss.backward()
+            optimizer.step()
 
-    for result in all_results:
-        result['params'] = json.dumps(result['params'], separators=(',', ': '))
+    duration = time.time() - start_time
 
-    df = pd.DataFrame(all_results)
-    val_summary = df[["model_type", "f1_score", "accuracy", "params"]].sort_values(by="f1_score", ascending=False)
+    # Evaluation
+    model.eval()
+    with torch.no_grad():
+        preds = model(X_val_tensor.to(device)).cpu().numpy()
+    y_pred = (preds > 0.5).astype(int)
 
-    print_header("Sorted Training Results On Validation set", 80)
-    print(val_summary.drop(columns=["params"]).to_string(index=False))
-    print("\nSee full params for each results in the CSV file")
+    f1 = f1_score(y_val, y_pred)
+    report = classification_report(y_val, y_pred)
+    matrix = confusion_matrix(y_val, y_pred)
 
-    best_per_model = {}
-    for result in all_results:
-        mtype = result["model_type"]
-        if mtype not in best_per_model or result["f1_score"] > best_per_model[mtype]["f1_score"]:
-            best_per_model[mtype] = result
-
-    test_results = evaluate_on_test_set(best_per_model, X_trainval, X_test, y_trainval, y_test, data_config)
-    return df, val_summary, test_results
+    return f1, report, matrix, duration
 
 
 # Evaluates the best model config (based on validation F1) on the test set for each model type
+# The function trains (once again) on the best hyperparameters combination for each model type
 def evaluate_on_test_set(best_per_model, X_trainval, X_test, y_trainval, y_test, data_config):
     test_results = []
 
@@ -327,6 +332,11 @@ def evaluate_on_test_set(best_per_model, X_trainval, X_test, y_trainval, y_test,
     return test_results
 
 
+# Returns a unique string per data configuration to attach to every csv file exported for results comparison
+def data_config_to_string(config):
+    return "_".join(f"{key}{str(value).replace('.', '')}" for key, value in config.items())
+
+
 # Exports two .csv files:
 # 1. Training set results on all models configs (tested on validation set)
 # 2. Test set results on the best config for each model type (tested on the test set)
@@ -349,11 +359,6 @@ def export_results(data_config, val_summary, test_results):
     print("\nTest set results exported to CSV")
 
 
-# Returns a unique string per data configuration to attach to every csv file exported for results comparison
-def data_config_to_string(config):
-    return "_".join(f"{key}{str(value).replace('.', '')}" for key, value in config.items())
-
-
 def main():
 
     start_time = time.time()
@@ -368,25 +373,25 @@ def main():
 
     # Set all configurations to be tested
     data_configs = [
-        {"balance_pct": 0.5, "augment_ratio": 0.0, "irrelevant_ratio": 0.0},
-        {"balance_pct": 0.5, "augment_ratio": 0.0, "irrelevant_ratio": 0.5},
-        {"balance_pct": 0.5, "augment_ratio": 0.0, "irrelevant_ratio": 0.7},
-        {"balance_pct": 0.5, "augment_ratio": 0.5, "irrelevant_ratio": 0.0},
-        {"balance_pct": 0.5, "augment_ratio": 0.5, "irrelevant_ratio": 0.5},
-        {"balance_pct": 0.5, "augment_ratio": 0.5, "irrelevant_ratio": 0.7},
+        # {"balance_pct": 0.5, "augment_ratio": 0.0, "irrelevant_ratio": 0.0},
+        # {"balance_pct": 0.5, "augment_ratio": 0.0, "irrelevant_ratio": 0.5},
+        # {"balance_pct": 0.5, "augment_ratio": 0.0, "irrelevant_ratio": 0.7},
+        # {"balance_pct": 0.5, "augment_ratio": 0.5, "irrelevant_ratio": 0.0},
+        # {"balance_pct": 0.5, "augment_ratio": 0.5, "irrelevant_ratio": 0.5},
+        {"balance_pct": 0.7, "augment_ratio": 0.5, "irrelevant_ratio": 0.0},
     ]
 
     model_grids = [
         ("MLP", mlp_param_grid),
-        ("CNN", cnn_param_grid),
-        ("LSTM", lstm_param_grid),
+        # ("CNN", cnn_param_grid),
+        # ("LSTM", lstm_param_grid),
     ]
 
     # Run experiments
     for config in data_configs:
         print(f"\nRunning with data config: {config}")
         X_trainval, X_test, y_trainval, y_test = prepare_data(helper, config, raw_data)
-        df_val, val_summary, test_results = test_model_combinations(model_grids, X_trainval, X_test, y_trainval, y_test, config)
+        df_val, val_summary, test_results = run_model_type(model_grids, X_trainval, X_test, y_trainval, y_test, config)
         export_results(config, val_summary, test_results)
         print_header("End of config")
 

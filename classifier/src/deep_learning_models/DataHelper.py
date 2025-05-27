@@ -2,7 +2,7 @@ from classifier.src.classifiers.BaseTextClassifier import BaseTextClassifier
 
 class DataHelper(BaseTextClassifier):
     def __init__(self):
-        super().__init__(labels=["antisemitic", "not_antisemitic"], seed=42)
+        super().__init__(labels= ['not_antisemitic', 'antisemitic'], seed = 42)
 
     def preprocess(self, datasets):
         pass
