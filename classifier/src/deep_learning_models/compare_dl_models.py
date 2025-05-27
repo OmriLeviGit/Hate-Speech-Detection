@@ -98,20 +98,12 @@ def prepare_data(helper, data_config, raw_data):
         irrelevant_ratio=data_config["irrelevant_ratio"]
     )
 
-    print("LabelEncoder.classes_ BEFORE encoding:", helper.label_encoder.classes_)
-
-    # helper.label_encoder.fit(y_raw)
-
     y_trainval = helper.label_encoder.transform(y_raw)
     y_test = helper.label_encoder.transform(y_test)
 
     normalizer = TextNormalizer(emoji="text")
     X_trainval = normalizer.normalize_texts(X_raw)
     X_test = normalizer.normalize_texts(X_test)
-
-    print("First 5 y_raw:", y_raw[:5])
-    print("First 5 y_trainval encoded:", y_trainval[:5])
-    print("LabelEncoder.classes_:", helper.label_encoder.classes_)
 
     return X_trainval, X_test, y_trainval, y_test
 
