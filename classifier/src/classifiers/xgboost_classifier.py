@@ -1,12 +1,14 @@
 from xgboost import XGBClassifier
 
 import numpy as np
+from scipy.sparse import vstack
 import random
 import time
+import joblib
 
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics import classification_report, confusion_matrix
-from sklearn.metrics import make_scorer, accuracy_score
+from sklearn.metrics import make_scorer, accuracy_score, recall_score
 from sklearn.model_selection import StratifiedKFold, GridSearchCV
 
 from classifier.src.deep_learning_models.DataHelper import DataHelper
@@ -15,6 +17,7 @@ from classifier.src.utils import print_header, format_duration
 
 
 def prepare_data(helper, data_config, raw_data):
+
     X_raw, X_test, y_raw, y_test = helper.prepare_dataset(
         raw_data,
         test_size=0.2,
@@ -23,6 +26,7 @@ def prepare_data(helper, data_config, raw_data):
         irrelevant_ratio=data_config["irrelevant_ratio"]
     )
 
+    # Original from here
     y_trainval = helper.label_encoder.transform(y_raw)
     y_test = helper.label_encoder.transform(y_test)
 
@@ -34,7 +38,15 @@ def prepare_data(helper, data_config, raw_data):
 
 
 def vectorize_texts(X_trainval, X_test):
-    vectorizer = TfidfVectorizer(max_features=5000, ngram_range=(1, 2))
+
+    # vectorizer = TfidfVectorizer(max_features=5000, ngram_range=(1, 2))
+    vectorizer = TfidfVectorizer(
+        max_features=5000,
+        ngram_range=(1, 2),
+        min_df=2,               # Ignore terms in < 2 documents
+        max_df=0.9              # Ignore terms in > 90% of documents
+    )
+
     X_train = vectorizer.fit_transform(X_trainval)
     X_test = vectorizer.transform(X_test)
     return X_train, X_test, vectorizer
@@ -46,19 +58,21 @@ def run_grid_search(X, y, cv_folds=5):
 
     param_grid = {
         'n_estimators': [200],
-        'learning_rate': [0.1],
-        'max_depth': [4, 6],
-        'colsample_bytree': [0.2, 0.5, 1.0],    # use %x of features used per tree, a little like dropout_rate in deep learning
-        'reg_alpha': [0, 0.5],                  # L1 regularization
+        'learning_rate': [0.005, 0.1],
+        'max_depth': [4],
+        'colsample_bytree': [0.3, 0.5],    # use %x of features used per tree, a little like dropout_rate in deep learning
+        'reg_alpha': [0, 0.2],                  # L1 regularization
         'reg_lambda': [1, 2],                   # L2 regularization
     }
 
-    grid = GridSearchCV(model,param_grid, cv=skf, scoring='f1', n_jobs=-1, verbose=1, return_train_score=True)
+    # When searching the best model by f1_weighted
+    grid = GridSearchCV(model,param_grid, cv=skf, scoring='f1_weighted', n_jobs=-1, verbose=1, return_train_score=True)
+
     grid.fit(X, y)
 
     print_header("Grid Search Results")
     print(f"\nBest Params: {grid.best_params_}")
-    print(f"\nCV F1 Score: {grid.best_score_:.4f}")
+    print(f"\nCross Validation f1_weighted Score: {grid.best_score_:.4f}")
 
     return grid.best_estimator_
 
@@ -69,7 +83,7 @@ def evaluate_on_test(model, X_test, y_test):
     print()
 
     y_pred = model.predict(X_test)
-    print(classification_report(y_test, y_pred))
+    print(classification_report(y_test, y_pred, labels=[0, 1], target_names=["Not Antisemitic", "Antisemitic"]))
 
     print("Confusion Matrix:")
     print(confusion_matrix(y_test, y_pred))
@@ -85,15 +99,25 @@ def main():
     raw_data = helper.load_data()
 
     data_config = [
+        # {"balance_pct": 0.5, "augment_ratio": 0.0, "irrelevant_ratio": 0.0},
+        # {"balance_pct": 0.5, "augment_ratio": 0.0, "irrelevant_ratio": 0.25},
         # {"balance_pct": 0.5, "augment_ratio": 0.0, "irrelevant_ratio": 0.5},
-        {"balance_pct": 0.33, "augment_ratio": 0.0, "irrelevant_ratio": 0.5},
+        # {"balance_pct": 0.4, "augment_ratio": 0.0, "irrelevant_ratio": 0.0},
+        # {"balance_pct": 0.4, "augment_ratio": 0.0, "irrelevant_ratio": 0.25},
         # {"balance_pct": 0.4, "augment_ratio": 0.0, "irrelevant_ratio": 0.5},
-
+        # {"balance_pct": 0.33, "augment_ratio": 0.0, "irrelevant_ratio": 0.4},
+        # {"balance_pct": 0.33, "augment_ratio": 0.0, "irrelevant_ratio": 0.4},
+        # {"balance_pct": 0.5, "augment_ratio": 0.0, "irrelevant_ratio": 0.0},
+        {"balance_pct": 0.5, "augment_ratio": 0.3, "irrelevant_ratio": 0.4},
+        # {"balance_pct": 0.6, "augment_ratio": 0.0, "irrelevant_ratio": 0.4},
+        # {"balance_pct": 0.667, "augment_ratio": 0.0, "irrelevant_ratio": 0.4},
     ]
 
     for config in data_config:
 
         print(f"\nRunning with data config: {config}")
+
+        config_start_time = time.time()
 
         X_trainval_texts, X_test_texts, y_trainval, y_test = prepare_data(helper, config, raw_data)
         X_train, X_test, vectorizer = vectorize_texts(X_trainval_texts, X_test_texts)
@@ -103,13 +127,17 @@ def main():
         # Re-train on full trainval set
         best_model.fit(X_train, y_trainval)
 
+        # Save best trained model and its vectorizer
+        joblib.dump(best_model, "best_model.pkl")
+        joblib.dump(vectorizer, "vectorizer.pkl")
+
         evaluate_on_test(best_model, X_test, y_test)
 
         train_preds = best_model.predict(X_train)
         train_acc = accuracy_score(y_trainval, train_preds)
         print(f"\nTrain Accuracy on full trainval set: {train_acc:.4f}")
 
-        config_duration = time.time() - start_time
+        config_duration = time.time() - config_start_time
         print("\nTotal config time:", format_duration(config_duration))
 
         print_header("End of config")

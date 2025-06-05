@@ -29,14 +29,14 @@ from classifier.src.normalization.TextNormalizer import TextNormalizer
 from classifier.src.utils import print_header, format_duration
 
 # Set logging .txt file for the run
-base_dir = os.path.dirname(os.path.abspath(__file__))
-log_dir = os.path.join(base_dir, "logs")
-os.makedirs(log_dir, exist_ok=True)
-timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-log_file = os.path.join(log_dir, f"run_log_{timestamp}.txt")
-
-sys.stdout = open(log_file, "w")
-sys.stderr = sys.stdout
+# base_dir = os.path.dirname(os.path.abspath(__file__))
+# log_dir = os.path.join(base_dir, "logs")
+# os.makedirs(log_dir, exist_ok=True)
+# timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+# log_file = os.path.join(log_dir, f"run_log_{timestamp}.txt")
+#
+# sys.stdout = open(log_file, "w")
+# sys.stderr = sys.stdout
 
 # Set fixed seed
 SEED = 42
@@ -48,8 +48,8 @@ os.environ['PYTHONHASHSEED'] = str(SEED)
 # Mapping model type strings to their corresponding classes
 model_registry = {
     "MLP": MLPModel,
-    "LSTM": LSTMModel,
     "CNN": CNNModel
+    # "LSTM": LSTMModel,
 }
 
 # Hyperparameters grids for the different models
@@ -61,6 +61,15 @@ model_registry = {
 #     'dense_activation': ['relu'],
 #     'epochs': [10]
 # }
+
+mlp_param_grid = {
+    'hidden_units': [64],
+    'dropout_rate': [0.7],
+    'learning_rate': [0.001],
+    'batch_size': [16],
+    'dense_activation': ['relu'],
+    'epochs': [10]
+}
 
 
 # cnn_param_grid = {
@@ -79,16 +88,16 @@ model_registry = {
 
 cnn_param_grid = {
     'embedding_dim': [100],
-    'num_filters': [32, 64],
-    'kernel_size': [4, 6],
+    'num_filters': [64],
+    'kernel_size': [5],
     'dropout_rate': [0.5],
-    'learning_rate': [0.005],
+    'learning_rate': [0.0001],
     'batch_size': [32],
     'epochs': [10],
     'max_sequence_length': [120],
     'dense_units': [64],
     'dense_activation': ['relu'],
-    'second_conv': [False]
+    'second_conv': [True]
 }
 
 # lstm_param_grid = {
@@ -398,21 +407,27 @@ def main():
         # {"balance_pct": 0.5, "augment_ratio": 0.5, "irrelevant_ratio": 0.0},
         # {"balance_pct": 0.5, "augment_ratio": 0.5, "irrelevant_ratio": 0.5},
         # {"balance_pct": 0.5, "augment_ratio": 0.0, "irrelevant_ratio": 0.33},
-        {"balance_pct": 0.5, "augment_ratio": 0.0, "irrelevant_ratio": 0.5},
+        # {"balance_pct": 0.33, "augment_ratio": 0.0, "irrelevant_ratio": 0.4},
+        {"balance_pct": 0.5, "augment_ratio": 0.3, "irrelevant_ratio": 0.4},
+        # {"balance_pct": 0.5, "augment_ratio": 0.0, "irrelevant_ratio": 0.4},
     ]
 
     model_grids = [
-        # ("MLP", mlp_param_grid),
-        # ("CNN", cnn_param_grid),
-        ("LSTM", lstm_param_grid),
+        ("MLP", mlp_param_grid),
+        ("CNN", cnn_param_grid),
+        # ("LSTM", lstm_param_grid),
     ]
 
     # Run experiments
     for config in data_configs:
+
         print(f"\nRunning with data config: {config}")
+
         X_trainval, X_test, y_trainval, y_test = prepare_data(helper, config, raw_data)
         df_val, val_summary, test_results = run_model_type(model_grids, X_trainval, X_test, y_trainval, y_test, config)
+
         export_results(config, val_summary, test_results)
+
         print_header("End of config")
 
     total_duration = time.time() - start_time

@@ -1,0 +1,62 @@
+#title {
+    text-align: center;
+}
+
+#centered-row {
+    display: flex;
+    justify-content: center;
+}
+
+#left-panel {
+    margin: 20px;
+    padding: 10px;
+    border-radius: 8px;
+}
+
+#predict-btn {
+    background-color: #ff9800 !important;
+    color: white !important;
+    font-weight: bold;
+    border-radius: 6px;
+    padding: 10px 20px;
+    font-size: 1rem;
+    border: none !important;
+}
+
+#predict-btn:hover {
+    background-color: #e57c00 !important;
+}
+
+#user-label {
+    margin-left: 10px;
+}
+
+.gr-dataframe {
+    font-family: arial !important;
+    font-size: 0.95rem;
+    max-height: 300px;
+    overflow: auto;
+    border-radius: 8px;
+}
+
+.gr-dataframe table {
+    table-layout: fixed;
+    width: 100%;
+}
+
+.gr-dataframe table thead tr th:first-child,
+.gr-dataframe table tbody tr td:first-child {
+    max-width: 300px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+#tweet-input {
+    flex: 1;
+}
+
+#model-output {
+    font-size: 1.1rem;
+    font-weight: bold;
+}
