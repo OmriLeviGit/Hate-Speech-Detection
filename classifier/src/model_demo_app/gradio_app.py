@@ -1,19 +1,24 @@
 import os
-import gradio as gr
-import joblib
-import csv
+from pathlib import Path
 
+import gradio as gr
+import csv
+import joblib
+
+from classifier.src.classifiers.BertClassifier import BertClassifier
 from classifier.src.normalization.TextNormalizer import TextNormalizer
 
 # Load model and vectorizer
 BASE_DIR = os.path.dirname(__file__)
-model = joblib.load(os.path.join(BASE_DIR, "../saved_models/best_model.pkl"))
-vectorizer = joblib.load(os.path.join(BASE_DIR, "../saved_models/vectorizer.pkl"))
-normalizer = TextNormalizer(emoji="text")
-
-# Use a .csv file to manage prediction history to be shared with all users
+MODEL_DIR = os.path.abspath(os.path.join(BASE_DIR, "..", "saved_models"))
 HISTORY_PATH = os.path.join(BASE_DIR, "tweet_history.csv")
 
+# model = BertClassifier.load_model(os.path.join(MODEL_DIR, "bert", "distilbert uncased"))
+model = BertClassifier.load_model("distilbert uncased", in_saved_models=True)
+
+# model = joblib.load(os.path.join(MODEL_DIR, "best_model.pkl"))
+# vectorizer = joblib.load(os.path.join(MODEL_DIR, "vectorizer.pkl"))
+# normalizer = TextNormalizer(emoji="text")
 
 # Loads csv file with the history of tweets users wanted to predict
 def load_history():
@@ -25,16 +30,14 @@ def load_history():
         data = [row[:4] for row in reader if len(row) >= 4]
         return list(reversed(data[-10:]))
 
-
 # Saves to csv file a predicted tweet
 def save_history(data):
     with open(HISTORY_PATH, "w", newline='', encoding='utf-8') as f:
         writer = csv.writer(f)
         writer.writerows(data)
 
-
 def predict_and_store(tweet, user_label):
-    # Loads full history from csv file
+    Path(HISTORY_PATH).touch(exist_ok=True) # create file if it doesnt exist
     with open(HISTORY_PATH, newline='', encoding='utf-8') as f:
         reader = csv.reader(f)
         full_history = [row[:4] for row in reader if len(row) >= 4]
@@ -46,14 +49,16 @@ def predict_and_store(tweet, user_label):
         return "⚠️ Please select your label", list(reversed(full_history[-10:]))
 
     # Preprocess and predict
-    norm_text = normalizer.normalize(tweet)
-    vectorized = vectorizer.transform([norm_text])
-    prediction = model.predict(vectorized)[0]
+    # norm_text = normalizer.normalize(tweet)
+    # vectorized = vectorizer.transform([norm_text])
+    # prediction = model.predict(vectorized)[0]
+    prediction = model.predict(tweet)
+
     model_label = "Antisemitic" if prediction == 1 else "Not Antisemitic"
     correct = "✔️" if user_label == model_label else "✖️"
 
     # Appends new row to full history
-    full_history.append((tweet, user_label, model_label, correct))
+    full_history.append([tweet, user_label, model_label, correct])
 
     # Saves full history (don’t truncate here)
     save_history(full_history)

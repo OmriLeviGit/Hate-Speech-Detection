@@ -306,8 +306,8 @@ class BertClassifier(BaseTextClassifier):
         self.tokenizer = temp_tokenizer
 
     @staticmethod
-    def load_model(path: str, saved_model_as_base_path=False):
-        if saved_model_as_base_path:
+    def load_model(path: str, in_saved_models=False):
+        if in_saved_models:
             bert_path = str(os.path.join(BaseTextClassifier.save_models_path, "bert", path))
         else:
             bert_path = path

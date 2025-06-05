@@ -3,7 +3,12 @@ import re
 import os
 
 from emoji import demojize
+import codecs
+import html
+import ftfy
+import unicodedata
 import wordninja
+
 
 from .ObfuscationMapGenerator import ObfuscationMapGenerator
 
@@ -61,8 +66,8 @@ class TextNormalizer:
 
     def normalize(self, text):
         """Process text by applying all functions to each word before moving to next word"""
-        text = text.lower()
-        words = text.split()
+        text = self._fix_corruptions(text)
+        words = text.lower().split()
         processed_words = []
 
         for word in words:
@@ -86,6 +91,20 @@ class TextNormalizer:
         processed_words = [self._expand_slang(word) for word in processed_words]
 
         return ' '.join(processed_words)
+
+    def _fix_corruptions(self, text):
+        text = html.unescape(text)
+        text = codecs.decode(text, 'unicode_escape', errors='replace')
+        text = ftfy.fix_text(text)
+        text = unicodedata.normalize('NFKD', text)
+
+        text = text.replace('†', '"')  # common character replacement
+        is_text_or_emoji = demojize(text).isascii()
+
+        if not is_text_or_emoji:
+            print(f"Entry contains non-ASCII or emoji characters: {text[:20]}")
+
+        return text
 
     def _replace_url(self, word):
         """Remove URLs - returns None if word is a URL, otherwise returns the word"""

@@ -38,9 +38,9 @@
       },
       {
         "baseTerm": "jew",
-        "staticReplacement": ["j$", "j*w", "je*"],
+        "staticReplacement": ["j$"],
         "substitutable": [],
-        "substitutablePlural": ["jew","joo", "zjoo"]
+        "substitutablePlural": ["jew", "j*w", "joo", "zjoo", "je*"]
       },
       {
         "baseTerm": "heil hitler",
@@ -73,14 +73,8 @@
     "mm": "music monday",
     "@": "at",
     "dm": "direct message",
-    "tweetup": "meetup",
-    "sm": "social media",
-    "sb": "small business",
     "icymi": "in case you missed it",
-    "mrt": "modified retweet",
-    "mt": "modified tweet",
-    "nts": "note to self",
-    "np": "now playing",
+    "np": "no problem",
     "cc": "carbon copy",
     "uncle h": "hitler",
     "rafah": "gaza",
