@@ -5,8 +5,8 @@ Accuracy score: 0.88 | f1 score: 0.88
 Classification Report:
                precision    recall  f1-score   support
 
-           0       0.90      0.85      0.87       230
-           1       0.86      0.91      0.88       230
+           0       0.90      0.85      0.87       230   # not antisemitic
+           1       0.86      0.91      0.88       230   # antisemitic
 
     accuracy                           0.88       460
    macro avg       0.88      0.88      0.88       460

@@ -277,9 +277,13 @@ class BertClassifier(BaseTextClassifier):
 
         return y_pred[0] if single_input else y_pred
 
-    def save_model(self):
+    def save_model(self, path=None):
         # Create the BERT directory
-        bert_path = str(os.path.join(BaseTextClassifier.save_models_path, "bert", self.model_name))
+        if path:
+            bert_path = str(os.path.join(os.path.abspath(__file__), self.model_name))
+        else:
+            bert_path = str(os.path.join(BaseTextClassifier.save_models_path, "bert", self.model_name))
+
         os.makedirs(bert_path, exist_ok=True)
 
         # Save model and tokenizer in the BERT directory
@@ -302,8 +306,12 @@ class BertClassifier(BaseTextClassifier):
         self.tokenizer = temp_tokenizer
 
     @staticmethod
-    def load_model(path: str):
-        bert_path = os.path.join(BaseTextClassifier.save_models_path, "bert", path)
+    def load_model(path: str, saved_model_as_base_path=False):
+        if saved_model_as_base_path:
+            bert_path = str(os.path.join(BaseTextClassifier.save_models_path, "bert", path))
+        else:
+            bert_path = path
+
         with open(os.path.join(bert_path, "classifier_class.pkl"), "rb") as f:
             obj = pickle.load(f)
 

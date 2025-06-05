@@ -12,7 +12,7 @@ from classifier.src.utils import reset_seeds
 """
 (augment_ratio, irrelevant_ratio, balance_pct)
 default sampling = (0, 0, None)
-best sampling = (0.33, 0.4, None) # best found, pretty consistent across model types
+best sampling = (0.33, 0.4, NONE) # best found, pretty consistent across model types
 
 balance_pct = 0.5 gives the best results, but in practice against real data, the negative class is undertrained
 """

@@ -122,8 +122,12 @@ class SKLearnClassifier(BaseTextClassifier):
 
         return y_pred[0] if single_input else y_pred
 
-    def save_model(self):
-        sklearn_path = str(os.path.join(BaseTextClassifier.save_models_path, "sklearn", self.model_name))
+    def save_model(self, path=None):
+        if path:
+            sklearn_path = str(os.path.join(os.path.abspath(__file__), self.model_name))
+        else:
+            sklearn_path = str(os.path.join(BaseTextClassifier.save_models_path, "sklearn", self.model_name))
+
         os.makedirs(sklearn_path, exist_ok=True)
 
         # Save model
@@ -145,8 +149,12 @@ class SKLearnClassifier(BaseTextClassifier):
         self.vectorizer = temp_vectorizer
 
     @staticmethod
-    def load_model(path: str):
-        sklearn_path = str(os.path.join(BaseTextClassifier.save_models_path, "sklearn", path))
+    def load_model(path: str, saved_model_as_base_path=False):
+        if saved_model_as_base_path:
+            sklearn_path = str(os.path.join(BaseTextClassifier.save_models_path, "sklearn", path))
+        else:
+            sklearn_path = path
+
         with open(os.path.join(sklearn_path, "classifier_class.pkl"), "rb") as f:
             obj = pickle.load(f)
 
