@@ -1,4 +1,23 @@
 services:
+  webgui:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - BUILDKIT_INLINE_CACHE=1
+        - PYTORCH_URL=https://download.pytorch.org/whl/cpu
+        - TARGET=cpu
+    image: model-cpu
+    ports:
+      - "7860:7860"
+    volumes:
+      - ./:/app/classifier/
+      - huggingface_models:/root/.cache/huggingface
+    environment:
+      - PYTHONUNBUFFERED=1
+      - PYTHONPATH=/app
+    command: ["python", "/app/classifier/src/model_demo_app/gradio_app.py"]
+
   classifier-cpu:
     build:
       context: .

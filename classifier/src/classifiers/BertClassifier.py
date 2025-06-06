@@ -5,7 +5,6 @@ import numpy as np
 import optuna
 import torch
 from torch.utils.data import Dataset
-from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score
 from sklearn.model_selection import KFold
 from transformers import (
     AutoModelForSequenceClassification,
@@ -287,8 +286,8 @@ class BertClassifier(BaseTextClassifier):
         os.makedirs(bert_path, exist_ok=True)
 
         # Save model and tokenizer in the BERT directory
-        self.best_model.save_pretrained(os.path.join(bert_path, "model"))
-        self.tokenizer.save_pretrained(os.path.join(bert_path, "model"))
+        self.best_model.save_pretrained(os.path.join(bert_path, "model"), safe_serialization=False)
+        self.tokenizer.save_pretrained(os.path.join(bert_path, "model"), safe_serialization=False)
 
         # Save temporary references
         temp_best_model = self.best_model

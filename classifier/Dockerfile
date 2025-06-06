@@ -1,4 +1,4 @@
-FROM python:3.9-slim AS builder
+FROM python:3.12-slim AS builder
 
 # Add build argument with CPU as default
 ARG PYTORCH_URL="https://download.pytorch.org/whl/cpu"
@@ -9,6 +9,8 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     && rm -rf /var/lib/apt/lists/*
+
+RUN pip install --upgrade pip setuptools wheel packaging
 
 COPY requirements.txt /app/
 
@@ -22,7 +24,7 @@ RUN python -m nltk.downloader wordnet omw-1.4 averaged_perceptron_tagger average
 
 COPY src /app/classifier/
 
-FROM python:3.9-slim
+FROM python:3.12-slim
 
 COPY --from=builder /usr/local /usr/local
 COPY --from=builder /app /app

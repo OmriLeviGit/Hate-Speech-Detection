@@ -113,4 +113,4 @@ with gr.Blocks() as demo:
         outputs=[model_output, history_table]
     )
 
-demo.launch(show_api=False)
+demo.launch(show_api=False, server_port=7860, server_name="0.0.0.0")

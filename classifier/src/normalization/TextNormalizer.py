@@ -97,12 +97,7 @@ class TextNormalizer:
         text = codecs.decode(text, 'unicode_escape', errors='replace')
         text = ftfy.fix_text(text)
         text = unicodedata.normalize('NFKD', text)
-
         text = text.replace('†', '"')  # common character replacement
-        is_text_or_emoji = demojize(text).isascii()
-
-        if not is_text_or_emoji:
-            print(f"Entry contains non-ASCII or emoji characters: {text[:20]}")
 
         return text
 
