@@ -104,6 +104,6 @@ if __name__ == "__main__":
     # batch = "not_antisemistic_batch1_bd_20250315_184339_0.csv"    # not antisemistic
 
     starting_line = 0   # in the excel
-    num_of_tweets = 800   # num of tweets to insert
+    num_of_tweets = 1365   # num of tweets to insert
     import_tweets_from_csv(file_name=batch, start=starting_line, limit=num_of_tweets)
     
