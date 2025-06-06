@@ -9,7 +9,7 @@ services:
         - TARGET=cpu
     image: model-cpu
     ports:
-      - "7860:7860"
+      - "80:80"
     volumes:
       - ./:/app/classifier/
       - huggingface_models:/root/.cache/huggingface
