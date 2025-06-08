@@ -27,31 +27,6 @@
     background-color: #e57c00 !important;
 }
 
-#user-label {
-    margin-left: 10px;
-}
-
-.gr-dataframe {
-    font-family: arial !important;
-    font-size: 0.95rem;
-    max-height: 300px;
-    overflow: auto;
-    border-radius: 8px;
-}
-
-.gr-dataframe table {
-    table-layout: fixed;
-    width: 100%;
-}
-
-.gr-dataframe table thead tr th:first-child,
-.gr-dataframe table tbody tr td:first-child {
-    max-width: 300px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
 #tweet-input {
     flex: 1;
 }
@@ -59,4 +34,28 @@
 #model-output {
     font-size: 1.1rem;
     font-weight: bold;
+}
+
+#history-table table {
+    table-layout: auto;
+    width: 100%;
+}
+
+#history-table th:nth-child(1),
+#history-table td:nth-child(1) {
+    width: auto;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+
+#history-table th:nth-child(2),
+#history-table td:nth-child(2) {
+    width: 200px;
+    white-space: nowrap;
+}
+
+#history-table th:nth-child(3),
+#history-table td:nth-child(3) {
+    width: 120px;
+    white-space: nowrap;
 }
