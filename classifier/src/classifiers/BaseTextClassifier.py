@@ -25,11 +25,6 @@ class BaseTextClassifier(ABC):
     final_model_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "final_model")
 
     def __init__(self, labels: list = None, seed = None):
-        # if 'antisemitic' in labels and len(labels) > 1:
-        #     # antisemitic needs to be at index [1] in order to be the "positive" class
-        #     labels.remove('antisemitic')
-        #     labels.insert(1, 'antisemitic')
-
         self.LABELS = labels
         self.seed = seed
 
@@ -39,18 +34,35 @@ class BaseTextClassifier(ABC):
         self.best_model = None
         self.model_name = None
 
-    def load_data(self, file_name='results.csv', debug=False) -> dict[str, list]:
+    def load_data(self, folder_name='datasets', debug=False) -> dict[str, list]:
         if debug:
             print("loading with 'debug' dataset")
             return self._initialize_test_dataset()
 
         script_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        df = pd.read_csv(os.path.join(script_dir, file_name))
+        folder_path = os.path.join(script_dir, folder_name)
+
+        # Get all CSV files in the folder
+        csv_files = [f for f in os.listdir(folder_path) if f.endswith('.csv')]
+
+        if not csv_files:
+            raise ValueError(f"No CSV files found in {folder_path}")
+
+        # Load and concatenate all CSV files
+        dfs = []
+        for file in csv_files:
+            file_path = os.path.join(folder_path, file)
+            df = pd.read_csv(file_path)
+            dfs.append(df)
+
+        # Concatenate all dataframes and remove duplicates
+        combined_df = pd.concat(dfs, ignore_index=True)
+        combined_df = combined_df.drop_duplicates(subset=['content'], keep='first')
 
         data = {
-            'antisemitic': df[df['sentiment'] == 'Positive']['content'].tolist(),
-            'not_antisemitic': df[df['sentiment'] == 'Negative']['content'].tolist(),
-            'irrelevant': df[df['sentiment'] == 'Irrelevant']['content'].tolist()
+            'antisemitic': combined_df[combined_df['sentiment'].str.lower() == 'positive']['content'].tolist(),
+            'not_antisemitic': combined_df[combined_df['sentiment'].str.lower() == 'negative']['content'].tolist(),
+            'irrelevant': combined_df[combined_df['sentiment'].str.lower() == 'irrelevant']['content'].tolist()
         }
 
         return data

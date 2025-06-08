@@ -197,9 +197,12 @@ class BertClassifier(BaseTextClassifier):
 
         return val_score
 
-    def train_final_model(self, X, y, params):
+    def train_final_model(self, X, y, params=None):
         """Train final model on all data using best parameters"""
         print("Training final model with best parameters...")
+
+        if params is None:
+            params = self.best_params
 
         X_preprocessed = self.preprocess(X)
         y_encoded = self.label_encoder.transform(y)

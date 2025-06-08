@@ -17,7 +17,7 @@ from sklearn.metrics import classification_report
 
 
 # Load CSV
-df = pd.read_csv("results.csv")
+df = pd.read_csv("datasets/results.csv")
 
 # Keep only tweets with Positive or Negative sentiment
 df = df[df["sentiment"].isin(["Positive", "Negative"])]

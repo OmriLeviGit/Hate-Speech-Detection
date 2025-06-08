@@ -5,8 +5,8 @@ __pycache__/
 *.md
 
 classifier/src/saved_models/
+classifier/src/datasets/
 classifier/src/glove/
 
-# Ignore all CSV files except for results.csv
+# Ignore all CSV files, should already be added as part of the volume
 *.csv
-!src/results.csv

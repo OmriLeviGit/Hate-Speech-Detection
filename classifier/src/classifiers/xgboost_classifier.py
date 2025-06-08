@@ -1,14 +1,13 @@
 from xgboost import XGBClassifier
 
 import numpy as np
-from scipy.sparse import vstack
 import random
 import time
 import joblib
 
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics import classification_report, confusion_matrix
-from sklearn.metrics import make_scorer, accuracy_score, recall_score
+from sklearn.metrics import, accuracy_score
 from sklearn.model_selection import StratifiedKFold, GridSearchCV
 
 from classifier.src.deep_learning_models.DataHelper import DataHelper
