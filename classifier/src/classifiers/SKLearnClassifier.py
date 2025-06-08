@@ -86,8 +86,8 @@ class SKLearnClassifier(BaseTextClassifier):
         self.cv_score = round(float(grid_search.best_score_), 2)
         self.best_params = grid_search.best_params_
 
-        # Calibrate models after training if they don't support probability estimation
-        # This improves decision boundary quality and enables accessing confidence scores if needed
+        # calibrate models after training if they don't support probability estimation
+        # improves decision boundary quality and enables accessing confidence scores if needed
         if not (hasattr(self.best_model, 'predict_proba') and callable(self.best_model.predict_proba)):
             calibrated = CalibratedClassifierCV(FrozenEstimator(self.best_model))
             calibrated.fit(X_vectorized, y_encoded)
@@ -95,32 +95,27 @@ class SKLearnClassifier(BaseTextClassifier):
 
         self.print_best_model_results(self.cv_score, self.best_params, training_duration)
 
-    def predict(self, text, threshold=0.5, output=False):
+    def predict(self, text, output=False):
         single_input = isinstance(text, str)
         text_list = [text] if single_input else text
 
         texts_processed = self.preprocess(text_list)
         texts_vectorized = self.vectorizer.transform(texts_processed)
 
-        if threshold == 0.5:
-            y_pred = self.best_model.predict(texts_vectorized)
-        else:
-            y_pred_proba = self.best_model.predict_proba(texts_vectorized)
-
-            antisemitic_class = 0
-            antisemitic_idx = list(self.best_model.classes_).index(antisemitic_class)
-            antisemitic_proba = y_pred_proba[:, antisemitic_idx]
-
-            y_pred = np.where(antisemitic_proba >= threshold, antisemitic_class, 1 - antisemitic_class)
+        y_pred = self.best_model.predict(texts_vectorized)
+        predicted_probs = self.best_model.predict_proba(texts_vectorized)
+        max_probs = np.max(predicted_probs, axis=1)
 
         if output:
             y_pred_decoded = self.label_encoder.inverse_transform(y_pred).tolist()
 
-            sorted_results = sorted(zip(y_pred_decoded, text_list), key=lambda x: x[0])
-            for pred in sorted_results:
+            for pred in zip(y_pred_decoded, max_probs, text_list):
                 print(pred)
 
-        return y_pred[0] if single_input else y_pred
+        if single_input:
+            return y_pred[0], max_probs[0]
+
+        return y_pred, max_probs
 
     def save_model(self, path=None):
         if path:

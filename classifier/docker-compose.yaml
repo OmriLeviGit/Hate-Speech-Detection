@@ -16,7 +16,7 @@ services:
     environment:
       - PYTHONUNBUFFERED=1
       - PYTHONPATH=/app
-    command: ["python", "/app/classifier/src/model_demo_app/gradio_app.py"]
+    command: ["python", "/app/classifier/src/webgui/app.py"]
 
   classifier-cpu:
     build:

@@ -5,6 +5,7 @@ import numpy as np
 import optuna
 import torch
 from torch.utils.data import Dataset
+import torch.nn.functional as F
 from sklearn.model_selection import KFold
 from transformers import (
     AutoModelForSequenceClassification,
@@ -247,7 +248,7 @@ class BertClassifier(BaseTextClassifier):
 
         return self.compute_all_metrics(labels, preds)
 
-    def predict(self, text, return_decoded=False, output=False):
+    def predict(self, text, output=False):
         self.best_model.eval()  # evaluation mode
 
         single_input = isinstance(text, str)
@@ -264,17 +265,22 @@ class BertClassifier(BaseTextClassifier):
         with torch.no_grad():
             outputs = self.best_model(**inputs)
 
-        # Get predicted class indices
+        # Get prediction and probabilities
         y_pred = torch.argmax(outputs.logits, dim=1).cpu().numpy()
+        probabilities = F.softmax(outputs.logits, dim=1)
+        max_probs = probabilities[range(len(y_pred)), y_pred].cpu().numpy()
 
         if output:
             y_pred_decoded = self.label_encoder.inverse_transform(y_pred).tolist()
 
             print()
-            for pred in zip(y_pred_decoded, text):
+            for pred in zip(y_pred_decoded, max_probs, text):
                 print(pred)
 
-        return y_pred[0] if single_input else y_pred
+        if single_input:
+            return y_pred[0], max_probs[0]
+
+        return y_pred, max_probs
 
     def save_model(self, path=None):
         # Create the BERT directory
