@@ -9,6 +9,7 @@ import csv
 import pandas as pd
 
 from classifier.src.classifiers.BertClassifier import BertClassifier
+from classifier.src.classifiers.SKLearnClassifier import SKLearnClassifier
 
 # consts
 BASE_DIR = os.path.dirname(__file__)
@@ -16,7 +17,8 @@ MODEL_DIR = os.path.abspath(os.path.join(BASE_DIR, "..", "saved_models"))
 HISTORY_PATH = os.path.join(BASE_DIR, "tweet_history.csv")
 DATASETS_PATH = os.path.join(BASE_DIR, "datasets")
 
-model = BertClassifier.load_model("distilbert uncased", in_saved_models=True)
+# model = BertClassifier.load_model("distilbert uncased", in_saved_models=True)
+model = SKLearnClassifier.load_model("RandomForestClassifier", in_saved_models=True)
 
 
 # Loads csv file with the history of tweets users wanted to predict
@@ -241,7 +243,10 @@ def retrain_model():
     try:
         data = model.load_data()
         X_train, X_test, y_train, y_test = model.prepare_dataset(data, augment_ratio=0.33, irrelevant_ratio=0.4)
-        model.train_final_model(X_train, y_train)
+
+        model.train(X_train, y_train)   # sklearn - random forest
+        # model.train_final_model(X_train, y_train) # bert
+
         evaluation = model.evaluate(X_test, y_test, output_file="evaluation_results.txt")
         print("eval", evaluation)
         model.save_model()

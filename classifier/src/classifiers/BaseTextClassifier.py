@@ -584,7 +584,7 @@ class BaseTextClassifier(ABC):
         # Preprocess test data
         X_processed = self.preprocess(X_test)
         y_encoded = self.label_encoder.transform(y_test)
-        y_pred = self.predict(X_processed)
+        y_pred, _ = self.predict(X_processed)
 
         # Calculate metrics
         accuracy = accuracy_score(y_encoded, y_pred)
