@@ -381,7 +381,7 @@ def create_app():
                 elem_id="history-table"
             )
 
-        # create_training_section()
+        create_training_section()
         
         # Call history loader on app launch
         demo.load(
