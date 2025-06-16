@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 13.20 (Debian 13.20-1.pgdg120+1)
+-- Dumped from database version 13.21 (Debian 13.21-1.pgdg120+1)
 -- Dumped by pg_dump version 15.10
 
 SET statement_timeout = 0;
@@ -12935,7 +12935,6 @@ COPY public.tagging_results (id, tweet_id, tag_result, features, decision_source
 19	1834659062681899000	Negative	{}	User agreement
 20	1821441855113838800	Negative	{}	User agreement
 21	1846816095665377300	Negative	{}	User agreement
-22	1830472523869557200	Positive	{"Justifying Nazi ideology"}	User agreement
 23	1864771420678447400	Negative	{}	User agreement
 24	1878174018391409000	Negative	{}	User agreement
 25	1814455828034007000	Positive	{Other,"Denying the Jewish people's right to self-determination/the right of Israel to exist"}	User agreement
@@ -12994,7 +12993,6 @@ COPY public.tagging_results (id, tweet_id, tag_result, features, decision_source
 95	1870254963479462000	Positive	{"Demonization of Jews (portraying them as inferior and despicable)","Denying the Jewish people's right to self-determination/the right of Israel to exist","Blood libels and religiously based antisemitism"}	User agreement
 96	1772946275756884200	Irrelevant	{}	User agreement
 97	1820548633714159900	Positive	{"Spreading conspiracy theories about Jewish control (power, money, and media)"}	User agreement
-98	1792552460843938000	Positive	{"Spreading conspiracy theories about Jewish control (power, money, and media)",Other}	User agreement
 101	1874997218501186000	Irrelevant	{}	User agreement
 106	1881809024532070400	Positive	{Other,"Calling for violence and hostility against Israel"}	User agreement
 107	1792566318820106800	Irrelevant	{}	User agreement
@@ -13047,14 +13045,12 @@ COPY public.tagging_results (id, tweet_id, tag_result, features, decision_source
 61	1848838599325741300	Negative	{}	User agreement
 63	1824462989313163800	Irrelevant	{}	User agreement
 64	1729995122564362800	Positive	{"Calls for harming/killing Jews"}	User agreement
-67	1843756416596881700	Negative	{}	User agreement
 68	1870417092098584800	Positive	{"Demonization of Jews (portraying them as inferior and despicable)","Spreading conspiracy theories about Jewish control (power, money, and media)",Other}	User agreement
 69	1818267260114313500	Negative	{}	User agreement
 73	1756263285547229400	Negative	{}	User agreement
 74	1767792654656676000	Positive	{Other,"Calling for violence and hostility against Israel","Denying the Jewish people's right to self-determination/the right of Israel to exist"}	User agreement
 75	1825033694828261400	Negative	{}	User agreement
 76	1880506350108905700	Positive	{Other,"Spreading conspiracy theories about Jewish control (power, money, and media)","Calling for violence and hostility against Israel","Denying the Jewish people's right to self-determination/the right of Israel to exist"}	User agreement
-78	1792180924249247700	Positive	{Other,"Calling for violence and hostility against Israel","Denying the Jewish people's right to self-determination/the right of Israel to exist"}	User agreement
 81	1710606557963329500	Positive	{"Applying double standards to Israel that are not applied to other states (double standard)","Denying the Jewish people's right to self-determination/the right of Israel to exist"}	User agreement
 84	1803264551154262500	Positive	{"Justifying Nazi ideology","Calling for violence and hostility against Israel","Denying the Jewish people's right to self-determination/the right of Israel to exist"}	User agreement
 87	1742590255625273600	Irrelevant	{}	User agreement
@@ -13072,7 +13068,6 @@ COPY public.tagging_results (id, tweet_id, tag_result, features, decision_source
 112	1883428769475768600	Irrelevant	{}	User agreement
 113	1747135117997552000	Irrelevant	{}	User agreement
 114	1838960244883382500	Positive	{"Spreading conspiracy theories about Jewish control (power, money, and media)"}	User agreement
-115	1838159553080569900	Negative	{}	User agreement
 116	1862306773987742200	Positive	{Other,"Blood libels and religiously based antisemitism"}	User agreement
 117	1855320479449358600	Irrelevant	{}	User agreement
 118	1756067862727532500	Irrelevant	{}	User agreement
@@ -13097,7 +13092,8 @@ COPY public.tagging_results (id, tweet_id, tag_result, features, decision_source
 139	1838931933427823000	Positive	{"Cynical use of the Holocaust and Holocaust denial"}	User agreement
 140	1829058255269835000	Negative	{}	User agreement
 290	1781196684539933000	Positive	{"Calls for harming/killing Jews","Calling for violence and hostility against Israel"}	User agreement
-137	1846367395453260000	Positive	{"Demonization of Jews (portraying them as inferior and despicable)","Applying double standards to Israel that are not applied to other states (double standard)","Calling for violence and hostility against Israel","Denying the Jewish people's right to self-determination/the right of Israel to exist","Spreading conspiracy theories about Jewish control (power, money, and media)"}	User agreement
+67	1843756416596881700	Positive	{"other"}	Pro user
+115	1838159553080569900	Positive	{"other"}	Pro user
 138	1875414494043893800	Negative	{}	User agreement
 142	1880768789153002000	Positive	{"Demonization of Jews (portraying them as inferior and despicable)","Spreading conspiracy theories about Jewish control (power, money, and media)"}	User agreement
 146	1822668032617198000	Negative	{}	User agreement
@@ -13138,7 +13134,6 @@ COPY public.tagging_results (id, tweet_id, tag_result, features, decision_source
 3925	1824466053679735000	Negative	{}	User agreement
 3926	1819870597653889300	Irrelevant	{}	User agreement
 3929	1795254068824474000	Irrelevant	{}	User agreement
-3931	1714100232865378600	Positive	{Other,"Calling for violence and hostility against Israel"}	User agreement
 3937	1878662406181622000	Negative	{}	User agreement
 3938	1851726629128802800	Negative	{}	User agreement
 3941	1856217649086165000	Irrelevant	{}	User agreement
@@ -13163,11 +13158,11 @@ COPY public.tagging_results (id, tweet_id, tag_result, features, decision_source
 3973	1756364021329006800	Irrelevant	{}	User agreement
 3974	1897107997505331700	Negative	{}	Pro user
 3975	1728179062575968800	Negative	{}	Pro user
+137	1846367395453260000	Positive	{"other"}	Pro user
 141	1861907865939689500	Positive	{"Demonization of Jews (portraying them as inferior and despicable)","Spreading conspiracy theories about Jewish control (power, money, and media)"}	User agreement
 143	1833968278240460800	Negative	{}	User agreement
 144	1796380428632560000	Negative	{}	User agreement
 145	1741445946050011600	Positive	{"Collective blame of Jews for actions of the State of Israel","Applying double standards to Israel that are not applied to other states (double standard)","Denying the Jewish people's right to self-determination/the right of Israel to exist","Defaming Jewish symbols","Calls for harming/killing Jews","Calling for violence and hostility against Israel"}	User agreement
-148	1794840484168470800	Positive	{"Cynical use of the Holocaust and Holocaust denial"}	User agreement
 149	1759365735829340700	Positive	{"Collective blame of Jews for actions of the State of Israel","Applying double standards to Israel that are not applied to other states (double standard)","Denying the Jewish people's right to self-determination/the right of Israel to exist","Blood libels and religiously based antisemitism","Defaming Jewish symbols","Calls for harming/killing Jews","Spreading conspiracy theories about Jewish control (power, money, and media)"}	User agreement
 150	1822486202404176400	Negative	{}	User agreement
 151	1863921539864785400	Negative	{}	User agreement
@@ -13217,13 +13212,12 @@ COPY public.tagging_results (id, tweet_id, tag_result, features, decision_source
 208	1841989004599951400	Positive	{"Comparing Israel and its policies to Nazi Germany",Other}	Pro user
 209	1868319628302455000	Irrelevant	{}	Pro user
 210	1823785328681083100	Negative	{}	Pro user
-211	1798674639553806300	Positive	{Other}	Pro user
 212	1893316790266081300	Positive	{"Justifying Nazi ideology",Other}	Pro user
-213	1822487643688747300	Positive	{Other}	Pro user
 214	1856499937229582800	Negative	{}	Pro user
 215	1895992439409951200	Positive	{"Calls for harming/killing Jews"}	Pro user
 216	1865388358442144300	Irrelevant	{}	Pro user
 294	1817377926280884500	Negative	{}	User agreement
+148	1794840484168470800	Positive	{"other"}	Pro user
 217	1886359892773982500	Positive	{"Collective blame of Jews for actions of the State of Israel","Applying double standards to Israel that are not applied to other states (double standard)"}	Pro user
 218	1884264526973133000	Negative	{}	Pro user
 219	1866623068870939100	Irrelevant	{}	Pro user
@@ -13234,13 +13228,11 @@ COPY public.tagging_results (id, tweet_id, tag_result, features, decision_source
 224	1721048691128295700	Positive	{Other}	Pro user
 225	1800409693703274800	Irrelevant	{}	Pro user
 226	1718376488280666400	Positive	{"Applying double standards to Israel that are not applied to other states (double standard)","Collective blame of Jews for actions of the State of Israel"}	Pro user
-227	1791663452953420300	Positive	{"Justifying Nazi ideology"}	Pro user
 228	1865384854424039700	Irrelevant	{}	Pro user
 229	1803289152521380000	Irrelevant	{}	Pro user
 230	1896726728871161900	Positive	{"Justifying Nazi ideology"}	Pro user
 231	1864283410807525600	Irrelevant	{}	Pro user
 232	1828396570061987800	Positive	{"Spreading conspiracy theories about Jewish control (power, money, and media)"}	Pro user
-233	1800452572391809300	Positive	{"Applying double standards to Israel that are not applied to other states (double standard)","Collective blame of Jews for actions of the State of Israel"}	Pro user
 234	1771049696095555800	Positive	{Other}	Pro user
 235	1896389880449761500	Positive	{"Denying the Jewish people's right to self-determination/the right of Israel to exist",Other}	Pro user
 236	1794430426372772000	Irrelevant	{}	Pro user
@@ -13260,7 +13252,6 @@ COPY public.tagging_results (id, tweet_id, tag_result, features, decision_source
 250	1812637841853452500	Negative	{}	Pro user
 251	1794578578497241300	Positive	{"Denying the Jewish people's right to self-determination/the right of Israel to exist"}	Pro user
 252	1883427493732053200	Irrelevant	{}	Pro user
-253	1821486987976798700	Positive	{"Justifying Nazi ideology"}	Pro user
 254	1886601651961913300	Irrelevant	{}	Pro user
 255	1893585377539359200	Irrelevant	{}	Pro user
 256	1848455235670352000	Irrelevant	{}	Pro user
@@ -13278,7 +13269,6 @@ COPY public.tagging_results (id, tweet_id, tag_result, features, decision_source
 268	1818021779434259000	Irrelevant	{}	Pro user
 269	1749202713047634200	Positive	{"Comparing Israel and its policies to Nazi Germany",Other}	Pro user
 270	1867781234988085500	Positive	{"Denying the Jewish people's right to self-determination/the right of Israel to exist","Applying double standards to Israel that are not applied to other states (double standard)"}	Pro user
-271	1867403873398521900	Positive	{Other}	Pro user
 272	1882176487375487200	Negative	{}	Pro user
 273	1852736769843749400	Positive	{"Spreading conspiracy theories about Jewish control (power, money, and media)"}	Pro user
 274	1873081963277631500	Positive	{"Demonization of Jews (portraying them as inferior and despicable)"}	Pro user
@@ -13298,8 +13288,9 @@ COPY public.tagging_results (id, tweet_id, tag_result, features, decision_source
 288	1811301709253333200	Positive	{"Denying the Jewish people's right to self-determination/the right of Israel to exist"}	User agreement
 289	1743044541454983200	Positive	{"Demonization of Jews (portraying them as inferior and despicable)","Collective blame of Jews for actions of the State of Israel","Comparing Israel and its policies to Nazi Germany","Denying the Jewish people's right to self-determination/the right of Israel to exist","Spreading conspiracy theories about Jewish control (power, money, and media)"}	User agreement
 295	1818942219900052000	Negative	{}	User agreement
+233	1800452572391809300	Positive	{"other"}	Pro user
+253	1821486987976798700	Positive	{"other"}	Pro user
 291	1840516621028221000	Positive	{"Spreading conspiracy theories about Jewish control (power, money, and media)"}	User agreement
-292	1867403876594594000	Negative	{}	User agreement
 293	1878101848030392600	Irrelevant	{}	User agreement
 297	1836808680655786500	Negative	{}	User agreement
 299	1783479713505448000	Irrelevant	{}	User agreement
@@ -13326,7 +13317,6 @@ COPY public.tagging_results (id, tweet_id, tag_result, features, decision_source
 3922	1817427959126307300	Negative	{}	User agreement
 3923	1813675746470318300	Irrelevant	{}	User agreement
 3927	1727445539002957800	Positive	{"Collective blame of Jews for actions of the State of Israel","Calling for violence and hostility against Israel"}	User agreement
-3928	1745821590833483800	Positive	{"Collective blame of Jews for actions of the State of Israel","Calling for violence and hostility against Israel"}	User agreement
 3930	1886552616173191400	Irrelevant	{}	User agreement
 3932	1830240073855750700	Positive	{Other,"Demonization of Jews (portraying them as inferior and despicable)","Calling for violence and hostility against Israel"}	User agreement
 3933	1820892515614236700	Irrelevant	{}	User agreement
@@ -13380,7 +13370,6 @@ COPY public.tagging_results (id, tweet_id, tag_result, features, decision_source
 314	1802339810616431000	Irrelevant	{}	User agreement
 315	1802160675827167500	Irrelevant	{}	User agreement
 316	1840925996532600800	Negative	{}	User agreement
-317	1845076610258698500	Positive	{"Demonization of Jews (portraying them as inferior and despicable)","Spreading conspiracy theories about Jewish control (power, money, and media)"}	User agreement
 318	1735615039946867000	Positive	{"Applying double standards to Israel that are not applied to other states (double standard)","Calling for violence and hostility against Israel","Denying the Jewish people's right to self-determination/the right of Israel to exist"}	User agreement
 319	1891715551325553000	Positive	{"Demonization of Jews (portraying them as inferior and despicable)",Other}	User agreement
 320	1726337256599016000	Positive	{"Applying double standards to Israel that are not applied to other states (double standard)",Other,"Denying the Jewish people's right to self-determination/the right of Israel to exist","Calling for violence and hostility against Israel"}	User agreement
@@ -13423,10 +13412,10 @@ COPY public.tagging_results (id, tweet_id, tag_result, features, decision_source
 357	1874422711101087700	Negative	{}	Pro user
 358	1868821371167580400	Irrelevant	{}	Pro user
 359	1779058209040499000	Negative	{}	Pro user
-360	1743934103081161000	Negative	{}	User agreement
 361	1877645970181423600	Negative	{}	User agreement
 362	1822909874612887600	Negative	{}	User agreement
 363	1711879155149951200	Positive	{"Demonization of Jews (portraying them as inferior and despicable)",Other,"Calling for violence and hostility against Israel"}	User agreement
+317	1845076610258698500	Positive	{"other"}	Pro user
 364	1883343052980548000	Positive	{"Demonization of Jews (portraying them as inferior and despicable)",Other,"Blood libels and religiously based antisemitism"}	User agreement
 368	1824816693039997400	Positive	{"Calling for violence and hostility against Israel","Denying the Jewish people's right to self-determination/the right of Israel to exist"}	User agreement
 369	1791787443294994400	Positive	{"Demonization of Jews (portraying them as inferior and despicable)","Calling for violence and hostility against Israel","Denying the Jewish people's right to self-determination/the right of Israel to exist","Collective blame of Jews for actions of the State of Israel"}	User agreement
@@ -13541,7 +13530,6 @@ COPY public.tagging_results (id, tweet_id, tag_result, features, decision_source
 427	1831411263316119600	Negative	{}	User agreement
 428	1848845407096554000	Negative	{}	User agreement
 429	1853124926384791800	Negative	{}	User agreement
-430	1760547409317519400	Positive	{"Collective blame of Jews for actions of the State of Israel","Applying double standards to Israel that are not applied to other states (double standard)","Calling for violence and hostility against Israel","Denying the Jewish people's right to self-determination/the right of Israel to exist","Calls for harming/killing Jews","Spreading conspiracy theories about Jewish control (power, money, and media)"}	User agreement
 431	1803507273068892400	Irrelevant	{}	User agreement
 432	1837101512239047200	Negative	{}	User agreement
 433	1886841504397975600	Negative	{}	User agreement
@@ -13559,7 +13547,6 @@ COPY public.tagging_results (id, tweet_id, tag_result, features, decision_source
 445	1896684018588102700	Negative	{}	Pro user
 446	1796093321133109200	Negative	{}	Pro user
 447	1758998312181711000	Positive	{"Spreading conspiracy theories about Jewish control (power, money, and media)"}	Pro user
-448	1802469422290145500	Positive	{Other}	Pro user
 449	1886314866929262800	Negative	{}	Pro user
 450	1856155047953887500	Negative	{}	Pro user
 451	1817483165365067800	Negative	{}	Pro user
@@ -13578,9 +13565,7 @@ COPY public.tagging_results (id, tweet_id, tag_result, features, decision_source
 464	1719576151788830700	Positive	{Other}	Pro user
 465	1846951659219411500	Negative	{}	Pro user
 466	1822668544624271400	Negative	{}	Pro user
-467	1867403870504411100	Negative	{}	Pro user
 468	1796429908526408000	Negative	{}	Pro user
-469	1889565159804252200	Negative	{}	Pro user
 470	1856631843023712500	Negative	{}	Pro user
 471	1812414507534504000	Negative	{}	Pro user
 472	1801719255395930400	Negative	{}	Pro user
@@ -13644,7 +13629,7 @@ COPY public.tagging_results (id, tweet_id, tag_result, features, decision_source
 530	1847645646741799400	Negative	{}	Pro user
 531	1891567264731730200	Positive	{Other}	Pro user
 532	1824994732080345300	Negative	{}	Pro user
-533	1879266699054362600	Positive	{Other}	Pro user
+533	1879266699054362600	Positive	{"other"}	Pro user
 534	1867119970846663000	Negative	{}	Pro user
 535	1885871804515811600	Negative	{}	Pro user
 536	1877762712400204300	Positive	{"Spreading conspiracy theories about Jewish control (power, money, and media)"}	Pro user
@@ -13759,7 +13744,6 @@ COPY public.tagging_results (id, tweet_id, tag_result, features, decision_source
 4807	1723514034933440500	Negative	{}	Pro user
 4808	1713870614803706400	Negative	{}	Pro user
 4809	1807216451084051000	Negative	{}	Pro user
-4810	1778575780437766100	Positive	{Other}	Pro user
 4811	1761140545144205300	Negative	{}	Pro user
 4812	1860137468177318100	Negative	{}	Pro user
 4813	1902234158371631600	Negative	{}	Pro user
@@ -13793,7 +13777,6 @@ COPY public.tagging_results (id, tweet_id, tag_result, features, decision_source
 4841	1750711218434888000	Negative	{}	Pro user
 4842	1892426009330192600	Negative	{}	Pro user
 4843	1836658606332350700	Negative	{}	Pro user
-4844	1858048239662150000	Positive	{"Applying double standards to Israel that are not applied to other states (double standard)"}	Pro user
 4845	1713118227184906500	Negative	{}	Pro user
 4846	1757296820529840600	Negative	{}	Pro user
 4847	1889809953059385900	Negative	{}	Pro user
@@ -13811,6 +13794,7 @@ COPY public.tagging_results (id, tweet_id, tag_result, features, decision_source
 4859	1782690353772208600	Negative	{}	Pro user
 4860	1862022615600394500	Negative	{}	Pro user
 4861	1711570715185713200	Negative	{}	Pro user
+4844	1858048239662150000	Negative	{}	Pro user
 618	1878926550504182300	Negative	{}	User agreement
 621	1804337836117934600	Negative	{}	Pro user
 622	1892412534486954500	Irrelevant	{}	Pro user
@@ -13882,7 +13866,6 @@ COPY public.tagging_results (id, tweet_id, tag_result, features, decision_source
 688	1893473998585082000	Negative	{}	User agreement
 689	1712761385233568000	Negative	{}	User agreement
 690	1865882614164537900	Positive	{"Spreading conspiracy theories about Jewish control (power, money, and media)",Other}	User agreement
-691	1867403879643853300	Positive	{"Spreading conspiracy theories about Jewish control (power, money, and media)",Other}	User agreement
 692	1845370300348891600	Negative	{}	User agreement
 693	1841428648957817000	Negative	{}	User agreement
 694	1865310813394997800	Positive	{"Calling for violence and hostility against Israel","Defaming Jewish symbols","Applying double standards to Israel that are not applied to other states (double standard)"}	User agreement
@@ -13952,7 +13935,6 @@ COPY public.tagging_results (id, tweet_id, tag_result, features, decision_source
 758	1787322448947585000	Irrelevant	{}	Pro user
 759	1862086600957771800	Positive	{"Spreading conspiracy theories about Jewish control (power, money, and media)"}	Pro user
 760	1780068079156007200	Irrelevant	{}	Pro user
-761	1841236791715881200	Negative	{}	Pro user
 762	1717285607947559200	Irrelevant	{}	Pro user
 763	1867235214910689300	Irrelevant	{}	Pro user
 764	1858621057151672300	Irrelevant	{}	Pro user
@@ -13962,6 +13944,7 @@ COPY public.tagging_results (id, tweet_id, tag_result, features, decision_source
 768	1892054039900151800	Positive	{"Spreading conspiracy theories about Jewish control (power, money, and media)"}	Pro user
 769	1892217981590991400	Positive	{"Spreading conspiracy theories about Jewish control (power, money, and media)"}	Pro user
 770	1728595509726625800	Negative	{}	User agreement
+761	1841236791715881200	Positive	{"other"}	Pro user
 771	1863113163077492700	Positive	{Other,"Calling for violence and hostility against Israel","Demonization of Jews (portraying them as inferior and despicable)"}	User agreement
 772	1793967984018592300	Positive	{"Calling for violence and hostility against Israel",Other,"Spreading conspiracy theories about Jewish control (power, money, and media)"}	User agreement
 773	1726708918280482800	Irrelevant	{}	User agreement
@@ -13979,7 +13962,6 @@ COPY public.tagging_results (id, tweet_id, tag_result, features, decision_source
 785	1873125744014197000	Positive	{Other}	User agreement
 786	1731464069377618400	Negative	{}	User agreement
 787	1861121920605004300	Irrelevant	{}	User agreement
-788	1794887003902996700	Negative	{}	User agreement
 789	1833766685402440000	Irrelevant	{}	User agreement
 790	1748947652228849700	Positive	{"Denying the Jewish people's right to self-determination/the right of Israel to exist",Other}	User agreement
 791	1805504457536586000	Irrelevant	{}	User agreement
@@ -14015,7 +13997,6 @@ COPY public.tagging_results (id, tweet_id, tag_result, features, decision_source
 821	1785449971703296300	Irrelevant	{}	Pro user
 822	1745386645715878400	Positive	{Other,"Calling for violence and hostility against Israel"}	Pro user
 823	1865164937812963300	Positive	{"Comparing Israel and its policies to Nazi Germany"}	Pro user
-824	1859852462175420700	Positive	{"Justifying Nazi ideology"}	Pro user
 825	1778294866759549200	Positive	{Other,"Applying double standards to Israel that are not applied to other states (double standard)"}	Pro user
 826	1793783353289884000	Irrelevant	{}	Pro user
 827	1828152668185076000	Irrelevant	{}	Pro user
@@ -14140,24 +14121,20 @@ COPY public.tagging_results (id, tweet_id, tag_result, features, decision_source
 4077	1899329032698675700	Negative	{}	User agreement
 4079	1742741844688028000	Negative	{}	User agreement
 4080	1902168334445039900	Irrelevant	{}	User agreement
-4862	1873509175160123600	Positive	{"Spreading conspiracy theories about Jewish control (power, money, and media)"}	Pro user
 4863	1884064484693791000	Negative	{}	Pro user
 4864	1860042647173468400	Positive	{"Defaming Jewish symbols","Blood libels and religiously based antisemitism"}	Pro user
 4865	1892739061665653000	Negative	{}	Pro user
 4866	1836438362590220800	Negative	{}	Pro user
-4867	1868664922202354200	Positive	{"Applying double standards to Israel that are not applied to other states (double standard)"}	Pro user
 4868	1857357545599541200	Negative	{}	Pro user
 4869	1758994595193799000	Negative	{}	Pro user
 4870	1713112824476786700	Negative	{}	Pro user
 4871	1777332532473639200	Positive	{"Spreading conspiracy theories about Jewish control (power, money, and media)","Denying the Jewish people's right to self-determination/the right of Israel to exist","Applying double standards to Israel that are not applied to other states (double standard)"}	Pro user
 4872	1849850590555452000	Negative	{}	Pro user
-4873	1867365336557007000	Positive	{"Justifying Nazi ideology","Spreading conspiracy theories about Jewish control (power, money, and media)"}	Pro user
 4874	1888072308343939000	Negative	{}	Pro user
 4875	1848590036133900800	Negative	{}	Pro user
 4876	1835417587355676700	Irrelevant	{}	Pro user
 4877	1817427200611594500	Irrelevant	{}	Pro user
 4878	1837170897687396600	Negative	{}	Pro user
-4879	1882095594669585000	Positive	{"Applying double standards to Israel that are not applied to other states (double standard)"}	Pro user
 4880	1827937231245586700	Negative	{}	Pro user
 4881	1905401507887153700	Negative	{}	Pro user
 4882	1864122656137916700	Negative	{}	Pro user
@@ -14166,6 +14143,9 @@ COPY public.tagging_results (id, tweet_id, tag_result, features, decision_source
 4885	1887682281739035100	Positive	{"Justifying Nazi ideology",Other}	Pro user
 4886	1897382761000063500	Positive	{"Spreading conspiracy theories about Jewish control (power, money, and media)"}	Pro user
 4887	1887744018542653400	Negative	{}	Pro user
+4867	1868664922202354200	Negative	{}	Pro user
+4879	1882095594669585000	Negative	{}	Pro user
+4873	1867365336557007000	Positive	{"other"}	Pro user
 909	1810626302296375300	Positive	{"Denying the Jewish people's right to self-determination/the right of Israel to exist","Spreading conspiracy theories about Jewish control (power, money, and media)"}	User agreement
 910	1750640080623210500	Negative	{}	User agreement
 911	1759842417086210300	Negative	{}	User agreement
@@ -14191,7 +14171,6 @@ COPY public.tagging_results (id, tweet_id, tag_result, features, decision_source
 944	1890386455081492700	Irrelevant	{}	User agreement
 946	1724287722410647800	Positive	{"Applying double standards to Israel that are not applied to other states (double standard)",Other}	User agreement
 947	1860152255380640000	Irrelevant	{}	User agreement
-948	1806166290941567200	Negative	{}	User agreement
 952	1825163144844751400	Irrelevant	{}	User agreement
 953	1714692947487207400	Positive	{"Applying double standards to Israel that are not applied to other states (double standard)","Calling for violence and hostility against Israel"}	User agreement
 954	1717966370342593000	Positive	{"Comparing Israel and its policies to Nazi Germany","Denying the Jewish people's right to self-determination/the right of Israel to exist","Applying double standards to Israel that are not applied to other states (double standard)","Calling for violence and hostility against Israel"}	User agreement
@@ -14250,7 +14229,6 @@ COPY public.tagging_results (id, tweet_id, tag_result, features, decision_source
 1023	1878394440529945000	Irrelevant	{}	User agreement
 1025	1840263215797940700	Negative	{}	User agreement
 1029	1803445304441840000	Irrelevant	{}	User agreement
-1030	1812219203287466200	Negative	{}	User agreement
 1031	1796765751187239200	Irrelevant	{}	User agreement
 1032	1773863257603768800	Irrelevant	{}	User agreement
 1034	1711230887159878000	Positive	{Other,"Calling for violence and hostility against Israel"}	User agreement
@@ -14373,7 +14351,6 @@ COPY public.tagging_results (id, tweet_id, tag_result, features, decision_source
 1083	1722801437728744000	Irrelevant	{}	Pro user
 1084	1818989285384835300	Irrelevant	{}	Pro user
 1085	1859390751865463300	Negative	{}	Pro user
-1086	1723454230747386000	Positive	{Other}	Pro user
 1087	1823312368199520500	Irrelevant	{}	Pro user
 1088	1852822988997222400	Irrelevant	{}	Pro user
 1089	1886636442287530200	Positive	{Other}	Pro user
@@ -14395,7 +14372,6 @@ COPY public.tagging_results (id, tweet_id, tag_result, features, decision_source
 1105	1728730754971243000	Negative	{}	Pro user
 1106	1833839557965418500	Positive	{"Defaming Jewish symbols"}	Pro user
 1107	1841608544434467000	Irrelevant	{}	Pro user
-1108	1833464765605417200	Positive	{"Denying the Jewish people's right to self-determination/the right of Israel to exist","Applying double standards to Israel that are not applied to other states (double standard)"}	Pro user
 1109	1737018012451168300	Irrelevant	{}	Pro user
 1110	1859868873799106600	Negative	{}	Pro user
 1111	1897208711460127000	Positive	{"Spreading conspiracy theories about Jewish control (power, money, and media)",Other}	Pro user
@@ -14509,7 +14485,6 @@ COPY public.tagging_results (id, tweet_id, tag_result, features, decision_source
 4090	1779110303785185800	Irrelevant	{}	User agreement
 4091	1818181602905907200	Irrelevant	{}	User agreement
 4093	1731960706667291000	Negative	{}	User agreement
-4098	1846922758451859700	Positive	{"Spreading conspiracy theories about Jewish control (power, money, and media)",Other}	User agreement
 4099	1718467322720211000	Positive	{"Applying double standards to Israel that are not applied to other states (double standard)","Denying the Jewish people's right to self-determination/the right of Israel to exist",Other}	User agreement
 4101	1806773077822321000	Irrelevant	{}	User agreement
 4108	1861042101141606700	Positive	{"Applying double standards to Israel that are not applied to other states (double standard)","Spreading conspiracy theories about Jewish control (power, money, and media)","Denying the Jewish people's right to self-determination/the right of Israel to exist",Other}	User agreement
@@ -14530,7 +14505,6 @@ COPY public.tagging_results (id, tweet_id, tag_result, features, decision_source
 1179	1725019123024085500	Negative	{}	User agreement
 1180	1732200879649161200	Negative	{}	User agreement
 1183	1715323832062374400	Positive	{"Applying double standards to Israel that are not applied to other states (double standard)","Collective blame of Jews for actions of the State of Israel"}	User agreement
-1184	1800293826931892700	Negative	{}	User agreement
 1185	1857850617118818600	Irrelevant	{}	User agreement
 1186	1797966189521686500	Irrelevant	{}	User agreement
 1187	1870730947785826300	Positive	{"Spreading conspiracy theories about Jewish control (power, money, and media)"}	User agreement
@@ -14623,7 +14597,6 @@ COPY public.tagging_results (id, tweet_id, tag_result, features, decision_source
 1355	1791272745621480000	Irrelevant	{}	User agreement
 1356	1805085234112651500	Irrelevant	{}	User agreement
 1357	1747096517398458400	Positive	{"Denying the Jewish people's right to self-determination/the right of Israel to exist","Calling for violence and hostility against Israel","Applying double standards to Israel that are not applied to other states (double standard)"}	User agreement
-1358	1867113596536144100	Negative	{}	User agreement
 1360	1734697401146093600	Positive	{Other,"Calling for violence and hostility against Israel","Applying double standards to Israel that are not applied to other states (double standard)"}	User agreement
 1361	1766410706038231300	Positive	{"Denying the Jewish people's right to self-determination/the right of Israel to exist","Calling for violence and hostility against Israel",Other}	User agreement
 1362	1841380553582637300	Negative	{}	User agreement
@@ -14785,7 +14758,6 @@ COPY public.tagging_results (id, tweet_id, tag_result, features, decision_source
 4201	1871090893945791000	Irrelevant	{}	User agreement
 1416	1851190756280808000	Irrelevant	{}	User agreement
 1417	1743054711442547000	Positive	{"Calling for violence and hostility against Israel",Other}	User agreement
-1418	1731805967015182600	Positive	{"Denying the Jewish people's right to self-determination/the right of Israel to exist","Calling for violence and hostility against Israel","Collective blame of Jews for actions of the State of Israel"}	User agreement
 1423	1776494518810079500	Positive	{"Demonization of Jews (portraying them as inferior and despicable)",Other}	User agreement
 1424	1768895437354987800	Negative	{}	User agreement
 1427	1869492409203405000	Irrelevant	{}	User agreement
@@ -14869,7 +14841,6 @@ COPY public.tagging_results (id, tweet_id, tag_result, features, decision_source
 1549	1780569104942068000	Positive	{"Denying the Jewish people's right to self-determination/the right of Israel to exist","Blood libels and religiously based antisemitism","Spreading conspiracy theories about Jewish control (power, money, and media)","Collective blame of Jews for actions of the State of Israel","Applying double standards to Israel that are not applied to other states (double standard)"}	User agreement
 1550	1895782794510680600	Irrelevant	{}	User agreement
 1552	1819882255143387400	Irrelevant	{}	User agreement
-1553	1790668343718162700	Positive	{"Spreading conspiracy theories about Jewish control (power, money, and media)","Collective blame of Jews for actions of the State of Israel"}	User agreement
 1556	1759426631926694100	Irrelevant	{}	User agreement
 1557	1766230959257436700	Negative	{}	User agreement
 1558	1743753072822886700	Positive	{"Calling for violence and hostility against Israel"}	User agreement
@@ -14907,10 +14878,10 @@ COPY public.tagging_results (id, tweet_id, tag_result, features, decision_source
 1624	1894639528968950000	Irrelevant	{}	User agreement
 1626	1818920369090445600	Positive	{"Demonization of Jews (portraying them as inferior and despicable)",Other,"Applying double standards to Israel that are not applied to other states (double standard)","Spreading conspiracy theories about Jewish control (power, money, and media)"}	User agreement
 1627	1744488086602743800	Irrelevant	{}	User agreement
-1629	1798863706509721600	Positive	{Other}	Pro user
 1630	1744492125377720300	Irrelevant	{}	Pro user
 1631	1740108573030642000	Negative	{}	Pro user
 1632	1785121667863507000	Irrelevant	{}	Pro user
+1553	1790668343718162700	Positive	{"other"}	Pro user
 1499	1780782830446096400	Negative	{}	User agreement
 1500	1745427034468180200	Negative	{}	User agreement
 1501	1821093396171387400	Irrelevant	{}	User agreement
@@ -15002,7 +14973,6 @@ COPY public.tagging_results (id, tweet_id, tag_result, features, decision_source
 4235	1729300770162643500	Negative	{}	User agreement
 4236	1874468860415668200	Irrelevant	{}	User agreement
 4237	1802148767178822100	Negative	{}	User agreement
-4239	1729886317167989000	Positive	{"Collective blame of Jews for actions of the State of Israel",Other}	User agreement
 4242	1769984192228831500	Irrelevant	{}	User agreement
 4243	1894748572039459300	Irrelevant	{}	User agreement
 4244	1882139492481675800	Irrelevant	{}	User agreement
@@ -15064,10 +15034,10 @@ COPY public.tagging_results (id, tweet_id, tag_result, features, decision_source
 4333	1816316515500900600	Negative	{}	Pro user
 4334	1893225511662277000	Negative	{}	Pro user
 4335	1899643032410145000	Negative	{}	Pro user
-4336	1904779167222436000	Negative	{}	Pro user
 4337	1833272514723909600	Negative	{}	Pro user
 4338	1878760177278861800	Negative	{}	Pro user
 4339	1889882004013064200	Negative	{}	Pro user
+4239	1729886317167989000	Positive	{"other"}	Pro user
 1633	1784685555860885500	Irrelevant	{}	Pro user
 1635	1791426244904644600	Positive	{"Demonization of Jews (portraying them as inferior and despicable)","Collective blame of Jews for actions of the State of Israel"}	User agreement
 1637	1868103450875339300	Negative	{}	Pro user
@@ -15077,7 +15047,6 @@ COPY public.tagging_results (id, tweet_id, tag_result, features, decision_source
 1642	1878056139231043600	Negative	{}	Pro user
 1643	1783284443463254300	Irrelevant	{}	Pro user
 1644	1775314212295971300	Negative	{}	User agreement
-1645	1727687418281656300	Negative	{}	User agreement
 1646	1855077039344157200	Irrelevant	{}	Pro user
 1647	1823648956049687000	Irrelevant	{}	User agreement
 1648	1746036686457643300	Positive	{Other}	Pro user
@@ -15087,14 +15056,12 @@ COPY public.tagging_results (id, tweet_id, tag_result, features, decision_source
 1652	1835201017887310000	Positive	{"Calls for harming/killing Jews"}	Pro user
 1653	1743684204401987600	Positive	{Other}	Pro user
 1654	1718001330176889000	Positive	{"Denying the Jewish people's right to self-determination/the right of Israel to exist","Applying double standards to Israel that are not applied to other states (double standard)"}	Pro user
-1655	1736284645476672000	Positive	{Other}	Pro user
 1656	1868920243122475500	Irrelevant	{}	Pro user
 1657	1775008028406034700	Positive	{Other}	Pro user
 1658	1732348714143142100	Positive	{Other}	Pro user
 1659	1853278636398510300	Irrelevant	{}	Pro user
 1660	1889639188598821400	Negative	{}	Pro user
 1661	1898997917081338400	Irrelevant	{}	Pro user
-1662	1711009888174842000	Negative	{}	User agreement
 1663	1872425356935966700	Negative	{}	Pro user
 1664	1850435775768195000	Positive	{"Spreading conspiracy theories about Jewish control (power, money, and media)"}	Pro user
 1665	1898882379936374800	Negative	{}	User agreement
@@ -15126,7 +15093,6 @@ COPY public.tagging_results (id, tweet_id, tag_result, features, decision_source
 1691	1743231814041538800	Negative	{}	Pro user
 1692	1792708811641487400	Irrelevant	{}	Pro user
 1693	1780349250406101000	Positive	{"Applying double standards to Israel that are not applied to other states (double standard)",Other}	Pro user
-1694	1718013243338162200	Positive	{"Applying double standards to Israel that are not applied to other states (double standard)",Other}	Pro user
 1695	1749684982459859200	Irrelevant	{}	Pro user
 1696	1774968051605418200	Irrelevant	{}	Pro user
 1697	1718357615552364800	Irrelevant	{}	Pro user
@@ -15150,6 +15116,7 @@ COPY public.tagging_results (id, tweet_id, tag_result, features, decision_source
 1715	1882334808212484400	Negative	{}	User agreement
 1716	1872241003752767700	Negative	{}	Pro user
 1717	1746229047045013800	Positive	{"Applying double standards to Israel that are not applied to other states (double standard)",Other}	Pro user
+1655	1736284645476672000	Positive	{"other"}	Pro user
 1718	1783251073895223600	Positive	{"Applying double standards to Israel that are not applied to other states (double standard)",Other}	Pro user
 1719	1760427879853118000	Irrelevant	{}	Pro user
 1721	1883637802153476600	Positive	{"Spreading conspiracy theories about Jewish control (power, money, and media)"}	Pro user
@@ -15166,12 +15133,10 @@ COPY public.tagging_results (id, tweet_id, tag_result, features, decision_source
 1753	1854856061767106800	Positive	{"Spreading conspiracy theories about Jewish control (power, money, and media)"}	User agreement
 1754	1806973945759027500	Irrelevant	{}	User agreement
 1758	1745773346422435800	Positive	{"Applying double standards to Israel that are not applied to other states (double standard)",Other}	Pro user
-1759	1844866725755617300	Positive	{"Applying double standards to Israel that are not applied to other states (double standard)",Other}	Pro user
 1760	1784022964679344600	Irrelevant	{}	Pro user
 1761	1748818259510698500	Positive	{"Applying double standards to Israel that are not applied to other states (double standard)",Other}	Pro user
 1762	1801433764561830100	Positive	{"Applying double standards to Israel that are not applied to other states (double standard)",Other}	Pro user
 1763	1818236296768151800	Positive	{"Denying the Jewish people's right to self-determination/the right of Israel to exist"}	Pro user
-1764	1764491290862031400	Positive	{Other}	Pro user
 1765	1829400407963058400	Negative	{}	Pro user
 1766	1743815658721468400	Positive	{Other}	Pro user
 1767	1737448627692253700	Negative	{}	Pro user
@@ -15272,7 +15237,6 @@ COPY public.tagging_results (id, tweet_id, tag_result, features, decision_source
 4251	1853460648673300700	Irrelevant	{}	User agreement
 4252	1880288237429850400	Positive	{"Spreading conspiracy theories about Jewish control (power, money, and media)",Other}	User agreement
 4253	1822056518155694300	Negative	{}	User agreement
-4254	1885072143727170000	Negative	{}	User agreement
 4255	1899110600791442000	Positive	{"Spreading conspiracy theories about Jewish control (power, money, and media)"}	User agreement
 4257	1872294297233694700	Negative	{}	User agreement
 4258	1779112275552686000	Irrelevant	{}	User agreement
@@ -15303,7 +15267,6 @@ COPY public.tagging_results (id, tweet_id, tag_result, features, decision_source
 4371	1895289801269748000	Negative	{}	User agreement
 1817	1838380750632259800	Irrelevant	{}	User agreement
 1820	1896170838652838100	Irrelevant	{}	User agreement
-4340	1868892050185441800	Positive	{Other}	Pro user
 1824	1832620948673196300	Negative	{}	User agreement
 1825	1818958270348034300	Irrelevant	{}	User agreement
 4341	1732668396305789200	Negative	{}	Pro user
@@ -15536,7 +15499,6 @@ COPY public.tagging_results (id, tweet_id, tag_result, features, decision_source
 4388	1754249858427568000	Irrelevant	{}	User agreement
 4389	1890307695120638000	Positive	{"Spreading conspiracy theories about Jewish control (power, money, and media)",Other}	User agreement
 4390	1823307747313565700	Irrelevant	{}	User agreement
-4393	1852521453671117000	Positive	{"Denying the Jewish people's right to self-determination/the right of Israel to exist",Other,"Calling for violence and hostility against Israel"}	User agreement
 4394	1842312986377273900	Negative	{}	User agreement
 4400	1815515479328637200	Negative	{}	User agreement
 4401	1867938091719356700	Irrelevant	{}	User agreement
@@ -15544,7 +15506,6 @@ COPY public.tagging_results (id, tweet_id, tag_result, features, decision_source
 4405	1807207807726280700	Irrelevant	{}	User agreement
 4406	1798805469219144000	Irrelevant	{}	User agreement
 4416	1889919273499500800	Irrelevant	{}	User agreement
-4426	1852246035759759400	Positive	{"Denying the Jewish people's right to self-determination/the right of Israel to exist","Collective blame of Jews for actions of the State of Israel"}	User agreement
 4431	1805728019279233300	Positive	{Other}	User agreement
 4432	1893796530504569000	Negative	{}	User agreement
 4433	1845957958511088000	Irrelevant	{}	User agreement
@@ -15603,12 +15564,14 @@ COPY public.tagging_results (id, tweet_id, tag_result, features, decision_source
 4527	1883930707241885700	Irrelevant	{}	User agreement
 4528	1797290907521470700	Positive	{Other,"Calling for violence and hostility against Israel"}	User agreement
 4530	1765698334512370000	Negative	{}	User agreement
-4891	1898411774434525200	Negative	{}	Pro user
 4892	1888832272796643800	Negative	{}	Pro user
 4893	1880088795787460900	Negative	{}	Pro user
 4894	1869206017378304300	Negative	{}	Pro user
 4895	1864150267236909300	Negative	{}	Pro user
 4896	1897876195079078100	Negative	{}	Pro user
+4426	1852246035759759400	Negative	{}	Pro user
+4393	1852521453671117000	Positive	{"other"}	Pro user
+4891	1898411774434525200	Positive	{"other"}	Pro user
 2015	1745566662013919700	Negative	{}	User agreement
 2016	1896373808627585500	Irrelevant	{}	User agreement
 2018	1852828373799604500	Irrelevant	{}	User agreement
@@ -15721,7 +15684,6 @@ COPY public.tagging_results (id, tweet_id, tag_result, features, decision_source
 4472	1885082009674109200	Negative	{}	User agreement
 4478	1892387970038317000	Negative	{}	User agreement
 4479	1763177605329830100	Negative	{}	User agreement
-4480	1821995929689624800	Positive	{"Demonization of Jews (portraying them as inferior and despicable)",Other}	User agreement
 4481	1765151990471074300	Negative	{}	User agreement
 4482	1854515046031774000	Irrelevant	{}	User agreement
 4489	1846741951883973000	Irrelevant	{}	User agreement
@@ -15733,7 +15695,6 @@ COPY public.tagging_results (id, tweet_id, tag_result, features, decision_source
 4501	1802137904246034400	Positive	{Other}	User agreement
 4503	1825161486488023300	Negative	{}	User agreement
 4504	1867040686702252500	Positive	{Other}	User agreement
-4506	1830350462119444500	Negative	{}	User agreement
 4507	1839536976187535600	Irrelevant	{}	User agreement
 4508	1881832550651634000	Irrelevant	{}	User agreement
 4509	1886970238446789000	Negative	{}	User agreement
@@ -15753,7 +15714,6 @@ COPY public.tagging_results (id, tweet_id, tag_result, features, decision_source
 4532	1768008768468779500	Positive	{"Demonization of Jews (portraying them as inferior and despicable)",Other}	User agreement
 4533	1847498756532687000	Negative	{}	User agreement
 4897	1866992009048728000	Positive	{"Cynical use of the Holocaust and Holocaust denial","Justifying Nazi ideology"}	Pro user
-4898	1867961713221620000	Positive	{"Spreading conspiracy theories about Jewish control (power, money, and media)"}	Pro user
 4899	1886900923877986600	Negative	{}	Pro user
 4900	1847472817258087000	Negative	{}	Pro user
 4901	1771079015056462300	Negative	{}	Pro user
@@ -15765,6 +15725,7 @@ COPY public.tagging_results (id, tweet_id, tag_result, features, decision_source
 4907	1891304902443360500	Negative	{}	Pro user
 4908	1858048236071596300	Negative	{}	User agreement
 4911	1865879647709274600	Negative	{}	User agreement
+4480	1821995929689624800	Positive	{"other"}	Pro user
 2102	1789233972490449200	Negative	{}	Pro user
 2103	1845803086910226400	Positive	{"Calls for harming/killing Jews"}	Pro user
 2104	1868821223385580000	Negative	{}	Pro user
@@ -15781,7 +15742,6 @@ COPY public.tagging_results (id, tweet_id, tag_result, features, decision_source
 2115	1780881429154680800	Negative	{}	Pro user
 2116	1719938261987316000	Irrelevant	{}	Pro user
 2117	1815867448060486000	Negative	{}	Pro user
-2118	1809195776041775600	Negative	{}	Pro user
 4534	1724659513658417200	Negative	{}	User agreement
 2120	1717816441280635000	Positive	{"Denying the Jewish people's right to self-determination/the right of Israel to exist"}	Pro user
 2121	1854995598006743600	Negative	{}	Pro user
@@ -15802,7 +15762,6 @@ COPY public.tagging_results (id, tweet_id, tag_result, features, decision_source
 2136	1810841723717005300	Negative	{}	Pro user
 4540	1904383412259221800	Negative	{}	User agreement
 2138	1716176397939659000	Negative	{}	Pro user
-2139	1727663006140563700	Positive	{Other}	Pro user
 2140	1812761781879878000	Negative	{}	Pro user
 2141	1810601129207878000	Negative	{}	Pro user
 2142	1892840406515131000	Negative	{}	Pro user
@@ -15824,8 +15783,8 @@ COPY public.tagging_results (id, tweet_id, tag_result, features, decision_source
 2158	1843123925171011800	Positive	{"Comparing Israel and its policies to Nazi Germany"}	Pro user
 2159	1780104169757758000	Positive	{Other}	Pro user
 2160	1898539883041563000	Irrelevant	{}	Pro user
+2118	1809195776041775600	Positive	{"other"}	Pro user
 2162	1764819233199063000	Negative	{}	Pro user
-2163	1771774593549705500	Positive	{"Denying the Jewish people's right to self-determination/the right of Israel to exist"}	Pro user
 2164	1809128837290340900	Negative	{}	Pro user
 2165	1807897001964851500	Irrelevant	{}	Pro user
 2166	1759328957512433700	Negative	{}	Pro user
@@ -15858,7 +15817,6 @@ COPY public.tagging_results (id, tweet_id, tag_result, features, decision_source
 2193	1868576631138460200	Positive	{"Denying the Jewish people's right to self-determination/the right of Israel to exist"}	Pro user
 2194	1784413077926224100	Negative	{}	Pro user
 2195	1889900909611938000	Irrelevant	{}	Pro user
-2196	1720983196526076000	Positive	{Other}	Pro user
 2197	1730123517138718700	Negative	{}	Pro user
 2198	1891698381560353000	Negative	{}	Pro user
 2199	1831321970409119700	Positive	{"Denying the Jewish people's right to self-determination/the right of Israel to exist"}	Pro user
@@ -15875,15 +15833,14 @@ COPY public.tagging_results (id, tweet_id, tag_result, features, decision_source
 2210	1726707820689793500	Negative	{}	Pro user
 2211	1783454260312920600	Negative	{}	Pro user
 2212	1880148718651150600	Negative	{}	Pro user
-2213	1791612346844209200	Negative	{}	Pro user
 2214	1842849139547152600	Negative	{}	Pro user
 4912	1864804850510500000	Negative	{}	User agreement
 2216	1794967129269338400	Negative	{}	Pro user
 2217	1860128014333542700	Negative	{}	Pro user
-2218	1864652820160336400	Negative	{}	Pro user
 2219	1861582284073378300	Irrelevant	{}	Pro user
 2220	1718381775649677300	Negative	{}	Pro user
 2221	1882898462234296600	Negative	{}	Pro user
+2213	1791612346844209200	Negative	{}	Pro user
 2223	1723864909476249900	Irrelevant	{}	Pro user
 2224	1758333431862411500	Negative	{}	Pro user
 2225	1869913433078149400	Negative	{}	Pro user
@@ -15952,6 +15909,7 @@ COPY public.tagging_results (id, tweet_id, tag_result, features, decision_source
 2288	1888559974944555300	Negative	{}	Pro user
 2289	1787759697921179600	Negative	{}	Pro user
 2290	1795734776537903400	Negative	{}	Pro user
+2196	1720983196526076000	Positive	{"other"}	Pro user
 2292	1716927902493925600	Negative	{}	Pro user
 2293	1898079376773988600	Negative	{}	Pro user
 2294	1810599202936037400	Negative	{}	Pro user
@@ -15979,7 +15937,6 @@ COPY public.tagging_results (id, tweet_id, tag_result, features, decision_source
 2319	1741178144651137300	Irrelevant	{}	Pro user
 2320	1878733497244029400	Positive	{Other}	Pro user
 2321	1877237517281280300	Negative	{}	Pro user
-2322	1725682024688517400	Negative	{}	Pro user
 2323	1888580484638429400	Irrelevant	{}	Pro user
 2324	1774949642083729700	Positive	{"Spreading conspiracy theories about Jewish control (power, money, and media)"}	Pro user
 2325	1788835627280347400	Negative	{}	Pro user
@@ -16006,7 +15963,6 @@ COPY public.tagging_results (id, tweet_id, tag_result, features, decision_source
 2348	1745429118618157300	Irrelevant	{}	Pro user
 2349	1722581047924122000	Negative	{}	Pro user
 2350	1720436383171391700	Negative	{}	Pro user
-2351	1764131454135718100	Positive	{"Applying double standards to Israel that are not applied to other states (double standard)"}	Pro user
 2352	1860228085578367500	Negative	{}	Pro user
 2353	1767091927953158100	Positive	{"Applying double standards to Israel that are not applied to other states (double standard)"}	Pro user
 2354	1810257208585904000	Negative	{}	Pro user
@@ -16020,7 +15976,6 @@ COPY public.tagging_results (id, tweet_id, tag_result, features, decision_source
 2362	1854049943402471700	Negative	{}	Pro user
 2363	1896489794173391000	Positive	{"Blood libels and religiously based antisemitism",Other}	Pro user
 2364	1748242672702361900	Positive	{"Applying double standards to Israel that are not applied to other states (double standard)"}	Pro user
-2365	1847931271315640600	Positive	{"Demonization of Jews (portraying them as inferior and despicable)"}	Pro user
 2366	1784482427630752000	Negative	{}	Pro user
 2367	1718123771729515000	Negative	{}	Pro user
 2368	1843898326011523600	Negative	{}	Pro user
@@ -16053,7 +16008,6 @@ COPY public.tagging_results (id, tweet_id, tag_result, features, decision_source
 2390	1783328780486058200	Negative	{}	Pro user
 2391	1887720998553985300	Negative	{}	Pro user
 2392	1887059579282035000	Negative	{}	Pro user
-2393	1782010414228013000	Positive	{"Applying double standards to Israel that are not applied to other states (double standard)"}	Pro user
 2394	1768096887004156400	Positive	{"Applying double standards to Israel that are not applied to other states (double standard)"}	Pro user
 2395	1716766040758317300	Negative	{}	Pro user
 2396	1732140565943181300	Negative	{}	Pro user
@@ -16078,7 +16032,6 @@ COPY public.tagging_results (id, tweet_id, tag_result, features, decision_source
 2415	1898667470791278800	Negative	{}	Pro user
 2416	1790682046916079900	Positive	{Other}	Pro user
 2417	1820330683807806000	Positive	{"Calling for violence and hostility against Israel"}	User agreement
-2424	1848432811788874000	Positive	{"Calling for violence and hostility against Israel",Other}	User agreement
 2427	1764901223306760200	Negative	{}	User agreement
 2429	1772155216219050200	Negative	{}	User agreement
 2430	1828038457153003800	Negative	{}	User agreement
@@ -16121,6 +16074,7 @@ COPY public.tagging_results (id, tweet_id, tag_result, features, decision_source
 2502	1715365817641009400	Negative	{}	User agreement
 2503	1883741164211212500	Negative	{}	User agreement
 2504	1879306471915356700	Negative	{}	User agreement
+2393	1782010414228013000	Positive	{"other"}	Pro user
 2423	1886593999332630800	Negative	{}	User agreement
 2425	1794055268478927000	Positive	{Other}	User agreement
 2426	1847091894305669400	Negative	{}	User agreement
@@ -16138,7 +16092,6 @@ COPY public.tagging_results (id, tweet_id, tag_result, features, decision_source
 2450	1883011548580577300	Negative	{}	User agreement
 2451	1834750895428632800	Negative	{}	User agreement
 2453	1886418647763329300	Negative	{}	User agreement
-2454	1710864520477090000	Negative	{}	User agreement
 2456	1730362993085387300	Negative	{}	User agreement
 2457	1754277424068809200	Negative	{}	User agreement
 2458	1902877042829648100	Irrelevant	{}	User agreement
@@ -16279,7 +16232,6 @@ COPY public.tagging_results (id, tweet_id, tag_result, features, decision_source
 2594	1857182516031160600	Negative	{}	User agreement
 2595	1881505514552729600	Negative	{}	User agreement
 2596	1753524483384816000	Negative	{}	User agreement
-2599	1722866600443834600	Negative	{}	User agreement
 2600	1861597108719190000	Irrelevant	{}	User agreement
 2603	1819921909091545000	Irrelevant	{}	User agreement
 2604	1866332302848262400	Negative	{}	User agreement
@@ -16308,7 +16260,6 @@ COPY public.tagging_results (id, tweet_id, tag_result, features, decision_source
 4556	1765239011683991800	Negative	{}	User agreement
 4557	1790142704417923300	Positive	{"Demonization of Jews (portraying them as inferior and despicable)","Spreading conspiracy theories about Jewish control (power, money, and media)"}	User agreement
 4558	1862581286730154500	Positive	{"Spreading conspiracy theories about Jewish control (power, money, and media)"}	User agreement
-4559	1856997279624036900	Positive	{"Demonization of Jews (portraying them as inferior and despicable)","Spreading conspiracy theories about Jewish control (power, money, and media)"}	User agreement
 4560	1897254606302061000	Positive	{Other}	User agreement
 4561	1787426801330889000	Positive	{"Applying double standards to Israel that are not applied to other states (double standard)","Denying the Jewish people's right to self-determination/the right of Israel to exist","Calling for violence and hostility against Israel","Demonization of Jews (portraying them as inferior and despicable)",Other,"Cynical use of the Holocaust and Holocaust denial","Comparing Israel and its policies to Nazi Germany"}	User agreement
 4564	1745382443203617000	Negative	{}	User agreement
@@ -16351,6 +16302,7 @@ COPY public.tagging_results (id, tweet_id, tag_result, features, decision_source
 4657	1741950363006075100	Negative	{}	User agreement
 4658	1873947707326521600	Negative	{}	User agreement
 4659	1858048246532419600	Negative	{}	User agreement
+4559	1856997279624036900	Positive	{"other"}	Pro user
 2597	1831957997939200300	Negative	{}	User agreement
 2598	1867562650445787400	Irrelevant	{}	User agreement
 2601	1747963280575123700	Irrelevant	{}	User agreement
@@ -16478,7 +16430,6 @@ COPY public.tagging_results (id, tweet_id, tag_result, features, decision_source
 2802	1753672785531122000	Negative	{}	User agreement
 2803	1843903757844918500	Negative	{}	User agreement
 2804	1860894447497527600	Irrelevant	{}	User agreement
-2806	1797755512047665400	Positive	{"Calling for violence and hostility against Israel","Denying the Jewish people's right to self-determination/the right of Israel to exist"}	User agreement
 2808	1903279447320777200	Irrelevant	{}	User agreement
 2815	1723465045609206000	Positive	{"Spreading conspiracy theories about Jewish control (power, money, and media)",Other}	User agreement
 2817	1839463151860846800	Negative	{}	User agreement
@@ -16510,8 +16461,8 @@ COPY public.tagging_results (id, tweet_id, tag_result, features, decision_source
 2859	1853701695416787200	Irrelevant	{}	User agreement
 2861	1732146392548757800	Positive	{"Collective blame of Jews for actions of the State of Israel","Applying double standards to Israel that are not applied to other states (double standard)","Denying the Jewish people's right to self-determination/the right of Israel to exist"}	User agreement
 2869	1883109466465534200	Irrelevant	{}	User agreement
-2870	1854359708658016500	Negative	{}	User agreement
 2974	1749542075170001200	Negative	{}	User agreement
+2806	1797755512047665400	Positive	{"other"}	Pro user
 2692	1871757152861475300	Positive	{Other,"Spreading conspiracy theories about Jewish control (power, money, and media)","Demonization of Jews (portraying them as inferior and despicable)"}	User agreement
 2694	1844605104038740000	Negative	{}	User agreement
 2695	1882030669095993600	Irrelevant	{}	User agreement
@@ -16612,7 +16563,6 @@ COPY public.tagging_results (id, tweet_id, tag_result, features, decision_source
 2867	1856228304732467700	Positive	{"Demonization of Jews (portraying them as inferior and despicable)","Spreading conspiracy theories about Jewish control (power, money, and media)","Blood libels and religiously based antisemitism"}	User agreement
 2868	1836952763080610000	Irrelevant	{}	User agreement
 2872	1740200527252906200	Irrelevant	{}	User agreement
-2873	1843096594708935000	Positive	{"Applying double standards to Israel that are not applied to other states (double standard)","Denying the Jewish people's right to self-determination/the right of Israel to exist","Spreading conspiracy theories about Jewish control (power, money, and media)"}	User agreement
 2874	1812285987818467800	Negative	{}	User agreement
 2875	1885954320828686800	Irrelevant	{}	User agreement
 2876	1761864863113249300	Positive	{"Denying the Jewish people's right to self-determination/the right of Israel to exist","Spreading conspiracy theories about Jewish control (power, money, and media)",Other}	User agreement
@@ -16651,10 +16601,7 @@ COPY public.tagging_results (id, tweet_id, tag_result, features, decision_source
 4607	1843118195496132900	Irrelevant	{}	User agreement
 4608	1736416918914155000	Irrelevant	{}	User agreement
 4609	1856262440427610600	Irrelevant	{}	User agreement
-4610	1851728563843797000	Negative	{}	User agreement
 4612	1823177831368818700	Negative	{}	User agreement
-4613	1827310614873555200	Positive	{"Denying the Jewish people's right to self-determination/the right of Israel to exist","Collective blame of Jews for actions of the State of Israel",Other}	User agreement
-4614	1897505053667164400	Positive	{"Demonization of Jews (portraying them as inferior and despicable)",Other}	User agreement
 4615	1884929953730339000	Irrelevant	{}	User agreement
 4616	1845640858302808000	Irrelevant	{}	User agreement
 4617	1857468513092300800	Irrelevant	{}	User agreement
@@ -16668,6 +16615,9 @@ COPY public.tagging_results (id, tweet_id, tag_result, features, decision_source
 4629	1821013319094055400	Irrelevant	{}	User agreement
 4630	1891184208019657000	Irrelevant	{}	User agreement
 4631	1713444091940463000	Irrelevant	{}	User agreement
+4610	1851728563843797000	Negative	{}	Pro user
+4614	1897505053667164400	Negative	{}	Pro user
+2873	1843096594708935000	Positive	{"other"}	Pro user
 2871	1732417894707798300	Positive	{Other,"Demonization of Jews (portraying them as inferior and despicable)"}	User agreement
 2879	1865734461079572700	Negative	{}	User agreement
 2880	1786702461174248000	Negative	{}	User agreement
@@ -16680,7 +16630,6 @@ COPY public.tagging_results (id, tweet_id, tag_result, features, decision_source
 2892	1854352219241365800	Negative	{}	User agreement
 2894	1860416404153131300	Negative	{}	User agreement
 2895	1829880756933705700	Negative	{}	User agreement
-2899	1736582995275116800	Negative	{}	User agreement
 2900	1883605656839852300	Negative	{}	User agreement
 2901	1802538246053970200	Negative	{}	User agreement
 2902	1846071391290020000	Irrelevant	{}	User agreement
@@ -16743,14 +16692,12 @@ COPY public.tagging_results (id, tweet_id, tag_result, features, decision_source
 2975	1754596659340931300	Irrelevant	{}	User agreement
 2976	1859113866434654500	Negative	{}	User agreement
 2979	1789229298294956500	Negative	{}	User agreement
-2980	1794685363035980300	Positive	{Other,"Demonization of Jews (portraying them as inferior and despicable)"}	User agreement
 2986	1837548499015278600	Positive	{"Calling for violence and hostility against Israel",Other}	User agreement
 2990	1838004299940676000	Positive	{"Calling for violence and hostility against Israel",Other}	User agreement
 2991	1752496536762929400	Negative	{}	User agreement
 2992	1885595575875408100	Negative	{}	User agreement
 2994	1857098856296792000	Negative	{}	User agreement
 2995	1728925780007428600	Irrelevant	{}	User agreement
-2996	1845754893270938000	Negative	{}	User agreement
 2997	1882538175371092200	Irrelevant	{}	User agreement
 2998	1897376577773822200	Irrelevant	{}	User agreement
 2999	1819705104003420200	Irrelevant	{}	User agreement
@@ -16786,12 +16733,10 @@ COPY public.tagging_results (id, tweet_id, tag_result, features, decision_source
 3050	1754702531849249000	Negative	{}	User agreement
 3051	1845755826549543200	Negative	{}	User agreement
 3052	1803902301754790000	Irrelevant	{}	User agreement
-3053	1903271753801232600	Positive	{"Collective blame of Jews for actions of the State of Israel","Spreading conspiracy theories about Jewish control (power, money, and media)"}	User agreement
 3054	1883694748411809800	Irrelevant	{}	User agreement
 3056	1863003126636434000	Irrelevant	{}	User agreement
 3059	1854725526344417500	Irrelevant	{}	User agreement
 3066	1899007531797885000	Irrelevant	{}	User agreement
-3067	1772537726320951800	Positive	{"Denying the Jewish people's right to self-determination/the right of Israel to exist",Other}	User agreement
 3068	1715553067666428000	Negative	{}	User agreement
 3069	1868680710695112700	Negative	{}	User agreement
 3070	1860851313577472500	Negative	{}	User agreement
@@ -16801,7 +16746,6 @@ COPY public.tagging_results (id, tweet_id, tag_result, features, decision_source
 3077	1839224239171449000	Positive	{"Calling for violence and hostility against Israel","Denying the Jewish people's right to self-determination/the right of Israel to exist",Other}	User agreement
 3078	1873506168976593400	Negative	{}	User agreement
 3083	1721099372023493000	Positive	{Other}	User agreement
-3084	1773495452949696800	Negative	{}	User agreement
 3085	1779833783497478400	Negative	{}	User agreement
 3086	1719088989657788700	Irrelevant	{}	User agreement
 3087	1844364296811401700	Irrelevant	{}	User agreement
@@ -16819,12 +16763,12 @@ COPY public.tagging_results (id, tweet_id, tag_result, features, decision_source
 3104	1814823428584841700	Irrelevant	{}	User agreement
 3105	1859025695646904800	Negative	{}	User agreement
 3106	1884198047657386200	Negative	{}	User agreement
+2980	1794685363035980300	Positive	{"other"}	Pro user
 2977	1756855839619785200	Negative	{}	User agreement
 2978	1812383002284237000	Irrelevant	{}	User agreement
 2981	1817604045395149300	Irrelevant	{}	User agreement
 2982	1882987883226927600	Negative	{}	User agreement
 2983	1894318832174731800	Negative	{}	User agreement
-2984	1854733728515567600	Positive	{"Calling for violence and hostility against Israel","Spreading conspiracy theories about Jewish control (power, money, and media)",Other}	User agreement
 2985	1756788658211053800	Positive	{"Denying the Jewish people's right to self-determination/the right of Israel to exist",Other}	User agreement
 2987	1712812977634574600	Irrelevant	{}	User agreement
 2988	1860236483040616400	Positive	{"Collective blame of Jews for actions of the State of Israel",Other}	User agreement
@@ -16962,7 +16906,6 @@ COPY public.tagging_results (id, tweet_id, tag_result, features, decision_source
 3217	1803830099541725700	Negative	{}	Pro user
 3218	1873599960312324400	Negative	{}	Pro user
 3219	1893125125136158700	Negative	{}	Pro user
-3220	1839096697659732200	Positive	{"Applying double standards to Israel that are not applied to other states (double standard)",Other}	Pro user
 3221	1832731424161464800	Irrelevant	{}	Pro user
 3222	1861219356455342000	Negative	{}	Pro user
 3223	1899955789441491500	Negative	{}	Pro user
@@ -17065,7 +17008,6 @@ COPY public.tagging_results (id, tweet_id, tag_result, features, decision_source
 3234	1807879543853928400	Negative	{}	Pro user
 3235	1865940202382090800	Negative	{}	Pro user
 3236	1854320237656609000	Negative	{}	Pro user
-3237	1853979867513266400	Negative	{}	Pro user
 3238	1832273308374696000	Irrelevant	{}	Pro user
 3239	1786270375552434200	Negative	{}	Pro user
 3240	1754221964800221200	Negative	{}	Pro user
@@ -17161,7 +17103,6 @@ COPY public.tagging_results (id, tweet_id, tag_result, features, decision_source
 3330	1891592000173973800	Negative	{}	Pro user
 3331	1813814006215590000	Negative	{}	Pro user
 3332	1885512758365741000	Irrelevant	{}	Pro user
-3333	1796503970086879500	Positive	{"Applying double standards to Israel that are not applied to other states (double standard)"}	Pro user
 3334	1834561825360511000	Irrelevant	{}	Pro user
 3335	1816987681903214800	Negative	{}	Pro user
 3336	1876572687969218600	Positive	{"Applying double standards to Israel that are not applied to other states (double standard)"}	Pro user
@@ -17242,7 +17183,7 @@ COPY public.tagging_results (id, tweet_id, tag_result, features, decision_source
 3411	1810044093101428700	Irrelevant	{}	User agreement
 3412	1721372499571773400	Negative	{}	User agreement
 3413	1739322779571298800	Irrelevant	{}	User agreement
-3414	1716559781568139500	Negative	{}	User agreement
+3333	1796503970086879500	Negative	{}	Pro user
 3415	1866799830439490000	Irrelevant	{}	User agreement
 3416	1751975013190861300	Negative	{}	User agreement
 3420	1874587123401322500	Negative	{}	User agreement
@@ -17378,7 +17319,6 @@ COPY public.tagging_results (id, tweet_id, tag_result, features, decision_source
 3524	1806136842695082000	Irrelevant	{}	User agreement
 3526	1861917826463801600	Negative	{}	User agreement
 3537	1752971293950116000	Irrelevant	{}	User agreement
-3538	1825332395035251200	Negative	{}	User agreement
 3539	1867336853759963400	Negative	{}	User agreement
 3540	1883642327094481200	Positive	{Other}	User agreement
 3545	1874985224163180500	Negative	{}	User agreement
@@ -17542,7 +17482,6 @@ COPY public.tagging_results (id, tweet_id, tag_result, features, decision_source
 3645	1843233003457388800	Negative	{}	Pro user
 3646	1879996598383702300	Negative	{}	Pro user
 3647	1725279776288411600	Negative	{}	Pro user
-3648	1818752686667485700	Positive	{"Applying double standards to Israel that are not applied to other states (double standard)"}	Pro user
 3649	1835837730456232200	Negative	{}	Pro user
 3650	1716310098786849000	Positive	{"Applying double standards to Israel that are not applied to other states (double standard)"}	Pro user
 3651	1850036314181116000	Negative	{}	Pro user
@@ -17651,7 +17590,6 @@ COPY public.tagging_results (id, tweet_id, tag_result, features, decision_source
 3754	1881670174321078500	Negative	{}	Pro user
 3755	1784062522842325200	Negative	{}	Pro user
 3756	1734305141216723200	Negative	{}	Pro user
-3757	1756905257802846500	Negative	{}	Pro user
 3758	1841286894593958000	Negative	{}	Pro user
 3759	1792777179883057700	Irrelevant	{}	Pro user
 3760	1847601851367363000	Negative	{}	Pro user
@@ -17690,7 +17628,6 @@ COPY public.tagging_results (id, tweet_id, tag_result, features, decision_source
 3793	1859480030050648300	Negative	{}	Pro user
 3794	1854980268559331800	Negative	{}	Pro user
 3795	1875390952942268400	Negative	{}	Pro user
-3796	1750168674688712700	Negative	{}	Pro user
 3797	1760391135912931600	Negative	{}	Pro user
 3798	1868001685525643500	Negative	{}	Pro user
 3799	1813334295639126500	Negative	{}	Pro user
@@ -17820,7 +17757,6 @@ COPY public.tagging_results (id, tweet_id, tag_result, features, decision_source
 4990	1839861352204292400	Positive	{"Collective blame of Jews for actions of the State of Israel",Other,"Spreading conspiracy theories about Jewish control (power, money, and media)"}	User agreement
 4991	1876266797416219000	Negative	{}	User agreement
 4992	1838208297717154000	Positive	{"Calling for violence and hostility against Israel","Demonization of Jews (portraying them as inferior and despicable)",Other,"Calls for harming/killing Jews"}	User agreement
-4993	1734492320265908700	Positive	{"Denying the Jewish people's right to self-determination/the right of Israel to exist",Other}	User agreement
 4994	1800589890310021600	Negative	{}	User agreement
 4995	1870707383879836000	Positive	{"Spreading conspiracy theories about Jewish control (power, money, and media)"}	User agreement
 4996	1889800635341816000	Irrelevant	{}	User agreement
@@ -17835,10 +17771,9 @@ COPY public.tagging_results (id, tweet_id, tag_result, features, decision_source
 5017	1906314855617024300	Negative	{}	User agreement
 5025	1907281292724482300	Negative	{}	User agreement
 5030	1863897955964768300	Negative	{}	User agreement
-5031	1847262884105257500	Positive	{Other,"Calls for harming/killing Jews"}	User agreement
 5032	1879614402980425700	Negative	{}	User agreement
-4951	1885017898441163000	Positive	{"Justifying Nazi ideology",Other,"Calls for harming/killing Jews"}	User agreement
-4952	1759409629631566300	Positive	{Other}	User agreement
+5031	1847262884105257500	Negative	{}	Pro user
+4993	1734492320265908700	Positive	{"other"}	Pro user
 4953	1876776318034915800	Irrelevant	{}	User agreement
 4954	1889627875856269800	Irrelevant	{}	User agreement
 4955	1779720468200595500	Negative	{}	User agreement
@@ -17900,7 +17835,6 @@ COPY public.tagging_results (id, tweet_id, tag_result, features, decision_source
 5042	1898965637298614500	Negative	{}	User agreement
 5043	1889055394452189400	Negative	{}	User agreement
 5044	1821736496224973300	Negative	{}	User agreement
-5045	1896050521171247600	Positive	{"Applying double standards to Israel that are not applied to other states (double standard)",Other}	User agreement
 5046	1858856857395180000	Positive	{"Spreading conspiracy theories about Jewish control (power, money, and media)"}	User agreement
 5047	1834318593527353600	Irrelevant	{}	User agreement
 5048	1899980109131767800	Negative	{}	User agreement
@@ -17913,6 +17847,8 @@ COPY public.tagging_results (id, tweet_id, tag_result, features, decision_source
 5055	1865664461408989700	Negative	{}	User agreement
 5056	1901658702127480800	Negative	{}	User agreement
 5057	1868458658457399600	Negative	{}	User agreement
+4951	1885017898441163000	Positive	{"other"}	Pro user
+4952	1759409629631566300	Positive	{"other"}	Pro user
 5058	1898162772221088000	Negative	{}	User agreement
 5059	1855815308201910300	Negative	{}	User agreement
 5060	1881173659978715600	Negative	{}	User agreement
@@ -17925,7 +17861,6 @@ COPY public.tagging_results (id, tweet_id, tag_result, features, decision_source
 5076	1735670440457085200	Negative	{}	User agreement
 5077	1862042504205652200	Negative	{}	User agreement
 5078	1896523636955316500	Negative	{}	User agreement
-5079	1874879441220034800	Positive	{Other,"Spreading conspiracy theories about Jewish control (power, money, and media)"}	User agreement
 5080	1819521884834124300	Negative	{}	User agreement
 5081	1838926437362913500	Negative	{}	User agreement
 5082	1841291919353344300	Negative	{}	User agreement
@@ -17952,7 +17887,6 @@ COPY public.tagging_results (id, tweet_id, tag_result, features, decision_source
 5105	1769797300820316700	Negative	{}	User agreement
 5106	1868480795230486800	Negative	{}	User agreement
 5107	1736122069639700700	Irrelevant	{}	User agreement
-5108	1810673764763406600	Positive	{"Denying the Jewish people's right to self-determination/the right of Israel to exist",Other}	Pro user
 5109	1836274645835592000	Negative	{}	Pro user
 5110	1758740492303630300	Negative	{}	Pro user
 5111	1852388822396629200	Negative	{}	Pro user
@@ -17960,7 +17894,6 @@ COPY public.tagging_results (id, tweet_id, tag_result, features, decision_source
 5113	1854014709969600800	Negative	{}	Pro user
 5114	1831901127564259600	Positive	{"Spreading conspiracy theories about Jewish control (power, money, and media)",Other}	Pro user
 5115	1865593404354187500	Irrelevant	{}	Pro user
-5116	1864605779535298600	Positive	{"Spreading conspiracy theories about Jewish control (power, money, and media)","Demonization of Jews (portraying them as inferior and despicable)","Blood libels and religiously based antisemitism"}	Pro user
 5117	1887780037794972000	Positive	{"Spreading conspiracy theories about Jewish control (power, money, and media)","Demonization of Jews (portraying them as inferior and despicable)"}	Pro user
 5118	1758316077040509400	Negative	{}	Pro user
 5119	1867004332757094700	Negative	{}	Pro user
@@ -17980,23 +17913,24 @@ COPY public.tagging_results (id, tweet_id, tag_result, features, decision_source
 5133	1782228410581885200	Negative	{}	Pro user
 5134	1762296959790989300	Negative	{}	Pro user
 5135	1867042356542968300	Negative	{}	Pro user
-5136	1854074554425258500	Positive	{Other}	Pro user
-5137	1884721436536824000	Positive	{Other}	Pro user
 5138	1843560640935575800	Negative	{}	Pro user
 5139	1876085899370582300	Negative	{}	Pro user
 5140	1839242220299497700	Negative	{}	Pro user
 5141	1901904455538237700	Negative	{}	Pro user
 5142	1855533287076246000	Negative	{}	Pro user
-5143	1762976420915986700	Positive	{Other}	Pro user
 5144	1898514696602567000	Negative	{}	Pro user
 5145	1868174984948167000	Positive	{"Spreading conspiracy theories about Jewish control (power, money, and media)"}	Pro user
 5146	1765245244268765200	Negative	{}	Pro user
 5147	1822382870536888300	Positive	{"Spreading conspiracy theories about Jewish control (power, money, and media)"}	Pro user
 5148	1886944004924957200	Negative	{}	Pro user
 5149	1856436143245472000	Positive	{Other}	Pro user
+5136	1854074554425258500	Negative	{}	Pro user
+5137	1884721436536824000	Negative	{}	Pro user
+5143	1762976420915986700	Negative	{}	Pro user
+5079	1874879441220034800	Positive	{"other"}	Pro user
+5116	1864605779535298600	Positive	{"other"}	Pro user
 5064	1834385638302388700	Negative	{}	User agreement
 5065	1879529101415121200	Positive	{Other}	User agreement
-5066	1857529617558491100	Positive	{"Justifying Nazi ideology"}	User agreement
 5067	1898272500712141300	Negative	{}	User agreement
 5068	1897885286971195600	Negative	{}	User agreement
 5069	1861082711475065000	Positive	{"Calling for violence and hostility against Israel",Other}	User agreement
@@ -18109,9 +18043,9 @@ COPY public.tagging_results (id, tweet_id, tag_result, features, decision_source
 5162	1836180869716877600	Negative	{}	Pro user
 5163	1895799630665040000	Negative	{}	Pro user
 5164	1759954632665633000	Negative	{}	Pro user
-5165	1741894673642230000	Negative	{}	Pro user
 5166	1777836312722330000	Positive	{"Spreading conspiracy theories about Jewish control (power, money, and media)",Other}	Pro user
 5167	1860855472573841400	Negative	{}	Pro user
+5165	1741894673642230000	Negative	{}	Pro user
 5257	1740043852030079200	Negative	{}	Pro user
 5258	1907187732759413000	Negative	{}	Pro user
 5259	1828200546609832400	Irrelevant	{}	Pro user
@@ -18269,7 +18203,6 @@ COPY public.tagging_results (id, tweet_id, tag_result, features, decision_source
 5411	1726667883735109600	Negative	{}	Pro user
 5412	1893961419365679000	Negative	{}	Pro user
 5413	1890222658937311700	Negative	{}	Pro user
-5414	1802701304781025500	Negative	{}	Pro user
 5415	1867412912614391800	Negative	{}	Pro user
 5416	1844923051827396900	Negative	{}	Pro user
 5417	1899990811791810800	Negative	{}	Pro user
@@ -18286,7 +18219,6 @@ COPY public.tagging_results (id, tweet_id, tag_result, features, decision_source
 5428	1865719640762253800	Negative	{}	Pro user
 5429	1819596671694578200	Negative	{}	Pro user
 5430	1897138799643386400	Negative	{}	Pro user
-5431	1892896378822807800	Positive	{"Spreading conspiracy theories about Jewish control (power, money, and media)"}	Pro user
 5432	1885094624722551000	Positive	{"Spreading conspiracy theories about Jewish control (power, money, and media)"}	Pro user
 5433	1904452382987309300	Negative	{}	Pro user
 5434	1876410645773496600	Irrelevant	{}	Pro user
@@ -18297,6 +18229,74 @@ COPY public.tagging_results (id, tweet_id, tag_result, features, decision_source
 5439	1850650554516767000	Negative	{}	Pro user
 5440	1844885164004163800	Positive	{Other}	Pro user
 5441	1893174054775071000	Negative	{}	Pro user
+4613	1827310614873555200	Negative	{}	Pro user
+4862	1873509175160123600	Negative	{}	Pro user
+5045	1896050521171247600	Negative	{}	Pro user
+5108	1810673764763406600	Negative	{}	Pro user
+78	1792180924249247700	Negative	{}	Pro user
+3931	1714100232865378600	Negative	{}	Pro user
+211	1798674639553806300	Negative	{}	Pro user
+213	1822487643688747300	Negative	{}	Pro user
+227	1791663452953420300	Negative	{}	Pro user
+271	1867403873398521900	Negative	{}	Pro user
+292	1867403876594594000	Negative	{}	Pro user
+3928	1745821590833483800	Negative	{}	Pro user
+360	1743934103081161000	Negative	{}	Pro user
+430	1760547409317519400	Negative	{}	Pro user
+448	1802469422290145500	Negative	{}	Pro user
+5414	1802701304781025500	Positive	{"other"}	Pro user
+5431	1892896378822807800	Positive	{"other"}	Pro user
+467	1867403870504411100	Negative	{}	Pro user
+469	1889565159804252200	Negative	{}	Pro user
+691	1867403879643853300	Negative	{}	Pro user
+788	1794887003902996700	Negative	{}	Pro user
+824	1859852462175420700	Negative	{}	Pro user
+948	1806166290941567200	Negative	{}	Pro user
+1030	1812219203287466200	Negative	{}	Pro user
+1086	1723454230747386000	Negative	{}	Pro user
+1108	1833464765605417200	Negative	{}	Pro user
+1184	1800293826931892700	Negative	{}	Pro user
+1358	1867113596536144100	Negative	{}	Pro user
+1418	1731805967015182600	Negative	{}	Pro user
+1629	1798863706509721600	Negative	{}	Pro user
+4336	1904779167222436000	Negative	{}	Pro user
+1645	1727687418281656300	Negative	{}	Pro user
+1662	1711009888174842000	Negative	{}	Pro user
+1694	1718013243338162200	Negative	{}	Pro user
+1759	1844866725755617300	Negative	{}	Pro user
+1764	1764491290862031400	Negative	{}	Pro user
+4506	1830350462119444500	Negative	{}	Pro user
+2139	1727663006140563700	Negative	{}	Pro user
+2218	1864652820160336400	Negative	{}	Pro user
+2424	1848432811788874000	Negative	{}	Pro user
+2599	1722866600443834600	Negative	{}	Pro user
+2870	1854359708658016500	Negative	{}	Pro user
+2899	1736582995275116800	Negative	{}	Pro user
+2984	1854733728515567600	Negative	{}	Pro user
+3220	1839096697659732200	Negative	{}	Pro user
+3414	1716559781568139500	Negative	{}	Pro user
+3538	1825332395035251200	Negative	{}	Pro user
+3648	1818752686667485700	Negative	{}	Pro user
+3757	1756905257802846500	Negative	{}	Pro user
+3796	1750168674688712700	Negative	{}	Pro user
+4810	1778575780437766100	Negative	{}	Pro user
+2996	1845754893270938000	Negative	{}	Pro user
+22	1830472523869557200	Positive	{"other"}	Pro user
+98	1792552460843938000	Positive	{"other"}	Pro user
+4098	1846922758451859700	Positive	{"other"}	Pro user
+4254	1885072143727170000	Positive	{"other"}	Pro user
+4340	1868892050185441800	Positive	{"other"}	Pro user
+4898	1867961713221620000	Positive	{"other"}	Pro user
+2163	1771774593549705500	Positive	{"other"}	Pro user
+2322	1725682024688517400	Positive	{"other"}	Pro user
+2351	1764131454135718100	Positive	{"other"}	Pro user
+2365	1847931271315640600	Positive	{"other"}	Pro user
+2454	1710864520477090000	Positive	{"other"}	Pro user
+3053	1903271753801232600	Positive	{"other"}	Pro user
+3067	1772537726320951800	Positive	{"other"}	Pro user
+3084	1773495452949696800	Positive	{"other"}	Pro user
+3237	1853979867513266400	Positive	{"other"}	Pro user
+5066	1857529617558491100	Positive	{"other"}	Pro user
 \.
 
 
@@ -23696,16 +23696,16 @@ COPY public.tweets (tweet_id, user_posted, content, date_posted, photos, tweet_u
 --
 
 COPY public.users (user_id, password, email, due_date, creation_date, last_login, left_to_classify, professional) FROM stdin;
-16	noaraz19@gmail.com	noaraz19@gmail.com	\N	2025-03-19	2025-05-12 02:33:53.811024	0	t
-8	yonatanl4242@gmail.com	yonatanl4242@gmail.com	2025-05-14	2025-03-19	2025-05-12 13:58:19.423611	41	f
+3	edenafenzar@gmail.com	edenafenzar@gmail.com	2025-05-14	2025-03-19	2025-05-13 12:01:14.299005	10	f
+4	omeru100@gmail.com	omeru100@gmail.com	2025-05-14	2025-03-19	2025-05-13 14:39:40.52113	10	f
+5	noam7706@gmail.com	noam7706@gmail.com	2025-05-14	2025-03-19	2025-05-13 14:46:50.487954	10	f
+8	yonatanl4242@gmail.com	yonatanl4242@gmail.com	2025-05-14	2025-03-19	2025-05-15 06:43:32.092314	41	f
+16	noaraz19@gmail.com	noaraz19@gmail.com	\N	2025-03-19	2025-05-26 02:57:21.961938	0	t
 14	hadarsharon7@gmail.com	hadarsharon7@gmail.com	2025-05-14	2025-03-19	2025-05-12 13:58:27.584514	16	f
 9	moradron4@gmail.com	moradron4@gmail.com	2025-05-14	2025-03-19	2025-05-12 13:58:33.597041	10	f
 12	ranfaraj90@gmail.com	ranfaraj90@gmail.com	2025-05-14	2025-03-19	2025-05-12 13:58:38.7743	10	f
 7	malachiviner1@gmail.com	malachiviner1@gmail.com	2025-05-14	2025-03-19	2025-05-12 13:58:44.722807	10	f
-5	noam7706@gmail.com	noam7706@gmail.com	2025-05-14	2025-03-19	2025-05-12 13:58:50.225907	10	f
-4	omeru100@gmail.com	omeru100@gmail.com	2025-05-14	2025-03-19	2025-05-12 13:58:55.426628	10	f
 11	adipin61@gmail.com	adipin61@gmail.com	2025-05-14	2025-03-19	2025-05-12 13:59:01.067288	10	f
-3	edenafenzar@gmail.com	edenafenzar@gmail.com	2025-05-14	2025-03-19	2025-05-12 13:59:06.835356	10	f
 6	tomeradired123@gmail.com	tomeradired123@gmail.com	2025-05-14	2025-03-19	2025-05-12 13:59:11.997194	10	f
 2	saarelayov1@gmail.com	saarelayov1@gmail.com	2025-05-14	2025-03-19	2025-05-12 13:59:16.997846	10	f
 10	antonio131188@gmail.com	antonio131188@gmail.com	2025-05-14	2025-03-19	2025-05-12 13:59:21.888459	10	f
