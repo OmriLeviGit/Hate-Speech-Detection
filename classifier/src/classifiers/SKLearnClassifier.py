@@ -1,4 +1,4 @@
-import time, os, pickle, joblib
+import time, os, pickle, joblib, psutil
 
 import numpy as np
 from sklearn.calibration import CalibratedClassifierCV
@@ -126,22 +126,29 @@ class SKLearnClassifier(BaseTextClassifier):
         os.makedirs(sklearn_path, exist_ok=True)
 
         # Save model
+        print("1")
+        print(f"Memory at 1: {psutil.Process().memory_info().rss / 1024 / 1024:.1f} MB")
         joblib.dump(self.best_model, os.path.join(sklearn_path, "sk_model.pkl"))
+        print(f"Memory at 2: {psutil.Process().memory_info().rss / 1024 / 1024:.1f} MB")
         joblib.dump(self.vectorizer, os.path.join(sklearn_path, "vectorizer.pkl"))
 
-        # Save temporary references
-        temp_best_model = self.best_model
-        temp_vectorizer = self.vectorizer
-
-        # Clear problematic attributes
+        print(f"Memory at 3: {psutil.Process().memory_info().rss / 1024 / 1024:.1f} MB")
+        # Clear large attributes, dont save temporary copy because machines with small ram run out of space
         self.best_model = None
         self.vectorizer = None
 
+        # Force garbage collection for memory cleanup
+        import gc
+        gc.collect()
+        print(f"Memory at 4: {psutil.Process().memory_info().rss / 1024 / 1024:.1f} MB")
+
         with open(os.path.join(sklearn_path, "classifier_class.pkl"), "wb") as f:
             pickle.dump(self, f)
+        print(f"Memory at 5: {psutil.Process().memory_info().rss / 1024 / 1024:.1f} MB")
 
-        self.best_model = temp_best_model
-        self.vectorizer = temp_vectorizer
+        # reload
+        self.best_model = joblib.load(os.path.join(sklearn_path, "sk_model.pkl"))
+        self.vectorizer = joblib.load(os.path.join(sklearn_path, "vectorizer.pkl"))
 
     @staticmethod
     def load_model(path: str, in_saved_models=False):

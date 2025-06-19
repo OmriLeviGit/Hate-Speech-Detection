@@ -1,5 +1,5 @@
 import os
-import shutil
+import shutil, psutil
 from datetime import datetime
 from pathlib import Path
 import tempfile
@@ -9,6 +9,7 @@ import csv
 import pandas as pd
 
 from classifier.src.classifiers.BertClassifier import BertClassifier
+from classifier.src.classifiers.SKLearnClassifier import SKLearnClassifier
 
 # consts
 BASE_DIR = os.path.dirname(__file__)
@@ -16,8 +17,8 @@ MODEL_DIR = os.path.abspath(os.path.join(BASE_DIR, "..", "saved_models"))
 HISTORY_PATH = os.path.join(BASE_DIR, "tweet_history.csv")
 DATASETS_PATH = os.path.join(BASE_DIR, "datasets")
 
+# model = SKLearnClassifier.load_model("RandomForestClassifier", in_saved_models=True)
 model = BertClassifier.load_model("distilbert uncased", in_saved_models=True)
-
 
 # Loads csv file with the history of tweets users wanted to predict
 def load_history():
@@ -236,15 +237,26 @@ def predict_and_store_with_visibility(tweet):
 def retrain_model():
     global model
 
+    print(f"Memory at start: {psutil.Process().memory_info().rss / 1024 / 1024:.1f} MB")
     print("Training started!")
 
     try:
         data = model.load_data()
+        print(f"Memory at start: {psutil.Process().memory_info().rss / 1024 / 1024:.1f} MB")
         X_train, X_test, y_train, y_test = model.prepare_dataset(data, augment_ratio=0.33, irrelevant_ratio=0.4)
-        model.train_final_model(X_train, y_train)
-        evaluation = model.evaluate(X_test, y_test, output_file="evaluation_results.txt")
-        print("eval", evaluation)
+        print(f"Memory at start: {psutil.Process().memory_info().rss / 1024 / 1024:.1f} MB")
+
+        model.train(X_train, y_train)   # sklearn - random forest
+        # model.train_final_model(X_train, y_train) # bert
+        print(f"Memory at start: {psutil.Process().memory_info().rss / 1024 / 1024:.1f} MB")
+
+        import gc
+        gc.collect()
         model.save_model()
+        model.model_name = "test"
+        print(f"Memory at test: {psutil.Process().memory_info().rss / 1024 / 1024:.1f} MB")
+
+        print(f"Memory at after save: {psutil.Process().memory_info().rss / 1024 / 1024:.1f} MB")
 
         gr.Info("🎉 Training completed! Model has been updated.")
         return "✅ Training completed! Model updated and ready to use."
@@ -258,6 +270,75 @@ def confirm_training():
 
 def cancel_training():
     return gr.update(visible=False)
+
+
+def create_training_section():
+    """Create the training and dataset management section with event handlers, requires machine with more ram"""
+    gr.Markdown("---")
+
+    # Dataset Management and Training (single column block)
+    with gr.Column():
+        gr.Markdown("# Add data & Retrain")
+        gr.Markdown("## Dataset Management")
+        gr.Markdown("""
+        Upload one or more CSV files with the following format:
+        - **Column 1:** 'content' - the text data
+        - **Column 2:** 'sentiment' - labeled as one of the following:
+          - 'Positive' for antisemitic content
+          - 'Negative' for political/religious content  
+          - 'Irrelevant' for other content
+        """)
+
+        # Compact file upload in a row with the button
+        file_upload = gr.File(
+            label="Add CSV files",
+            file_count="multiple",
+            file_types=[".csv"],  # Only allow CSV files in the file picker
+            height=150
+        )
+        add_button = gr.Button("Add to Dataset", variant="primary", scale=1)
+
+        # Hidden status for file upload (to avoid warnings)
+        dataset_status = gr.Textbox(label="Status", interactive=False, visible=False)
+
+        # Training section (below dataset)
+        gr.Markdown("## Model Training")
+        train_button = gr.Button("Train Model", variant="secondary")
+
+        # Confirmation dialog (initially hidden)
+        with gr.Group(visible=False) as confirmation_group:
+            gr.Markdown("⚠️ **Are you sure you want to start training?** This process may take a while and will temporarily freeze the interface.")
+            with gr.Row():
+                confirm_btn = gr.Button("Yes, Start Training", variant="stop")
+                cancel_btn = gr.Button("Cancel", variant="secondary")
+
+        training_status = gr.Textbox(label="Train Model", interactive=False)
+
+        # Event handlers for training section
+        add_button.click(
+            fn=save_to_dataset,
+            inputs=file_upload,
+            outputs=[dataset_status, file_upload]  # Clear the file upload after saving
+        )
+
+        # Training confirmation flow
+        train_button.click(
+            fn=lambda: gr.update(visible=True),
+            outputs=confirmation_group
+        )
+
+        confirm_btn.click(
+            fn=lambda: ["🔄 Training in progress...", gr.update(visible=False)],
+            outputs=[training_status, confirmation_group]
+        ).then(
+            fn=retrain_model,  # This runs after UI updates
+            outputs=[training_status]
+        )
+
+        cancel_btn.click(
+            fn=lambda: gr.update(visible=False),
+            outputs=confirmation_group
+        )
 
 def create_app():
     """Create and return the Gradio app interface"""
@@ -300,46 +381,8 @@ def create_app():
                 elem_id="history-table"
             )
 
-        gr.Markdown("---")
-
-        # Dataset Management and Training (single column block)
-        with gr.Column():
-            gr.Markdown("# Add data & Retrain")
-            gr.Markdown("## Dataset Management")
-            gr.Markdown("""
-            Upload one or more CSV files with the following format:
-            - **Column 1:** 'content' - the text data
-            - **Column 2:** 'sentiment' - labeled as one of the following:
-              - 'Positive' for antisemitic content
-              - 'Negative' for political/religious content  
-              - 'Irrelevant' for other content
-            """)
-
-            # Compact file upload in a row with the button
-            file_upload = gr.File(
-                label="Add CSV files",
-                file_count="multiple",
-                file_types=[".csv"],  # Only allow CSV files in the file picker
-                height=150
-            )
-            add_button = gr.Button("Add to Dataset", variant="primary", scale=1)
-
-            # Hidden status for file upload (to avoid warnings)
-            dataset_status = gr.Textbox(label="Status", interactive=False, visible=False)
-
-            # Training section (below dataset)
-            gr.Markdown("## Model Training")
-            train_button = gr.Button("Train Model", variant="secondary")
-
-            # Confirmation dialog (initially hidden)
-            with gr.Group(visible=False) as confirmation_group:
-                gr.Markdown("⚠️ **Are you sure you want to start training?**\n\nThis process may take a while and will temporarily freeze the interface.")
-                with gr.Row():
-                    confirm_btn = gr.Button("Yes, Start Training", variant="stop")
-                    cancel_btn = gr.Button("Cancel", variant="secondary")
-
-            training_status = gr.Textbox(label="Training Status", interactive=False)
-
+        create_training_section()
+        
         # Call history loader on app launch
         demo.load(
             fn=load_history_with_visibility,
@@ -350,7 +393,7 @@ def create_app():
         with open(os.path.join(BASE_DIR, "style.css")) as f:
             gr.HTML(f"<style>{f.read()}</style>")
 
-        # Event bindings
+        # Only the main prediction/batch processing events remain here
         predict_btn.click(
             fn=predict_and_store_with_visibility,
             inputs=[tweet_input],
@@ -363,34 +406,9 @@ def create_app():
             outputs=[upload_status, download_file]
         )
 
-        # Dataset button
-        add_button.click(
-            fn=save_to_dataset,
-            inputs=file_upload,
-            outputs=[dataset_status, file_upload]  # Clear the file upload after saving
-        )
-
-        # Training confirmation flow
-        train_button.click(
-            fn=lambda: gr.update(visible=True),
-            outputs=confirmation_group
-        )
-
-        confirm_btn.click(
-            fn=retrain_model,
-            outputs=[training_status]
-        ).then(
-            fn=lambda: gr.update(visible=False),
-            outputs=confirmation_group
-        )
-
-        cancel_btn.click(
-            fn=lambda: gr.update(visible=False),
-            outputs=confirmation_group
-        )
-
     return demo
 
 if __name__ == "__main__":
     app = create_app()
-    app.launch(show_api=False, server_port=80, server_name="0.0.0.0")
+    app.launch(show_api=False, server_port=80, server_name="0.0.0.0") # port change requires updating the docker-compose
+

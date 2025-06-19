@@ -2,6 +2,9 @@ import subprocess
 import datetime
 import os
 
+# need to install pg_dump first by using "sudo apt install postgresql-client"
+# used to save the entire database before closing the machine
+
 # Database connection parameters
 db_params = {
     'dbname': 'tagger_db',

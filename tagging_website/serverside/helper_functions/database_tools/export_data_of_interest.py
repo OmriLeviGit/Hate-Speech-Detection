@@ -6,12 +6,18 @@ import pandas as pd
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
 server_side = os.path.dirname(os.path.dirname(script_dir))
-#* Add project root to Python path*
 project_root = os.path.dirname(server_side)
 sys.path.append(project_root)
 
-# Use absolute import
 from tagging_website.serverside.db_service import get_db_instance
+
+
+"""
+retrieves all users that are @mentioned in posts and appear in an X number of tweets, 
+but are NOT already in the database, and exports to csv.
+Has the option to randomize the list
+"""
+
 
 def filter_non_posters(usernames_with_counts, posters):
    non_posters = []

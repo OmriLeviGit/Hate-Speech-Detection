@@ -85,8 +85,8 @@ sklearn_configs = [
             'n_estimators': [100],
             'max_depth': [None, 10, 20],
             'min_samples_split': [2, 5],
-            'min_samples_leaf': [1, 2],
-            'max_features': ['sqrt', 'log2', None],
+            'min_samples_leaf': [2],
+            'max_features': ['sqrt', 'log2'],
             'class_weight': [None, 'balanced', {0: 2, 1: 1}, {0: 3, 1: 1}]
         },
     }
