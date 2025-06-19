@@ -48,8 +48,8 @@ os.environ['PYTHONHASHSEED'] = str(SEED)
 # Mapping model type strings to their corresponding classes
 model_registry = {
     "MLP": MLPModel,
-    "CNN": CNNModel
-    # "LSTM": LSTMModel,
+    "CNN": CNNModel,
+    "LSTM": LSTMModel,
 }
 
 # Hyperparameters grids for the different models
@@ -88,10 +88,10 @@ mlp_param_grid = {
 
 cnn_param_grid = {
     'embedding_dim': [100],
-    'num_filters': [64],
+    'num_filters': [128],
     'kernel_size': [5],
     'dropout_rate': [0.5],
-    'learning_rate': [0.0001],
+    'learning_rate': [0.001],
     'batch_size': [32],
     'epochs': [10],
     'max_sequence_length': [120],
@@ -116,7 +116,7 @@ lstm_param_grid = {
     'embedding_dim': [300],
     'lstm_units': [128],
     'dropout_rate': [0.5],
-    'learning_rate': [0.0001],
+    'learning_rate': [0.001],
     'batch_size': [32],
     'epochs': [50],
     'max_sequence_length': [120],
@@ -408,8 +408,9 @@ def main():
         # {"balance_pct": 0.5, "augment_ratio": 0.5, "irrelevant_ratio": 0.5},
         # {"balance_pct": 0.5, "augment_ratio": 0.0, "irrelevant_ratio": 0.33},
         # {"balance_pct": 0.33, "augment_ratio": 0.0, "irrelevant_ratio": 0.4},
-        {"balance_pct": 0.5, "augment_ratio": 0.3, "irrelevant_ratio": 0.4},
-        # {"balance_pct": 0.5, "augment_ratio": 0.0, "irrelevant_ratio": 0.4},
+        {"balance_pct": 0.5, "augment_ratio": 0.0, "irrelevant_ratio": 0.0},
+        {"balance_pct": 0.5, "augment_ratio": 0.33, "irrelevant_ratio": 0.4},
+
     ]
 
     model_grids = [

@@ -7,7 +7,7 @@ import joblib
 
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics import classification_report, confusion_matrix
-from sklearn.metrics import, accuracy_score
+from sklearn.metrics import accuracy_score
 from sklearn.model_selection import StratifiedKFold, GridSearchCV
 
 from classifier.src.deep_learning_models.DataHelper import DataHelper
@@ -106,8 +106,8 @@ def main():
         # {"balance_pct": 0.4, "augment_ratio": 0.0, "irrelevant_ratio": 0.5},
         # {"balance_pct": 0.33, "augment_ratio": 0.0, "irrelevant_ratio": 0.4},
         # {"balance_pct": 0.33, "augment_ratio": 0.0, "irrelevant_ratio": 0.4},
-        # {"balance_pct": 0.5, "augment_ratio": 0.0, "irrelevant_ratio": 0.0},
-        {"balance_pct": 0.5, "augment_ratio": 0.3, "irrelevant_ratio": 0.4},
+        {"balance_pct": 0.5, "augment_ratio": 0.0, "irrelevant_ratio": 0.0},
+        {"balance_pct": 0.5, "augment_ratio": 0.33, "irrelevant_ratio": 0.4},
         # {"balance_pct": 0.6, "augment_ratio": 0.0, "irrelevant_ratio": 0.4},
         # {"balance_pct": 0.667, "augment_ratio": 0.0, "irrelevant_ratio": 0.4},
     ]
