@@ -106,7 +106,7 @@ def main():
         # {"balance_pct": 0.4, "augment_ratio": 0.0, "irrelevant_ratio": 0.5},
         # {"balance_pct": 0.33, "augment_ratio": 0.0, "irrelevant_ratio": 0.4},
         # {"balance_pct": 0.33, "augment_ratio": 0.0, "irrelevant_ratio": 0.4},
-        {"balance_pct": 0.5, "augment_ratio": 0.0, "irrelevant_ratio": 0.0},
+        # {"balance_pct": 0.5, "augment_ratio": 0.0, "irrelevant_ratio": 0.0},
         {"balance_pct": 0.5, "augment_ratio": 0.33, "irrelevant_ratio": 0.4},
         # {"balance_pct": 0.6, "augment_ratio": 0.0, "irrelevant_ratio": 0.4},
         # {"balance_pct": 0.667, "augment_ratio": 0.0, "irrelevant_ratio": 0.4},

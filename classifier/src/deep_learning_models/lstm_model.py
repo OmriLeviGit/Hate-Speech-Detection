@@ -10,7 +10,7 @@ from .base_dl_model import BaseDLModel
 
 # Dynamically resolve the GloVe path relative to this file
 base_dir = os.path.dirname(os.path.abspath(__file__))
-glove_path = os.path.join(base_dir, "..", "GloVe", "glove.6B.300d.txt")
+glove_path = os.path.join(base_dir, "..", "GloVe", "glove.6B.50d.txt")
 glove_path = os.path.abspath(glove_path)
 
 

@@ -22,6 +22,7 @@ from sklearn.exceptions import UndefinedMetricWarning
 # Import model classes
 from classifier.src.deep_learning_models.mlp_model import MLPModel
 from classifier.src.deep_learning_models.lstm_model import LSTMModel
+# from classifier.src.deep_learning_models.cnn_model import CNNModel
 from classifier.src.deep_learning_models.cnn_model import CNNModel
 from classifier.src.deep_learning_models.DataHelper import DataHelper
 
@@ -113,12 +114,12 @@ cnn_param_grid = {
 # }
 
 lstm_param_grid = {
-    'embedding_dim': [300],
-    'lstm_units': [128],
+    'embedding_dim': [50],
+    'lstm_units': [32],
     'dropout_rate': [0.5],
     'learning_rate': [0.001],
-    'batch_size': [32],
-    'epochs': [50],
+    'batch_size': [64],
+    'epochs': [10],
     'max_sequence_length': [120],
     'dense_units': [64],
     'dense_activation': ['relu']
@@ -414,9 +415,9 @@ def main():
     ]
 
     model_grids = [
-        ("MLP", mlp_param_grid),
-        ("CNN", cnn_param_grid),
-        # ("LSTM", lstm_param_grid),
+        # ("MLP", mlp_param_grid),
+        # ("CNN", cnn_param_grid),
+        ("LSTM", lstm_param_grid),
     ]
 
     # Run experiments

@@ -71,20 +71,20 @@ def main():
     raw_data = helper.load_data()
 
     data_configs = [
-        {"balance_pct": 0.5, "augment_ratio": 0.0, "irrelevant_ratio": 0.0},
+        # {"balance_pct": 0.5, "augment_ratio": 0.0, "irrelevant_ratio": 0.0},
         {"balance_pct": 0.5, "augment_ratio": 0.33, "irrelevant_ratio": 0.4},
     ]
 
     # === Define vectorizers ===
     vectorizer_configs = [
-        {
-            "name": "TF-IDF",
-            "vectorizer": TfidfVectorizer(max_features=5000, ngram_range=(1, 2), min_df=2, max_df=0.9)
-        },
         # {
-        #     "name": "GloVe",
-        #     "vectorizer": GloVeVectorizer("glove.6B.50d.txt")
-        # }
+        #     "name": "TF-IDF",
+        #     "vectorizer": TfidfVectorizer(max_features=5000, ngram_range=(1, 2), min_df=2, max_df=0.9)
+        # },
+        {
+            "name": "GloVe",
+            "vectorizer": GloVeVectorizer("glove.twitter.27B.200d.txt", dim=200)
+        }
     ]
 
     # === Define models ===
@@ -93,36 +93,36 @@ def main():
         #     "name": "LogisticRegression",
         #     "model": LogisticRegression(max_iter=1000, random_state=42),
         #     "param_grid": {
-        #         "model__C": [0.1, 1.0]
+        #         "model__C": [1.0]
         #     }
         # },
-
-        {
-            "name": "LinearSVC",
-            "model": LinearSVC(max_iter=1000, random_state=42),
-            "param_grid": {
-                "model__C": [0, 0.1, 1]
-            }
-        },
-
-        {
-            "name": "MultinomialNB",
-            "model": MultinomialNB(),
-            "param_grid": {
-                "model__alpha": [0.1, 0.5, 1.0],
-                "model__fit_prior": [True, False]
-            }
-        },
+        #
+        # {
+        #     "name": "LinearSVC",
+        #     "model": LinearSVC(max_iter=1000, random_state=42),
+        #     "param_grid": {
+        #         "model__C": [1.0]
+        #     }
+        # },
 
         # {
-        #     "name": "RandomForest",
-        #     "model": RandomForestClassifier(random_state=42),
+        #     "name": "MultinomialNB",
+        #     "model": MultinomialNB(),
         #     "param_grid": {
-        #         "model__n_estimators": [200],
-        #         "model__max_depth": [20],
-        #         "model__min_samples_split": [5],
+        #         "model__alpha": [0.1, 0.5, 1.0],
+        #         "model__fit_prior": [True, False]
         #     }
         # },
+
+        {
+            "name": "RandomForest",
+            "model": RandomForestClassifier(random_state=42),
+            "param_grid": {
+                "model__n_estimators": [100, 200],
+                "model__max_depth": [10, 20, 40],
+                "model__min_samples_split": [5],
+            }
+        },
         #
         # {
         #     "name": "KNeighborsClassifier",
@@ -167,7 +167,7 @@ def main():
             print_header(f"Using Vectorizer: {vec_cfg['name']}")
 
             for model_cfg in model_configs:
-                print(f"\nTraining model: {model_cfg['name']}")
+                print_header(f"Training model: {model_cfg['name']}")
 
                 pipeline = Pipeline([
                     ("vectorizer", vec_cfg["vectorizer"]),
@@ -179,7 +179,13 @@ def main():
                 }
 
                 best_model = run_grid_search(pipeline, param_grid, X_trainval, y_trainval)
-                # best_model.fit(X_trainval, y_trainval)
+                best_model.fit(X_trainval, y_trainval)
+
+                # Training accuracy
+                y_train_pred = best_model.predict(X_trainval)
+                train_acc = accuracy_score(y_trainval, y_train_pred)
+                print(f"Train Accuracy on trainval set: {train_acc:.4f}")
+
                 evaluate_on_test(best_model, X_test, y_test)
 
     total_duration = time.time() - start_time

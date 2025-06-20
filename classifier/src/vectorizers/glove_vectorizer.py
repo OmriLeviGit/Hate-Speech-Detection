@@ -1,9 +1,10 @@
 import os
 import numpy as np
 
+
 class GloVeVectorizer:
-    """Creates an average word embedding vector for each text using GloVe."""
-    def __init__(self, glove_path, dim=50):
+    # Creates an average word embedding vector for each text using GloVe
+    def __init__(self, glove_path, dim):
         self.glove_path = glove_path
         self.dim = dim
         self.embeddings = {}
