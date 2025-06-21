@@ -52,8 +52,18 @@ class BaseTextClassifier(ABC):
         dfs = []
         for file in csv_files:
             file_path = os.path.join(folder_path, file)
-            df = pd.read_csv(file_path)
-            dfs.append(df)
+            try:
+                df = pd.read_csv(file_path)
+                dfs.append(df)
+            except Exception as e:
+                print(f"Skipping file {file} due to error: {e}")
+                print(f"Attempting to delete {file}")
+                try:
+                    os.remove(file_path)
+                    print(f"Successfully deleted {file}")
+                except Exception as delete_error:
+                    print(f"Failed to delete {file}: {delete_error}")
+                continue
 
         # Concatenate all dataframes and remove duplicates
         combined_df = pd.concat(dfs, ignore_index=True)

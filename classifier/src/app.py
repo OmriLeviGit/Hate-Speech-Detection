@@ -235,25 +235,16 @@ def predict_and_store_with_visibility(tweet):
 def retrain_model():
     global model
 
-    print(f"Memory at start: {psutil.Process().memory_info().rss / 1024 / 1024:.1f} MB")
     print("Training started!")
 
     try:
         data = model.load_data()
-        print(f"Memory at start: {psutil.Process().memory_info().rss / 1024 / 1024:.1f} MB")
-        X_train, X_test, y_train, y_test = model.prepare_dataset(data, augment_ratio=0.33, irrelevant_ratio=0.4)
-        print(f"Memory at start: {psutil.Process().memory_info().rss / 1024 / 1024:.1f} MB")
+        X_train, X_test, y_train, y_test = model.prepare_dataset(
+            data, augment_ratio=0.33, irrelevant_ratio=0.4, balance_pct=0.5)
 
         model.train(X_train, y_train)   # sklearn/xgboost models
-        print(f"Memory at start: {psutil.Process().memory_info().rss / 1024 / 1024:.1f} MB")
 
-        import gc
-        gc.collect()
         model.save_model()
-        model.model_name = "test"
-        print(f"Memory at test: {psutil.Process().memory_info().rss / 1024 / 1024:.1f} MB")
-
-        print(f"Memory at after save: {psutil.Process().memory_info().rss / 1024 / 1024:.1f} MB")
 
         gr.Info("🎉 Training completed! Model has been updated.")
         return "✅ Training completed! Model updated and ready to use."
@@ -267,7 +258,6 @@ def confirm_training():
 
 def cancel_training():
     return gr.update(visible=False)
-
 
 def create_training_section():
     """Create the training and dataset management section with event handlers, requires machine with more ram"""
