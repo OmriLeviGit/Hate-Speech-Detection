@@ -127,7 +127,7 @@ def main():
         best_model.fit(X_train, y_trainval)
 
         # Save best trained model and its vectorizer
-        joblib.dump(best_model, "best_model.pkl")
+        joblib.dump(best_model, "xgboost_model.pkl")
         joblib.dump(vectorizer, "vectorizer.pkl")
 
         evaluate_on_test(best_model, X_test, y_test)
