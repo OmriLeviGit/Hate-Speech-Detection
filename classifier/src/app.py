@@ -10,6 +10,7 @@ import pandas as pd
 
 from classifier.src.classifiers.BertClassifier import BertClassifier
 from classifier.src.classifiers.SKLearnClassifier import SKLearnClassifier
+from classifier.src.classifiers.xgboost_wrapper import XGBoostWrapper
 
 # consts
 BASE_DIR = os.path.dirname(__file__)
@@ -17,8 +18,8 @@ MODEL_DIR = os.path.abspath(os.path.join(BASE_DIR, "..", "saved_models"))
 HISTORY_PATH = os.path.join(BASE_DIR, "tweet_history.csv")
 DATASETS_PATH = os.path.join(BASE_DIR, "datasets")
 
-# model = SKLearnClassifier.load_model("RandomForestClassifier", in_saved_models=True)
-model = BertClassifier.load_model("distilbert uncased", in_saved_models=True)
+model = XGBoostWrapper.load_model("XGBoost", in_saved_models=True)
+# model = BertClassifier.load_model("distilbert uncased", in_saved_models=True)
 
 # Loads csv file with the history of tweets users wanted to predict
 def load_history():
@@ -200,7 +201,7 @@ def predict_and_store(tweet):
     # Make prediction automatically
     prediction, prob = model.predict(tweet)
     percentage = f"{prob * 100:.2f}%"
-    model_label = "Antisemitic" if prediction == 1 else "Not Antisemitic"
+    model_label = "Antisemitic" if prediction == 0 else "Not Antisemitic"
 
     # Add to history with same format as file processing
     full_history.append([tweet, model_label, percentage])
@@ -246,7 +247,7 @@ def retrain_model():
         X_train, X_test, y_train, y_test = model.prepare_dataset(data, augment_ratio=0.33, irrelevant_ratio=0.4)
         print(f"Memory at start: {psutil.Process().memory_info().rss / 1024 / 1024:.1f} MB")
 
-        model.train(X_train, y_train)   # sklearn - random forest
+        model.train(X_train, y_train)   # sklearn/xgboost models
         # model.train_final_model(X_train, y_train) # bert
         print(f"Memory at start: {psutil.Process().memory_info().rss / 1024 / 1024:.1f} MB")
 
@@ -410,5 +411,6 @@ def create_app():
 
 if __name__ == "__main__":
     app = create_app()
-    app.launch(show_api=False, server_port=80, server_name="0.0.0.0") # port change requires updating the docker-compose
+    # app.launch(show_api=False, server_port=80, server_name="0.0.0.0") # port change requires updating the docker-compose
+    app.launch()
 

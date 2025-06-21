@@ -1,0 +1,164 @@
+import time, os, pickle, joblib, psutil
+
+import numpy as np
+from sklearn.calibration import CalibratedClassifierCV
+from sklearn.frozen import FrozenEstimator
+from sklearn.metrics import make_scorer
+from sklearn.model_selection import GridSearchCV, StratifiedKFold
+from xgboost import XGBClassifier
+
+from classifier.src.classifiers.BaseTextClassifier import BaseTextClassifier
+from classifier.src.SpacySingleton import SpacyModel
+from classifier.src.normalization.TextNormalizer import TextNormalizer
+
+
+class XGBoostWrapper(BaseTextClassifier):
+    def __init__(self, labels: list, normalizer: TextNormalizer(), vectorizer, config: dict, seed: int = 42):
+        super().__init__(labels, seed)
+
+        self.config = config
+        self.normalizer = normalizer
+
+        self.model_name = config.get("model_name")
+        self.model_class = config.get("model_class")
+
+        self.param_grid = config.get("param_grid")
+
+        self.vectorizer = vectorizer
+        self.nlp = SpacyModel.get_instance()
+
+        self.best_model = None
+        self.cv_score = None
+        self.best_params = None
+
+    def preprocess(self, text_list: list[str], output=False) -> list[str]:
+        normalizer = self.normalizer
+        normalized_text_list = normalizer.normalize_texts(text_list)
+
+        unrecognized_tokens = 0
+        processed_text_list = []
+        for post in normalized_text_list:
+            doc = self.nlp(post)
+            tokens = []
+
+            for token in doc:
+                if not token.is_stop and not token.is_punct:
+                    tokens.append(token.lemma_)
+
+                    if not token.has_vector:
+                        unrecognized_tokens += 1
+
+            lemmatized_text = ' '.join(tokens).strip()
+            processed_text_list.append(lemmatized_text)
+
+        if output is True and unrecognized_tokens > 0:
+            print(f"Undetected tokens found: {unrecognized_tokens} ")
+
+        return processed_text_list
+
+    def train(self, X: list[str], y: list[str], param_grid=None):
+        """Optimize hyperparameters with GridSearchCV"""
+
+        print(f"Training {self.model_name}")
+
+        # Validate hyperparameter config
+        if param_grid:
+            self.param_grid = param_grid
+
+        X_preprocessed = self.preprocess(X)
+        X_vectorized = self.vectorizer.fit_transform(X_preprocessed)
+        y_encoded = self.label_encoder.fit_transform(y)
+
+        start_time = time.time()
+
+        skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=self.seed)
+
+        # When searching the best model by f1_weighted
+        grid_search = GridSearchCV(self.model_class, self.param_grid, cv=skf, scoring='f1_weighted', n_jobs=-1, verbose=1,
+                            return_train_score=True)
+
+        grid_search.fit(X_vectorized, y_encoded)
+        training_duration = time.time() - start_time
+
+        self.best_model = grid_search.best_estimator_
+        self.cv_score = round(float(grid_search.best_score_), 2)
+        self.best_params = grid_search.best_params_
+
+        # calibrate models after training if they don't support probability estimation
+        # improves decision boundary quality and enables accessing confidence scores if needed
+        if not (hasattr(self.best_model, 'predict_proba') and callable(self.best_model.predict_proba)):
+            calibrated = CalibratedClassifierCV(FrozenEstimator(self.best_model))
+            calibrated.fit(X_vectorized, y_encoded)
+            self.best_model = calibrated
+
+        self.print_best_model_results(self.cv_score, self.best_params, training_duration)
+
+    def predict(self, text, output=False):
+        single_input = isinstance(text, str)
+        text_list = [text] if single_input else text
+
+        texts_processed = self.preprocess(text_list)
+        texts_vectorized = self.vectorizer.transform(texts_processed)
+
+        y_pred = self.best_model.predict(texts_vectorized)
+        predicted_probs = self.best_model.predict_proba(texts_vectorized)
+        max_probs = np.max(predicted_probs, axis=1)
+
+        if output:
+            y_pred_decoded = self.label_encoder.inverse_transform(y_pred).tolist()
+
+            for pred in zip(y_pred_decoded, max_probs, text_list):
+                print(pred)
+
+        if single_input:
+            return y_pred[0], max_probs[0]
+
+        return y_pred, max_probs
+
+    def save_model(self, path=None):
+        if path:
+            sklearn_path = str(os.path.join(os.path.abspath(__file__), self.model_name))
+        else:
+            sklearn_path = str(os.path.join(BaseTextClassifier.save_models_path, "xgboost", self.model_name))
+
+        os.makedirs(sklearn_path, exist_ok=True)
+
+        # Save model
+        print("1")
+        print(f"Memory at 1: {psutil.Process().memory_info().rss / 1024 / 1024:.1f} MB")
+        joblib.dump(self.best_model, os.path.join(sklearn_path, "xgboost_model.pkl"))
+        print(f"Memory at 2: {psutil.Process().memory_info().rss / 1024 / 1024:.1f} MB")
+        joblib.dump(self.vectorizer, os.path.join(sklearn_path, "vectorizer.pkl"))
+
+        print(f"Memory at 3: {psutil.Process().memory_info().rss / 1024 / 1024:.1f} MB")
+        # Clear large attributes, dont save temporary copy because machines with small ram run out of space
+        self.best_model = None
+        self.vectorizer = None
+
+        # Force garbage collection for memory cleanup
+        import gc
+        gc.collect()
+        print(f"Memory at 4: {psutil.Process().memory_info().rss / 1024 / 1024:.1f} MB")
+
+        with open(os.path.join(sklearn_path, "classifier_class.pkl"), "wb") as f:
+            pickle.dump(self, f)
+        print(f"Memory at 5: {psutil.Process().memory_info().rss / 1024 / 1024:.1f} MB")
+
+        # reload
+        self.best_model = joblib.load(os.path.join(sklearn_path, "xgboost_model.pkl"))
+        self.vectorizer = joblib.load(os.path.join(sklearn_path, "vectorizer.pkl"))
+
+    @staticmethod
+    def load_model(path: str, in_saved_models=False):
+        if in_saved_models:
+            sklearn_path = str(os.path.join(BaseTextClassifier.save_models_path, "xgboost", path))
+        else:
+            sklearn_path = path
+
+        with open(os.path.join(sklearn_path, "classifier_class.pkl"), "rb") as f:
+            obj = pickle.load(f)
+
+        obj.best_model = joblib.load(os.path.join(sklearn_path, "xgboost_model.pkl"))
+        obj.vectorizer = joblib.load(os.path.join(sklearn_path, "vectorizer.pkl"))
+
+        return obj
