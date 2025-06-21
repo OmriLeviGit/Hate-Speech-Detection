@@ -3,16 +3,18 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import SGDClassifier, LogisticRegression
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.svm import LinearSVC
+from xgboost import XGBClassifier
+
 from transformers import AutoTokenizer
 
 from classifier.src.classifiers.BertClassifier import BertClassifier
-from classifier.src.classifiers.SKLearnClassifier import SKLearnClassifier
+from classifier.src.classifiers.ClassicalModelClassifier import ClassicalModelClassifier
 from classifier.src.normalization.TextNormalizer import TextNormalizer
 from classifier.src.normalization.TextNormalizerRoBERTa import TextNormalizerRoBERTa
 
-debug_sklearn_configs = [
+debug_classical_configs = [
     {
-        "model_name": "DEBUG SKLEARN",
+        "model_name": "DEBUG CLASSICAL",
         "model_class": LogisticRegression(),
         "param_grid": {
             'C': [1],
@@ -38,7 +40,7 @@ debug_bert_configs = [
     }
 ]
 
-sklearn_configs = [
+classical_configs = [
     {
         "model_name": "LinearSVC",
         "model_class": LinearSVC(),
@@ -89,6 +91,18 @@ sklearn_configs = [
             'max_features': ['sqrt', 'log2'],
             'class_weight': [None, 'balanced', {0: 2, 1: 1}, {0: 3, 1: 1}]
         },
+    },
+    {
+    'model_class': XGBClassifier(eval_metric='logloss', random_state=42),
+    'model_name': 'XGBoost',
+    'param_grid': {
+        'n_estimators': [200],
+        'learning_rate': [0.005, 0.1],
+        'max_depth': [4],
+        'colsample_bytree': [0.3, 0.5], # use %x of features used per tree, a little like dropout_rate in deep learning
+        'reg_alpha': [0, 0.2],          # L1 regularization
+        'reg_lambda': [1, 2],           # L2 regularization.
+        },
     }
 ]
 
@@ -126,9 +140,9 @@ bert_configs = [
     },
 ]
 
-def ini_sklearn_models(configs, default_labels, seed, debug=False):
+def ini_classical_models(configs, default_labels, seed, debug=False):
     if debug:
-        configs = debug_sklearn_configs
+        configs = debug_classical_configs
         default_labels.append("irrelevant")
 
     sklearn_models = []
@@ -141,7 +155,7 @@ def ini_sklearn_models(configs, default_labels, seed, debug=False):
         variants = base_config.pop("variants", [])
 
         # Create the standard model
-        classifier = SKLearnClassifier(
+        classifier = ClassicalModelClassifier(
             default_labels,
             default_normalizer,
             default_vectorizer,
@@ -160,7 +174,7 @@ def ini_sklearn_models(configs, default_labels, seed, debug=False):
 
             model_config["model_name"] = f"{base_config['model_name']}_{variant.get('variant_name')}"
 
-            classifier = SKLearnClassifier(default_labels, normalizer, vectorizer, model_config, seed=seed)
+            classifier = ClassicalModelClassifier(default_labels, normalizer, vectorizer, model_config, seed=seed)
             sklearn_models.append(classifier)
 
     return sklearn_models
@@ -215,8 +229,8 @@ def generate_models(seed, debug=False):
     labels = ["antisemitic", "not_antisemitic"]
 
     models = []
-    models.extend(ini_sklearn_models(sklearn_configs, labels, seed=seed, debug=debug))
-    models.extend(ini_bert_models(bert_configs, labels, seed=seed, debug=debug))
+    models.extend(ini_classical_models(classical_configs, labels, seed=seed, debug=debug))
+    # models.extend(ini_bert_models(bert_configs, labels, seed=seed, debug=debug))
 
     model_names = [model.model_name for model in models]
 

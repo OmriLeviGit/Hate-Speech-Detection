@@ -22,7 +22,7 @@ def compare_models(models, debug=False):
     reset_seeds(models[0].seed)
 
     X_train, X_test, y_train, y_test = models[0].prepare_dataset(data,
-            augment_ratio=0.33, irrelevant_ratio=0.4)
+            augment_ratio=0.33, irrelevant_ratio=0.4, balance_pct=0.5)
 
     results = []
     start_time = time.time()
@@ -56,7 +56,7 @@ def save_results(model_results, total_time):
 
 def main():
     debug = False
-    seed = 1
+    seed = 42
     # utils.check_device()
 
     models = generate_models(seed=seed, debug=debug)

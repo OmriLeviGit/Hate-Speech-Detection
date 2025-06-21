@@ -8,7 +8,7 @@ from transformers import AutoTokenizer
 
 from classifier.src.classifiers.BaseTextClassifier import BaseTextClassifier
 from classifier.src.classifiers.BertClassifier import BertClassifier
-from classifier.src.classifiers.SKLearnClassifier import SKLearnClassifier
+from classifier.src.classifiers.ClassicalModelClassifier import ClassicalModelClassifier
 from classifier.src.model_generation import generate_models
 from classifier.src.normalization.TextNormalizer import TextNormalizer
 from classifier.src import utils

@@ -9,7 +9,7 @@ import csv
 import pandas as pd
 
 from classifier.src.classifiers.BertClassifier import BertClassifier
-from classifier.src.classifiers.SKLearnClassifier import SKLearnClassifier
+from classifier.src.classifiers.ClassicalModelClassifier import ClassicalModelClassifier
 
 # consts
 BASE_DIR = os.path.dirname(__file__)

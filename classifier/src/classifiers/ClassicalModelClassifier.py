@@ -4,14 +4,14 @@ import numpy as np
 from sklearn.calibration import CalibratedClassifierCV
 from sklearn.frozen import FrozenEstimator
 from sklearn.metrics import make_scorer
-from sklearn.model_selection import GridSearchCV
+from sklearn.model_selection import GridSearchCV, StratifiedKFold
 
 from classifier.src.classifiers.BaseTextClassifier import BaseTextClassifier
 from classifier.src.SpacySingleton import SpacyModel
 from classifier.src.normalization.TextNormalizer import TextNormalizer
 
 
-class SKLearnClassifier(BaseTextClassifier):
+class ClassicalModelClassifier(BaseTextClassifier):
     def __init__(self, labels: list, normalizer: TextNormalizer(), vectorizer, config: dict, seed: int = 42):
         super().__init__(labels, seed)
 
@@ -70,11 +70,13 @@ class SKLearnClassifier(BaseTextClassifier):
 
         # scoring=make_scorer(self.compute_custom_f1, greater_is_better=True),
 
+        skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=self.seed)
+
         grid_search = GridSearchCV(
             estimator=self.model_class,
             param_grid=self.param_grid,
             scoring='f1_weighted',
-            cv=5,
+            cv=skf,
             verbose=1,
             n_jobs=2,
         )
@@ -119,48 +121,42 @@ class SKLearnClassifier(BaseTextClassifier):
 
     def save_model(self, path=None):
         if path:
-            sklearn_path = str(os.path.join(os.path.abspath(__file__), self.model_name))
+            classical_path = str(os.path.join(os.path.abspath(__file__), self.model_name))
         else:
-            sklearn_path = str(os.path.join(BaseTextClassifier.save_models_path, "sklearn", self.model_name))
+            classical_path = str(os.path.join(BaseTextClassifier.save_models_path, "classical", self.model_name))
 
-        os.makedirs(sklearn_path, exist_ok=True)
+        os.makedirs(classical_path, exist_ok=True)
 
         # Save model
-        print("1")
-        print(f"Memory at 1: {psutil.Process().memory_info().rss / 1024 / 1024:.1f} MB")
-        joblib.dump(self.best_model, os.path.join(sklearn_path, "sk_model.pkl"))
-        print(f"Memory at 2: {psutil.Process().memory_info().rss / 1024 / 1024:.1f} MB")
-        joblib.dump(self.vectorizer, os.path.join(sklearn_path, "vectorizer.pkl"))
+        joblib.dump(self.best_model, os.path.join(classical_path, "classical_model.pkl"))
+        joblib.dump(self.vectorizer, os.path.join(classical_path, "vectorizer.pkl"))
 
-        print(f"Memory at 3: {psutil.Process().memory_info().rss / 1024 / 1024:.1f} MB")
-        # Clear large attributes, dont save temporary copy because machines with small ram run out of space
+        # Clear large attributes, don't save temporary copy because machines with small ram run out of space
         self.best_model = None
         self.vectorizer = None
 
         # Force garbage collection for memory cleanup
         import gc
         gc.collect()
-        print(f"Memory at 4: {psutil.Process().memory_info().rss / 1024 / 1024:.1f} MB")
 
-        with open(os.path.join(sklearn_path, "classifier_class.pkl"), "wb") as f:
+        with open(os.path.join(classical_path, "classifier_class.pkl"), "wb") as f:
             pickle.dump(self, f)
-        print(f"Memory at 5: {psutil.Process().memory_info().rss / 1024 / 1024:.1f} MB")
 
         # reload
-        self.best_model = joblib.load(os.path.join(sklearn_path, "sk_model.pkl"))
-        self.vectorizer = joblib.load(os.path.join(sklearn_path, "vectorizer.pkl"))
+        self.best_model = joblib.load(os.path.join(classical_path, "classical_model.pkl"))
+        self.vectorizer = joblib.load(os.path.join(classical_path, "vectorizer.pkl"))
 
     @staticmethod
     def load_model(path: str, in_saved_models=False):
         if in_saved_models:
-            sklearn_path = str(os.path.join(BaseTextClassifier.save_models_path, "sklearn", path))
+            classical_path = str(os.path.join(BaseTextClassifier.save_models_path, "classical", path))
         else:
-            sklearn_path = path
+            classical_path = path
 
-        with open(os.path.join(sklearn_path, "classifier_class.pkl"), "rb") as f:
+        with open(os.path.join(classical_path, "classifier_class.pkl"), "rb") as f:
             obj = pickle.load(f)
 
-        obj.best_model = joblib.load(os.path.join(sklearn_path, "sk_model.pkl"))
-        obj.vectorizer = joblib.load(os.path.join(sklearn_path, "vectorizer.pkl"))
+        obj.best_model = joblib.load(os.path.join(classical_path, "classical_model.pkl"))
+        obj.vectorizer = joblib.load(os.path.join(classical_path, "vectorizer.pkl"))
 
         return obj

@@ -693,12 +693,12 @@ class BaseTextClassifier(ABC):
                         continue
 
         # Check SKlearn models
-        sklearn_path = os.path.join(base_path, "sklearn")
-        if os.path.exists(sklearn_path):
-            sklearn_subfolders = [d for d in os.listdir(sklearn_path) if os.path.isdir(os.path.join(sklearn_path, d))]
+        classical_path = os.path.join(base_path, "classical")
+        if os.path.exists(classical_path):
+            sklearn_subfolders = [d for d in os.listdir(classical_path) if os.path.isdir(os.path.join(classical_path, d))]
 
             for subfolder in sklearn_subfolders:
-                classifier_path = os.path.join(sklearn_path, subfolder, "classifier_class.pkl")
+                classifier_path = os.path.join(classical_path, subfolder, "classifier_class.pkl")
                 if os.path.exists(classifier_path):
                     try:
                         with open(classifier_path, "rb") as f:
@@ -706,7 +706,7 @@ class BaseTextClassifier(ABC):
 
                         if hasattr(classifier, 'cv_score') and classifier.cv_score > cv_score:
                             cv_score = classifier.cv_score
-                            best_model_type = "sklearn"
+                            best_model_type = "classical"
                             best_subfolder = subfolder
                     except:
                         continue
@@ -716,10 +716,10 @@ class BaseTextClassifier(ABC):
             from .BertClassifier import BertClassifier
             model_path = os.path.join(base_path, "bert", best_subfolder)
             return BertClassifier.load_model(model_path)
-        elif best_model_type == "sklearn":
-            from .SKLearnClassifier import SKLearnClassifier
-            model_path = os.path.join(base_path, "sklearn", best_subfolder)
-            return SKLearnClassifier.load_model(model_path)
+        elif best_model_type == "classical":
+            from .ClassicalModelClassifier import ClassicalModelClassifier
+            model_path = os.path.join(base_path, "classical", best_subfolder)
+            return ClassicalModelClassifier.load_model(model_path)
         else:
             raise ValueError(f"No valid classifier model found at path: {base_path}")
 
