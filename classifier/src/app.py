@@ -108,7 +108,7 @@ def process_file_upload(file):
         with open(output_file, "w", newline='', encoding='utf-8') as f:
             writer = csv.writer(f)
             # Add headers
-            writer.writerow(["Tweet", "Model Prediction", "Certainty"])
+            writer.writerow(["Tweet", "Model Prediction", "Confidence"])
             writer.writerows(processed_data)
 
         message = f"✅ Successfully processed {len(processed_data)} tweets!"
@@ -363,7 +363,7 @@ def create_app():
         with gr.Group(visible=False) as history_section:
             gr.Markdown("## Last 10 Processed Tweets")
             history_table = gr.Dataframe(
-                headers=["Tweet", "Model Prediction", "Certainty"],
+                headers=["Tweet", "Model Prediction", "Confidence"],
                 row_count=10,
                 wrap=True,
                 type="array",
@@ -419,5 +419,5 @@ if __name__ == "__main__":
     app = create_app()
 
     # port change requires updating the docker-compose
-    app.launch(show_api=False, server_port=80, server_name="0.0.0.0")
+    app.launch(show_api=False, server_port=7860, server_name="0.0.0.0")
 

@@ -6,6 +6,7 @@ initiate_job.sh
 .env.local
 
 test.py
+classifier/src/sampling_results
 classifier/src/saved_models
 classifier/src/GloVe/glove.6B.300d.txt
 classifier/src/final_model/bert
