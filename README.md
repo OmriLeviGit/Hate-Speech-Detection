@@ -4,7 +4,7 @@ A machine learning system for detecting antisemitic content on X (formerly Twitt
 
 This repository contains two main components:
 
-### 🤖 [Classifier App](./classifier-app/)
+### [Classifier App](./classifier/)
 A web-based application for model inference and training, and an evaluation framework with a unified API for comparison across different model architectures.
 
 **Features:**
@@ -15,7 +15,7 @@ A web-based application for model inference and training, and an evaluation fram
 
 **Tech Stack:** Python, Gradio, scikit-learn, Transformers, XGBoost, TensorFlow/PyTorch
 
-### 🏷️ [Data Tagging Website](./data-tagging/)
+### [Data Tagging Website](./tagging_website/)
 A web application for manual annotation by multiple annotators to create labeled training datasets from scraped social media content.
 
 **Features:**
@@ -31,4 +31,4 @@ A web application for manual annotation by multiple annotators to create labeled
 Each component can be run independently using Docker. See the individual README files for detailed setup instructions:
 
 - [Classifier App Setup](./classifier/README.md)
-- [Data Tagging Setup](./data-tagging/README.md)
+- [Data Tagging Setup](./tagging_website/README.md)

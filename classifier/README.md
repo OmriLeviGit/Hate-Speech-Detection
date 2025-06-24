@@ -44,7 +44,7 @@ docker-compose up compare-gpu
 
 ## File Structure
 
-Core project structure:
+Core file structure:
 
 ```
 classifier/src/
@@ -71,7 +71,7 @@ classifier/src/
 
 ![Web Interface - Inference](assets/inference-interface.png)
 
-#### Model Retraining and data management.
+#### Model Retraining and data management
 - **Dataset Management**: Upload labeled CSV files with content and sentiment columns
   - Column 1: 'content' - the text data
   - Column 2: 'sentiment' - labeled as 'Positive', 'Negative', or 'Irrelevant'
@@ -80,7 +80,9 @@ classifier/src/
 
 > **Note**: Only CSV format is supported. Do not rename .xls, .xlsx, or .numbers to .csv - export/save as proper CSV format
 
-### Model Comparison
+![Web Interface - Training](assets/retrain-interface.png)
+
+#### Model Comparison
 - **Architecture Evaluation**: Compare traditional ML, deep learning, and transformer models
 - **Sampling Strategy Analysis**: Test different data balancing techniques (oversampling, undersampling, data augmentation)
 - **Performance Metrics**: Generate comprehensive reports with accuracy, precision, recall, F1-score, and confusion matrices
