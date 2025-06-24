@@ -18,7 +18,7 @@ services:
       - PYTHONPATH=/app
     command: ["python", "/app/classifier/src/app.py"]
 
-  classifier-cpu:
+  compare-cpu:
     build:
       context: .
       dockerfile: Dockerfile
@@ -34,7 +34,7 @@ services:
       - PYTHONUNBUFFERED=1
       - PYTHONPATH=/app
 
-  classifier-gpu:
+  compare-gpu:
     build:
       context: .
       dockerfile: Dockerfile

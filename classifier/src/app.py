@@ -8,15 +8,15 @@ import gradio as gr
 import csv
 import pandas as pd
 
+from classifier.src.classifiers.BertClassifier import BertClassifier
 from classifier.src.classifiers.ClassicalModelClassifier import ClassicalModelClassifier
+from classifier.src.model_generation import generate_models
 
 # consts
 BASE_DIR = os.path.dirname(__file__)
-MODEL_DIR = os.path.abspath(os.path.join(BASE_DIR, "..", "saved_models"))
 HISTORY_PATH = os.path.join(BASE_DIR, "tweet_history.csv")
 DATASETS_PATH = os.path.join(BASE_DIR, "datasets")
 
-model = ClassicalModelClassifier.load_model("XGBoost", in_saved_models=True)
 
 # Loads csv file with the history of tweets users wanted to predict
 def load_history():
@@ -232,7 +232,7 @@ def predict_and_store_with_visibility(tweet):
         return prediction, [], gr.update(visible=False)
 
 
-def retrain_model():
+def train_model():
     global model
 
     print("Training started!")
@@ -242,9 +242,11 @@ def retrain_model():
         X_train, X_test, y_train, y_test = model.prepare_dataset(
             data, augment_ratio=0.33, irrelevant_ratio=0.4, balance_pct=0.5)
 
-        model.train(X_train, y_train)   # sklearn/xgboost models
+        model.train(X_train, y_train)
 
         model.save_model()
+
+        print("Finished training")
 
         gr.Info("🎉 Training completed! Model has been updated.")
         return "✅ Training completed! Model updated and ready to use."
@@ -318,7 +320,7 @@ def create_training_section():
             fn=lambda: ["🔄 Training in progress...", gr.update(visible=False)],
             outputs=[training_status, confirmation_group]
         ).then(
-            fn=retrain_model,  # This runs after UI updates
+            fn=train_model,  # This runs after UI updates
             outputs=[training_status]
         )
 
@@ -395,7 +397,27 @@ def create_app():
 
     return demo
 
+use_bert = False
+
+try:
+    if use_bert:
+        name = "distilbert uncased"
+        print(f"Loading {name}...")
+        model = BertClassifier.load_model(name, in_saved_models=True)
+    else:
+        name = "XGBoost"
+        print(f"Loading {name}...")
+        model = ClassicalModelClassifier.load_model("XGBoost", in_saved_models=True)
+
+except Exception as e:
+    # Happens either when it's the first time using the app, or the model was corrupted during the last save
+    print(f"Error: {e}")
+    model = generate_models(seed=1, name=name)[0]
+    train_model()
+
 if __name__ == "__main__":
     app = create_app()
-    app.launch(show_api=False, server_port=80, server_name="0.0.0.0") # port change requires updating the docker-compose
+
+    # port change requires updating the docker-compose
+    app.launch(show_api=False, server_port=80, server_name="0.0.0.0")
 
