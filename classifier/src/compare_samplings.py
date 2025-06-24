@@ -152,6 +152,10 @@ values4 = [
     ('(0.33, 0.5, None)', 0.33, 0.5, None),
 ]
 
+best_values = [
+    ('(0.3, 0.4, 0.5)', 0.3, 0.4, 0.5)
+]
+
 
 file_name = "sampling_results.txt"
 
@@ -162,7 +166,7 @@ def run(model, v, params, debug=None):
     _, ar, ir, pct = v
 
     X_train, X_test, y_train, y_test = model.prepare_dataset(
-        data, augment_ratio=ar, irrelevant_ratio=ir)
+        data, augment_ratio=ar, irrelevant_ratio=ir, balance_pct=pct)
 
     utils.reset_seeds(model.seed)
 
@@ -178,20 +182,22 @@ def main():
 
     # utils.check_device()
 
-    model = generate_models(1)[0]
-    original_name = model.model_name
+    models = generate_models(1)
+    values = best_values
 
     results = []
 
-    for v in values4:
-        for seed in range(10):
-            print(f"running {v[0]}, seed {seed}")
+    for model in models:
+        original_name = model.model_name
+        for v in values:
+            for seed in range(10):
+                print(f"running {original_name}, seed {seed}, value {v[0]}")
 
-            model.model_name = original_name + v[0]
+                model.model_name = original_name + f"{seed}"
 
-            name, res = run(model, v, params, debug=debug)
+                name, res = run(model, v, params, debug=debug)
 
-            results.append((name, res))
+                results.append((name, res))
 
     sorted_results = sorted(results, key=lambda x: x[1][1], reverse=True)
 

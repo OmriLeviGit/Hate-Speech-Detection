@@ -56,14 +56,15 @@ class BaseTextClassifier(ABC):
                 df = pd.read_csv(file_path)
                 dfs.append(df)
             except Exception as e:
-                print(f"Skipping file {file} due to error: {e}")
+                print(f"Error, file {file} has an error: {e}")
                 print(f"Attempting to delete {file}")
                 try:
                     os.remove(file_path)
                     print(f"Successfully deleted {file}")
                 except Exception as delete_error:
                     print(f"Failed to delete {file}: {delete_error}")
-                continue
+
+                raise Exception(f"Encountered corrupted file {file}. Process stopped.")
 
         # Concatenate all dataframes and remove duplicates
         combined_df = pd.concat(dfs, ignore_index=True)

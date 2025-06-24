@@ -41,45 +41,45 @@ debug_bert_configs = [
 ]
 
 classical_configs = [
-    {
-        "model_name": "LinearSVC",
-        "model_class": LinearSVC(),
-        "param_grid": {
-            'C': [0.1, 1, 10],
-            'max_iter': [1000],
-            'loss': ['squared_hinge'],
-            'dual': [False]
-        },
-    },
-    {
-        "model_name": "LogisticRegression",
-        "model_class": LogisticRegression(),
-        "param_grid": {
-            'C': [0.5, 1, 5],
-            'penalty': ['l2'],
-            'solver': ['liblinear', 'lbfgs'],
-            'max_iter': [1000]
-        },
-    },
-    {
-        "model_name": "KNeighborsClassifier",
-        "model_class": KNeighborsClassifier(),
-        "param_grid": {
-            'n_neighbors': [3, 5, 7, 11],
-            'weights': ['uniform', 'distance'],
-            'metric': ['euclidean']
-        },
-    },
-    {
-        "model_name": "SGDClassifier",
-        "model_class": SGDClassifier(),
-        "param_grid": {
-            'loss': ['hinge', 'log_loss'],
-            'penalty': ['l2', 'elasticnet'],
-            'alpha': [1e-4, 1e-3],
-            'max_iter': [1000]
-        }
-    },
+    # {
+    #     "model_name": "LinearSVC",
+    #     "model_class": LinearSVC(),
+    #     "param_grid": {
+    #         'C': [0.1, 1, 10],
+    #         'max_iter': [1000],
+    #         'loss': ['squared_hinge'],
+    #         'dual': [False]
+    #     },
+    # },
+    # {
+    #     "model_name": "LogisticRegression",
+    #     "model_class": LogisticRegression(),
+    #     "param_grid": {
+    #         'C': [0.5, 1, 5],
+    #         'penalty': ['l2'],
+    #         'solver': ['liblinear', 'lbfgs'],
+    #         'max_iter': [1000]
+    #     },
+    # },
+    # {
+    #     "model_name": "KNeighborsClassifier",
+    #     "model_class": KNeighborsClassifier(),
+    #     "param_grid": {
+    #         'n_neighbors': [3, 5, 7, 11],
+    #         'weights': ['uniform', 'distance'],
+    #         'metric': ['euclidean']
+    #     },
+    # },
+    # {
+    #     "model_name": "SGDClassifier",
+    #     "model_class": SGDClassifier(),
+    #     "param_grid": {
+    #         'loss': ['hinge', 'log_loss'],
+    #         'penalty': ['l2', 'elasticnet'],
+    #         'alpha': [1e-4, 1e-3],
+    #         'max_iter': [1000]
+    #     }
+    # },
     {
         "model_name": "RandomForestClassifier",
         "model_class": RandomForestClassifier(),
@@ -229,10 +229,8 @@ def generate_models(seed, debug=False):
     labels = ["antisemitic", "not_antisemitic"]
 
     models = []
-    # models.extend(ini_classical_models(classical_configs, labels, seed=seed, debug=debug))
+    models.extend(ini_classical_models(classical_configs, labels, seed=seed, debug=debug))
     models.extend(ini_bert_models(bert_configs, labels, seed=seed, debug=debug))
-
-    models = [models[0]]
 
     model_names = [model.model_name for model in models]
 
