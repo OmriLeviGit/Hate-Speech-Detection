@@ -90,7 +90,7 @@ def process_file_upload(file):
             # Make prediction
             prediction, prob = model.predict(tweet)
             percentage = f"{prob * 100:.2f}%"
-            model_label = "Antisemitic" if prediction == 1 else "Not Antisemitic"
+            model_label = "Antisemitic" if prediction == 0 else "Not Antisemitic"
 
             processed_data.append([tweet, model_label, percentage])
 
@@ -419,5 +419,8 @@ if __name__ == "__main__":
     app = create_app()
 
     # port change requires updating the docker-compose
-    app.launch(show_api=False, server_port=7860, server_name="0.0.0.0")
+    # app.launch(show_api=False, server_port=7860, server_name="0.0.0.0")
+
+    # Use this line when running locally
+    app.launch(show_api=False)
 
