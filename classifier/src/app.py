@@ -90,7 +90,7 @@ def process_file_upload(file):
             # Make prediction
             prediction, prob = model.predict(tweet)
             percentage = f"{prob * 100:.2f}%"
-            model_label = "Antisemitic" if prediction == 1 else "Not Antisemitic"
+            model_label = "Antisemitic" if prediction == 0 else "Not Antisemitic"
 
             processed_data.append([tweet, model_label, percentage])
 
