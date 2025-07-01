@@ -231,7 +231,6 @@ def predict_and_store_with_visibility(tweet):
     else:
         return prediction, [], gr.update(visible=False)
 
-
 def train_model():
     global model
 
