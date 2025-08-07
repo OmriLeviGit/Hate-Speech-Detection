@@ -29,23 +29,32 @@ def is_due_date_valid(user_id):
 
 
 async def get_tweet_to_tag(user_id):
+    """
+    Get next tweet for user to classify, with validation checks.
+
+    Args:
+        user_id: The ID of the user requesting a tweet
+
+    Returns:
+        dict: Tweet data or error response
+    """
     db = get_db_instance()
 
+    # Check if user's due date has passed (unless they're pro)
     if not is_due_date_valid(user_id) and not db.is_pro(user_id):
-        return {'error': 'Due date has passed.'}
+        return {'error': 'DEADLINE_PASSED', 'message': 'Due date has passed.'}
 
+    # Check if user has any tweets left to classify
     tweets_left = db.tweets_left_to_classify(user_id)
-
     if tweets_left < 1:
-        return {'error': 'No tweets left to classify! 🎉'} # no tweets left \ pro user has no assigned tweets
+        return {'error': 'NO_TWEETS_REMAINING', 'message': 'No tweets left to classify! 🎉'}
 
+    # Try to get or assign a tweet to the user
     tweet_data = db.get_or_assign_tweet(user_id)
-
     if not tweet_data:
-        return {'error': 'No available tweets'} # no tweets left \ pro user has no assigned tweets
+        return {'error': 'NO_AVAILABLE_TWEETS', 'message': 'No available tweets'}
 
-    # print(f"controller.py - get_tweet_to_tag returns tweet data: {tweet_data['content'][:20]}...")
-
+    # Success - return tweet data
     return tweet_data
 
 

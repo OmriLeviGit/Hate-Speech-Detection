@@ -51,24 +51,44 @@ const MainView = ({ token, setToken, passcode, setPasscode, isPro }) => {
         }
     };
 
-    // Data fetching functions
+      // Data fetching functions
     const getNewTweet = async () => {
         setLoading(true);
         await fetchTweetsLeftData();
         const resj = await fetchTweet(token);
 
         if (!resj) {
+            // Server connection error
             setTweet({
                 tweetId: '',
                 content: "Error connecting to server!"
             });
         } else if (resj.error) {
+            // Handle different error types from backend
+            let displayMessage = resj.message || resj.error;
+
+            // Customize messages for frontend display if needed
+            switch(resj.error) {
+                case 'DEADLINE_PASSED':
+                    displayMessage = "Your classification deadline has passed.";
+                    break;
+                case 'NO_TWEETS_REMAINING':
+                    displayMessage = "Congratulations! You've classified all your tweets! 🎉";
+                    break;
+                case 'NO_AVAILABLE_TWEETS':
+                    displayMessage = "No more tweets available for classification.";
+                    break;
+                default:
+                    displayMessage = resj.message || "An error occurred.";
+            }
+
             setTweet({
                 tweetId: '',
-                content: resj.error
+                content: displayMessage
             });
             setDoneTagging(true);
         } else {
+            // Success - load tweet data
             setTweet({
                 tweetId: resj.id,
                 content: resj.content,
