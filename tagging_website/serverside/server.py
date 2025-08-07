@@ -3,7 +3,6 @@ import platform
 import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from asyncio.locks import Lock
 
 from helper_functions.load_params import get_params
 
@@ -14,7 +13,6 @@ from auth import login_required
 # update the time form utc to jerusalem or something
 
 app = FastAPI()
-lock = Lock()
 
 app.add_middleware(
     CORSMiddleware,
@@ -33,7 +31,7 @@ async def sign_in(data: Password):
 @app.get("/get_tweet_to_tag")
 @login_required
 async def get_tweet_to_tag(user_id):
-    return await controller.get_tweet_to_tag(lock, user_id)
+    return await controller.get_tweet_to_tag(user_id)
 
 
 @app.post("/submit_tweet_tag")
@@ -43,7 +41,7 @@ async def tag_tweet(user_id, data: Classification):
     classification=data.classification
     features=data.features
     tagging_duration=data.tagging_duration
-    await controller.handle_tweet_tagging(lock, user_id, tweet_id, classification, features, tagging_duration)
+    await controller.handle_tweet_tagging(user_id, tweet_id, classification, features, tagging_duration)
 
 # Currently, not in use by the client
 @app.get("/count_tags_made_by_user")
@@ -60,13 +58,13 @@ async def tweets_left_to_classify(user_id):
 @app.get("/get_user_panel")
 @login_required
 async def get_user_panel(user_id):
-    return await controller.get_user_panel(lock, user_id)
+    return await controller.get_user_panel(user_id)
 
 
 @app.get("/get_pro_panel")
 @login_required
 async def get_pro_panel(user_id):
-    return await controller.get_pro_panel(lock)
+    return await controller.get_pro_panel()
 
 
 @app.get("/features_list")
