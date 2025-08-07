@@ -26,7 +26,7 @@ A web application for manual annotation by multiple annotators to create labeled
 
 **Tech Stack:** React, FastAPI, PostgreSQL
 
-## Getting Started
+---
 
 Each component can be run independently using Docker. See the individual README files for detailed setup instructions:
 
